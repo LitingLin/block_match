@@ -1,0 +1,2 @@
+LIBRARY "block_match_mex.mexw64"
+EXPORTS mexFunction
