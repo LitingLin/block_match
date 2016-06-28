@@ -7,6 +7,14 @@ enum LibBlockMatchMexError
 	blockMatchMexErrorTypeOfArgument,
 	blockMatchMexErrorNumberOfMatrixDimension,
 	blockMatchMexErrorNumberOfMatrixDimensionMismatch,
+	blockMatchMexErrorSizeOfMatrixDimension,
+
+};
+
+struct LibBlockMatchMexErrorWithMessage
+{
+	enum LibBlockMatchMexError error;
+	char message[32];
 };
 
 struct LibBlockMatchMexContext
@@ -14,52 +22,82 @@ struct LibBlockMatchMexContext
 	enum Method method;
 	size_t sequenceMatrixNumberOfDimensions;
 
-	size_t sequence1MatrixDimensions[4];
-	double *sequence1MatrixPointer;
+	size_t sequenceAMatrixDimensions[4];
+	double *sequenceAMatrixPointer;
 
-	size_t sequence2MatrixDimensions[4];
-	double *sequence2MatrixPointer;
+	size_t sequenceBMatrixDimensions[4];
+	double *sequenceBMatrixPointer;
 
 	size_t blockWidth;
 	size_t blockHeight;
-	size_t neighbourWidth;
-	size_t neighbourHeight;
+	size_t searchRegionWidth;
+	size_t searchRegionHeight;
 
-	size_t sequence2StrideWidth;
-	size_t sequence2StrideHeight;
+	size_t sequenceBStrideWidth;
+	size_t sequenceBStrideHeight;
 };
+
+enum LibBlockMatchMexError parseSequence2StrideSize()
+{
+	
+}
+
+enum LibBlockMatchMexError parseSearchRegionSize(struct LibBlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	size_t searchRegionWidth, searchRegionHeight;
+
+	if (mxGetNumberOfElements(pa) == 1)
+	{
+		searchRegionWidth = searchRegionHeight = mxGetScalar(pa);
+	}
+	else if (mxGetNumberOfElements(pa) == 2)
+	{
+		const double *pr = mxGetData(pa);
+		searchRegionHeight = pr[0];
+		searchRegionWidth = pr[1];
+	}
+	else
+	{
+		return blockMatchMexErrorNumberOfMatrixDimension;
+	}
+
+	if (context->sequenceAMatrixDimensions[0] - context->blockWidth < searchRegionWidth || context->sequenceAMatrixDimensions[1] - context->blockHeight < searchRegionHeight)
+	{
+		return blockMatchMexErrorSizeOfMatrixDimension;
+	}
+	context->searchRegionWidth = searchRegionWidth;
+	context->searchRegionHeight = searchRegionHeight;
+
+	return blockMatchMexOk;
+}
 
 enum LibBlockMatchMexError parseBlockSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	size_t blockWidth, blockHeight;
-	if (mxGetNumberOfElements(prhs[index]) == 1)
+	if (mxGetNumberOfElements(pa) == 1)
 	{
-		blockWidth = blockHeight = mxGetScalar(prhs[index]);
+		blockWidth = blockHeight = mxGetScalar(pa);
 	}
-	else if (mxGetNumberOfElements(prhs[index]) == 2)
+	else if (mxGetNumberOfElements(pa) == 2)
 	{
-		const double *pr = mxGetData(prhs[index]);
+		const double *pr = mxGetData(pa);
 		blockHeight = pr[0];
 		blockWidth = pr[1];
 	}
 	else
 	{
-		mexErrMsgTxt("check failed: dim of blockSize should be 1 or 2\n");
-		return;
+		return blockMatchMexErrorNumberOfMatrixDimension;
 	}
 
-	if (sequence1MatrixDimensions[0] < blockWidth || sequence1MatrixDimensions[1] < blockHeight)
+	if (context->sequenceAMatrixDimensions[0] < blockWidth || context->sequenceAMatrixDimensions[1] < blockHeight)
 	{
-		mexErrMsgTxt("check failed: size of matrix(para1) smaller than blockSize\n");
-		return;
+		return blockMatchMexErrorSizeOfMatrixDimension;
 	}
-
-	if (sequence2MatrixDimensions[0] < blockWidth || sequence2MatrixDimensions[1] < blockHeight)
-	{
-		mexErrMsgTxt("check failed: size of matrix(para2) smaller than blockSize\n");
-		return;
-	}
+	
+	context->blockWidth = blockWidth;
+	context->blockHeight = blockHeight;
 
 	return blockMatchMexOk;
 }
@@ -72,22 +110,28 @@ enum LibBlockMatchMexError parseSequence2(struct LibBlockMatchMexContext *contex
 		return blockMatchMexErrorTypeOfArgument;
 	}
 
-	size_t sequence2MatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
+	size_t sequenceBMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
 
-	if (sequence2MatrixNumberOfDimensions != context->sequenceMatrixNumberOfDimensions) {
+	if (sequenceBMatrixNumberOfDimensions != context->sequenceMatrixNumberOfDimensions)
+	{
 		return blockMatchMexErrorNumberOfMatrixDimensionMismatch;
 	}
 
-	const size_t *sequence2MatrixDimension = mxGetDimensions(pa);
-	context->sequence2MatrixDimensions[1] = sequence2MatrixDimension[0];
-	context->sequence2MatrixDimensions[0] = sequence2MatrixDimension[1];
+	const size_t *sequenceBMatrixDimensions = mxGetDimensions(pa);
+	context->sequenceBMatrixDimensions[1] = sequenceBMatrixDimensions[0];
+	context->sequenceBMatrixDimensions[0] = sequenceBMatrixDimensions[1];
 
-	context->sequence2MatrixPointer = mxGetData(pa);
+	if (sequenceBMatrixDimensions[0] < context->sequenceAMatrixDimensions[0] || sequenceBMatrixDimensions[1] < context->sequenceAMatrixDimensions[1])
+	{
+		return blockMatchMexErrorSizeOfMatrixDimension;
+	}
+
+	context->sequenceBMatrixPointer = mxGetData(pa);
 
 	return blockMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequence1(struct LibBlockMatchMexContext *context, 
+enum LibBlockMatchMexError parseSequenceA(struct LibBlockMatchMexContext *context, 
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
@@ -95,19 +139,19 @@ enum LibBlockMatchMexError parseSequence1(struct LibBlockMatchMexContext *contex
 		return blockMatchMexErrorTypeOfArgument;
 	}
 
-	size_t sequence1MatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
-	if (sequence1MatrixNumberOfDimensions != 2)
+	size_t sequenceAMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
+	if (sequenceAMatrixNumberOfDimensions != 2)
 	{
 		return blockMatchMexErrorNumberOfMatrixDimension;
 	}
 
-	context->sequenceMatrixNumberOfDimensions = sequence1MatrixNumberOfDimensions;
+	context->sequenceMatrixNumberOfDimensions = sequenceAMatrixNumberOfDimensions;
 
-	const size_t *sequenceDimension = mxGetDimensions(pa);
-	context->sequence1MatrixDimensions[1] = sequenceDimension[0];
-	context->sequence1MatrixDimensions[0] = sequenceDimension[1];
+	const size_t *sequenceAMatrixDimensions = mxGetDimensions(pa);
+	context->sequenceAMatrixDimensions[1] = sequenceAMatrixDimensions[0];
+	context->sequenceAMatrixDimensions[0] = sequenceAMatrixDimensions[1];
 
-	context->sequence1MatrixPointer = mxGetData(pa);
+	context->sequenceAMatrixPointer = mxGetData(pa);
 
 	return blockMatchMexOk;
 }
