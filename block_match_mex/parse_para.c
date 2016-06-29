@@ -1,20 +1,23 @@
 #include "common.h"
+#include <string.h>
 
 enum LibBlockMatchMexError
 {
-	blockMatchMexOk,
-	blockMatchMexErrorNumberOfOutputArguments,
+	blockMatchMexOk = 0,
+	blockMatchMexErrorNumberOfArguments,
 	blockMatchMexErrorTypeOfArgument,
 	blockMatchMexErrorNumberOfMatrixDimension,
 	blockMatchMexErrorNumberOfMatrixDimensionMismatch,
 	blockMatchMexErrorSizeOfMatrixDimension,
-
 };
+
+#define LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH 128
+#define LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH 128
 
 struct LibBlockMatchMexErrorWithMessage
 {
 	enum LibBlockMatchMexError error;
-	char message[32];
+	char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH];
 };
 
 struct LibBlockMatchMexContext
@@ -123,7 +126,7 @@ enum LibBlockMatchMexError parseBlockSize(struct LibBlockMatchMexContext *contex
 	return blockMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequence2(struct LibBlockMatchMexContext *context,
+enum LibBlockMatchMexError parseSequenceB(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
@@ -181,18 +184,120 @@ enum LibBlockMatchMexError parseOutputArgument(struct LibBlockMatchMexContext *c
 	int nlhs, mxArray *plhs[])
 {
 	if (nlhs >= 2)
-		return blockMatchMexErrorNumberOfOutputArguments;
+		return blockMatchMexErrorNumberOfArguments;
 
 	return blockMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseParameter(struct LibBlockMatchMexContext *context,
-	int nlhs, mxArray *plhs[], 
+enum LibBlockMatchMexError getString(const mxArray *pa, char *buffer, size_t bufferLength)
+{
+	if (mxGetString(pa, buffer, bufferLength) == 0)
+		return blockMatchMexErrorTypeOfArgument;
+
+	return blockMatchMexOk;
+}
+
+inline
+struct LibBlockMatchMexErrorWithMessage generateErrorMessage(enum LibBlockMatchMexError error, char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH])
+{
+	struct LibBlockMatchMexErrorWithMessage error_with_message = { error, "" };
+	strncpy_s(error_with_message.message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH, message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH);
+	return error_with_message;
+}
+
+struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
+	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[])
 {
 	enum LibBlockMatchMexError error = parseOutputArgument(context, nlhs, plhs);
-	if (error != blockMatchMexOk)
-		return error;
+	if (error == blockMatchMexErrorTypeOfArgument)
+		return generateErrorMessage(error, "Too many output arguments\n");
 
-	return blockMatchMexOk;
+	if (nrhs < 3)
+		return generateErrorMessage(blockMatchMexErrorNumberOfArguments, "Too few input arguments\n");
+
+	int index = 0;
+
+	error = parseSequenceA(context, prhs[index]);
+	if (error == blockMatchMexErrorTypeOfArgument)
+	{
+		return generateErrorMessage(error, "Type of Matrix A must be double\n");
+	}
+	else if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	{
+		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2\n");
+	}
+
+	++index;
+
+	error = parseSequenceB(context, prhs[index]);
+	if (error == blockMatchMexErrorTypeOfArgument)
+	{
+		return generateErrorMessage(error, "Type of Matrix B must be double\n");
+	}
+	else if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	{
+		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2\n");
+	}
+	else if (error == blockMatchMexErrorNumberOfMatrixDimensionMismatch)
+	{
+		return generateErrorMessage(error, "Number of dimension of Matrix B must be the same as Matrix A\n");
+	}
+
+	++index;
+
+	error = parseBlockSize(context, prhs[index]);
+	if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	{
+		return generateErrorMessage(error, "Number of dimension of BlockSize must be 1 or 2\n");
+	}
+	else if (error == blockMatchMexErrorSizeOfMatrixDimension)
+	{
+		return generateErrorMessage(error, "BlockSize cannot be smaller then Matrix A\n");
+	}
+
+	if ((nrhs - index) % 2)
+	{
+		return generateErrorMessage(error, "Wrong number of input arguments");
+	}
+
+	while (index < nrhs)
+	{
+		char buffer[LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH];
+		error = getString(prhs[index], buffer, LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH);
+		if (error == blockMatchMexErrorTypeOfArgument)
+		{
+			sprintf_s(buffer, LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH,
+				"Argument %d should be the name of parameter(string)\n", index);
+			return generateErrorMessage(error, buffer);
+		}
+
+		++index;
+
+		if (strncmp(buffer, "SearchRegionSize", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSearchRegionSize(context, prhs[index]);
+			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			{
+				return generateErrorMessage(error, "Number of dimension of SearchRegionSize must be 2\n");
+			}
+			else if (error == blockMatchMexErrorSizeOfMatrixDimension)
+			{
+				return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize");
+			}
+		}
+
+		else if (strncmp(buffer, "SequenceBStrideSize", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSequenceBStrideSize(context, prhs[index]);
+			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			{
+				return generateErrorMessage(error, "Number of dimension of SequenceBStrideSize must be 2\n");
+			}
+		}
+	}
+
+	struct LibBlockMatchMexErrorWithMessage error_message = { 0 };
+	
+	return error_message;
 }
