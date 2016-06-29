@@ -37,9 +37,30 @@ struct LibBlockMatchMexContext
 	size_t sequenceBStrideHeight;
 };
 
-enum LibBlockMatchMexError parseSequence2StrideSize()
+enum LibBlockMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexContext *context,
+	const mxArray *pa)
 {
-	
+	size_t sequenceBStrideWidth, sequenceBStrideHeight;
+
+	if (mxGetNumberOfElements(pa) == 1)
+	{
+		sequenceBStrideWidth = sequenceBStrideHeight = mxGetScalar(pa);
+	}
+	else if (mxGetNumberOfElements(pa) == 2)
+	{
+		const double *pr = mxGetData(pa);
+		sequenceBStrideHeight = pr[0];
+		sequenceBStrideWidth = pr[1];
+	}
+	else
+	{
+		return blockMatchMexErrorNumberOfMatrixDimension;
+	}
+
+	context->sequenceBStrideWidth = sequenceBStrideWidth;
+	context->sequenceBStrideHeight = sequenceBStrideHeight;
+
+	return blockMatchMexOk;
 }
 
 enum LibBlockMatchMexError parseSearchRegionSize(struct LibBlockMatchMexContext *context,
