@@ -834,14 +834,7 @@ bool processWorker_paddingB(float *matA, float *matB, float *result,
 
 unsigned processWorkerProxy(void *para)
 {
-	std::tuple<float *, float *, float *,
-		float *, size_t, size_t, size_t, size_t, size_t, size_t,
-		float *, size_t, size_t,
-		size_t, size_t,
-		size_t, size_t,
-		size_t, size_t,
-		float *, float *, float *,
-		cudaStream_t, int, int, Method > *para_tuple =
+	auto para_tuple =
 		(std::tuple<float *, float *, float *,
 			float *, size_t, size_t, size_t, size_t, size_t, size_t,
 			float *, size_t, size_t,
