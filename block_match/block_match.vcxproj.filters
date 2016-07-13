@@ -18,6 +18,7 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="block_match_initialize.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block_match.cuh">
