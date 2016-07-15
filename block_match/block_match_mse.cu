@@ -16,7 +16,7 @@ block_match_mse_kernel(const float *block_A, const float *block_B, size_t blockS
 	{
 		temp += (c_block_A[i] - c_block_B[i]) * (c_block_A[i] - c_block_B[i]);
 	}
-
+	temp /= blockSize;
 	result[tid] = temp;
 }
 
@@ -43,6 +43,8 @@ block_match_mse_async_kernel(const float *blocks_A, const float *blocks_B, size_
 	{
 		temp += (c_block_A[i] - c_block_B[i]) * (c_block_A[i] - c_block_B[i]);
 	}
+
+	temp /= blockSize;
 
 	resultsBuffer[tid] = temp;
 }
@@ -74,6 +76,8 @@ block_match_mse_async_kernel(const float *blocks_A, const float *blocks_B, size_
 	{
 		temp += (c_block_A[i] - c_block_B[i]) * (c_block_A[i] - c_block_B[i]);
 	}
+
+	temp /= blockSize;
 
 	resultsBuffer[tid] = temp;
 }

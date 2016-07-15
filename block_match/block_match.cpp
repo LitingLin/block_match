@@ -337,6 +337,117 @@ bool initialize_async_submit(void **_instance, size_t matA_M, size_t matA_N, siz
 	instance->stride_M = stride_M;
 	instance->stride_N = stride_N;
 
+	size_t result_dim0 = matA_M - block_M + 1;
+	size_t result_dim1 = matA_N - block_N + 1;
+	size_t result_dim2 = (neighbour_M + stride_M - 1) / stride_M;
+	size_t result_dim3 = (neighbour_N + stride_N - 1) / stride_N;
+	instance->result_dim0 = result_dim0;
+	instance->result_dim1 = result_dim1;
+	instance->result_dim2 = result_dim2;
+	instance->result_dim3 = result_dim3;
+
+	int numDeviceMultiProcessor;
+	const int numProcessorThread = 512;
+
+	cudaError_t cuda_error = cudaDeviceGetAttribute(&numDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_instance;
+	}
+
+	instance->numDeviceMultiProcessor = numDeviceMultiProcessor;
+	instance->numProcessorThread = numProcessorThread;
+
+	instance->pool = pool;
+
+	for (uint32_t i = 0; i < numSubmitThread; ++i)
+	{
+		cuda_error = cudaStreamCreate(&instance->stream[i]);
+		if (cuda_error != cudaSuccess)
+			return false;
+	}
+
+	cuda_error = cudaMallocHost(&instance->buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_instance;
+	}
+
+	cuda_error = cudaMallocHost(&instance->buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_buffer_A;
+	}
+
+	cuda_error = cudaMallocHost(&instance->result_buffer, result_dim0 * result_dim1 * result_dim2 * result_dim3 * sizeof(float));
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_buffer_B;
+	}
+
+	cuda_error = cudaMalloc(&instance->device_buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_result_buffer;
+	}
+
+	cuda_error = cudaMalloc(&instance->device_buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_device_buffer_A;
+	}
+	cuda_error = cudaMalloc(&instance->device_result_buffer, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * sizeof(float));
+
+	if (cuda_error != cudaSuccess)
+	{
+		goto release_device_buffer_B;
+	}
+	*_instance = instance;
+
+	return true;
+
+release_device_buffer_B:
+
+	cudaFree(instance->device_buffer_B);
+release_device_buffer_A:
+
+	cudaFree(instance->device_buffer_A);
+release_result_buffer:
+
+	cudaFreeHost(instance->result_buffer);
+release_buffer_B:
+
+	cudaFreeHost(instance->buffer_B);
+release_buffer_A:
+
+	cudaFreeHost(instance->buffer_A);
+release_instance:
+
+	free(instance);
+	return false;
+}
+bool initialize_async_submit_bak(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N)
+{
+	struct Context_Async * instance = (struct Context_Async *)malloc(sizeof(struct Context_Async));
+	if (!instance)
+		return false;
+
+	instance->type = COMBILE;
+
+	instance->matA_M = matA_M;
+	instance->matA_N = matA_N;
+	instance->matB_M = matB_M;
+	instance->matB_N = matB_N;
+
+	instance->block_M = block_M;
+	instance->block_N = block_N;
+
+	instance->neighbour_M = neighbour_M;
+	instance->neighbour_N = neighbour_N;
+
+	instance->stride_M = stride_M;
+	instance->stride_N = stride_N;
+
 	size_t result_dim0 = matA_M - block_M - neighbour_M + 2;
 	size_t result_dim1 = matA_N - block_N - neighbour_N + 2;
 	size_t result_dim2 = (neighbour_M + stride_M - 1) / stride_M;
@@ -426,8 +537,7 @@ release_instance:
 	free(instance);
 	return false;
 }
-
-bool processWorker(float *matA, float *matB, float *result,
+bool processWorker_bak(float *matA, float *matB, float *result,
 	float *bufferA, size_t matA_M, size_t matA_N, size_t index_A_M_begin, size_t index_A_M_end, size_t index_A_N_begin, size_t index_A_N_end,
 	float *bufferB, size_t matB_M, size_t matB_N,
 	size_t block_M, size_t block_N,
@@ -542,6 +652,154 @@ bool processWorker(float *matA, float *matB, float *result,
 			return false;
 
 		if (!processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC, (numTasks + numThreadsPerProcessor - 1) / numThreadsPerProcessor, numThreadsPerProcessor, numTasks, stream) == cudaSuccess)
+			return false;
+
+		cuda_error = cudaStreamSynchronize(stream);
+		if (cuda_error != cudaSuccess)
+			return false;
+
+		cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+		if (cuda_error != cudaSuccess)
+			return false;
+	}
+
+	return true;
+}
+bool processWorker(float *matA, float *matB, float *result,
+	float *bufferA, size_t matA_M, size_t matA_N, size_t index_A_M_begin, size_t index_A_M_end, size_t index_A_N_begin, size_t index_A_N_end,
+	float *bufferB, size_t matB_M, size_t matB_N,
+	size_t block_M, size_t block_N,
+	size_t neighbour_M, size_t neighbour_N,
+	size_t stride_M, size_t stride_N,
+	float *device_bufferA, float *device_bufferB, float *device_bufferC,
+	cudaStream_t stream, int numDeviceMultiProcessor, int numThreadsPerProcessor, Method method)
+{
+	cudaError_t(*processFunction)(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+	cudaError_t(*processFunction_borderCheck)(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_blockSize, size_t blockSize, float *result, int numProcessors, int numThreads, size_t numTasks, cudaStream_t stream);
+	if (method == MSE)
+	{
+		processFunction = block_match_mse_async;
+		processFunction_borderCheck = block_match_mse_async;
+	}
+	else
+	{
+		processFunction = block_match_cc_async;
+		processFunction_borderCheck = block_match_cc_async;
+	}
+
+	size_t blockSize = block_M * block_N;
+	size_t neighbourSize = neighbour_M / stride_M * neighbour_N / stride_N;
+
+	float *c_bufferA = bufferA;
+	float *c_bufferB = bufferB;
+	float *c_result = result;
+
+	size_t neighbour_M_m = neighbour_M / 2;
+	size_t neighbour_N_m = neighbour_N / 2;
+
+	int blocksPerProcessor = 0;
+	int filledProcessor = 0;
+	size_t numTasks = 0;
+	size_t numBlocks_A = 0, numBlocks_B = 0;
+
+	for (size_t ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ++ind_A_M)
+	{
+		for (size_t ind_A_N = index_A_N_begin; ind_A_N < index_A_N_end; ++ind_A_N)
+		{
+			copyPatch(c_bufferA, matA, matA_M, matA_N, ind_A_M, ind_A_N, block_M, block_N);
+
+			for (size_t ind_neighbour_M = 0; ind_neighbour_M < neighbour_M; ind_neighbour_M += stride_M)
+			{
+				size_t minus_index_x, index_x;
+				if (ind_A_M + ind_neighbour_M < neighbour_M_m)
+				{
+					minus_index_x = neighbour_M_m - ind_A_M - ind_neighbour_M;
+					index_x = 0;
+				}
+				else
+				{
+					minus_index_x = 0;
+					index_x = ind_A_M + ind_neighbour_M - neighbour_M_m;
+				}
+
+				for (size_t ind_neighbour_N = 0; ind_neighbour_N < neighbour_N; ind_neighbour_N += stride_N)
+				{
+					size_t minus_index_y, index_y;
+					if (ind_A_N + ind_neighbour_N < neighbour_N_m)
+					{
+						minus_index_y = neighbour_N_m - ind_A_N - ind_neighbour_N;
+						index_y = 0;
+					}
+					else
+					{
+						minus_index_y = 0;
+						index_y = ind_A_N + ind_neighbour_N - neighbour_N_m;
+					}
+
+					copyPatchWithSymmetricPaddding(c_bufferB, matB, matB_M, matB_N, index_x, minus_index_x, index_y, minus_index_y, block_M, block_N);
+					
+					c_bufferB += blockSize;
+				}
+			}
+
+			numBlocks_B += neighbourSize;
+			numBlocks_A += 1;
+
+			numTasks += neighbourSize;
+
+			blocksPerProcessor += neighbourSize;
+			c_bufferA += blockSize;
+
+			if (blocksPerProcessor + neighbourSize > numThreadsPerProcessor)
+			{
+				filledProcessor++;
+
+				if (filledProcessor == numDeviceMultiProcessor)
+				{
+					cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+					if (cuda_error != cudaSuccess)
+						return false;
+
+					cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+					if (cuda_error != cudaSuccess)
+						return false;
+
+					if (processFunction(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC, filledProcessor, blocksPerProcessor, stream) != cudaSuccess)
+						return false;
+
+					cuda_error = cudaStreamSynchronize(stream);
+					if (cuda_error != cudaSuccess)
+						return false;
+
+					cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+					if (cuda_error != cudaSuccess)
+						return false;
+
+					c_result += numTasks;
+					c_bufferA = bufferA;
+					c_bufferB = bufferB;
+
+					numBlocks_A = 0;
+					numBlocks_B = 0;
+					numTasks = 0;
+					filledProcessor = 0;
+				}
+				blocksPerProcessor = 0;
+			}
+		}
+	}
+
+	if (numTasks)
+	{
+		cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+		if (cuda_error != cudaSuccess)
+			return false;
+
+		cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+		if (cuda_error != cudaSuccess)
+			return false;
+
+		if (processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC, (numTasks + numThreadsPerProcessor - 1) / numThreadsPerProcessor, numThreadsPerProcessor, numTasks, stream) != cudaSuccess)
 			return false;
 
 		cuda_error = cudaStreamSynchronize(stream);

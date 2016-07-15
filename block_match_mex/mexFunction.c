@@ -167,7 +167,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 	++index;
 
-	size_t stride_M = blockWidth, stride_N = blockHeight;
+	size_t stride_M = 1, stride_N = 1;
 	
 	float *sequence1, *sequence2;
 	size_t sequence1Size = sequence1MatrixDimensions[0] * sequence1MatrixDimensions[1];
@@ -219,10 +219,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	float *result;
 	size_t result_dims[4];
 	getResult(instance, &result, result_dims + 1, result_dims, result_dims + 3, result_dims + 2);
-
-	mxArray *block = mxCreateNumericArray(4, result_dims, mxDOUBLE_CLASS, mxREAL);
+	result_dims[0] = result_dims[0] * result_dims[1];
+	result_dims[1] = result_dims[2];
+	result_dims[2] = result_dims[3];
+	mxArray *block = mxCreateNumericArray(3, result_dims, mxDOUBLE_CLASS, mxREAL);
 	void *block_p = mxGetData(block);
-	floatToDouble(result, block_p, result_dims[0] * result_dims[1] * result_dims[2] * result_dims[3]);
+	floatToDouble(result, block_p, result_dims[0] * result_dims[1] * result_dims[2]/* * result_dims[3]*/);
 
 	plhs[0] = block;
 
