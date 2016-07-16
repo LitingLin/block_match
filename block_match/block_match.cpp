@@ -1130,6 +1130,98 @@ bool process_async_submit(void *_instance, float *matA, float *matB, enum Method
 		neighbour_N = instance->neighbour_N,
 		stride_M = instance->stride_M,
 		stride_N = instance->stride_N,
+		result_dim0 = instance->result_dim0,
+		result_dim1 = instance->result_dim1,
+		result_dim2 = instance->result_dim2,
+		result_dim3 = instance->result_dim3;
+
+	int numDeviceMultiProcessor = instance->numDeviceMultiProcessor,
+		numThreadsPerProcessor = instance->numProcessorThread;
+	size_t ind_A_N_begin = 0;
+	size_t ind_A_M_end = result_dim0;
+	size_t ind_A_N_end = result_dim1;
+	
+	std::tuple<float *, float *, float *,
+		float *, size_t, size_t, size_t, size_t, size_t, size_t,
+		float *, size_t, size_t,
+		size_t, size_t,
+		size_t, size_t,
+		size_t, size_t,
+		float *, float *, float *,
+		cudaStream_t, int, int, Method > para_tuple[numSubmitThread];
+	for (uint32_t i = 0; i < numSubmitThread; ++i)
+	{
+		size_t c_index_A_M_begin = (ind_A_M_end) / numSubmitThread * i;
+		size_t c_index_A_M_end;
+		if (i + 1 != numSubmitThread)
+		{
+			c_index_A_M_end = (ind_A_M_end) / numSubmitThread * (i + 1);
+		}
+		else
+		{
+			c_index_A_M_end = ind_A_M_end;
+		}
+
+		float *c_buffer_A = bufferA + i * numDeviceMultiProcessor * numThreadsPerProcessor * block_M * block_N;
+		float *c_buffer_B = bufferB + i * numDeviceMultiProcessor * numThreadsPerProcessor * block_M * block_N;
+		float *c_buffer_result = result_buffer + (c_index_A_M_begin) * result_dim1 * result_dim2 * result_dim3;
+		float *c_device_buffer_A = device_bufferA + i * numDeviceMultiProcessor * numThreadsPerProcessor * block_M * block_N;
+		float *c_device_buffer_B = device_bufferB + i * numDeviceMultiProcessor * numThreadsPerProcessor * block_M * block_N;
+		float *c_device_buffer_C = device_bufferC + i * numDeviceMultiProcessor * numThreadsPerProcessor;
+
+		cudaStream_t stream = instance->stream[i];
+
+		para_tuple[i] =
+			std::make_tuple(matA, matB, c_buffer_result,
+				c_buffer_A, matA_M, matA_N, c_index_A_M_begin, c_index_A_M_end, ind_A_N_begin, ind_A_N_end,
+				c_buffer_B, matB_M, matB_N,
+				block_M, block_N,
+				neighbour_M, neighbour_N,
+				stride_M, stride_N,
+				c_device_buffer_A, c_device_buffer_B, c_device_buffer_C,
+				stream, numDeviceMultiProcessor, numThreadsPerProcessor, method);
+
+		task_handle[i] = pool.submit(processWorkerProxy, &para_tuple[i]);
+	}
+	for (uint32_t i = 0; i < numSubmitThread; ++i)
+	{
+		pool.join(task_handle[i]);
+	}
+	bool isFailed = false;
+	for (uint32_t i = 0; i < numSubmitThread; ++i)
+	{
+		if (pool.get_rc(task_handle[i]) != 0)
+			isFailed = true;
+		pool.release(task_handle[i]);
+	}
+
+	return !isFailed;
+}
+
+bool process_async_submit_bak(void *_instance, float *matA, float *matB, enum Method method)
+{
+	struct Context_Async *instance = (struct Context_Async *)_instance;
+	thread_pool &pool = *instance->pool;
+
+	void *task_handle[numSubmitThread];
+
+	float *result_buffer = instance->result_buffer,
+		*bufferA = instance->buffer_A,
+		*bufferB = instance->buffer_B,
+		*device_bufferA = instance->device_buffer_A,
+		*device_bufferB = instance->device_buffer_B,
+		*device_bufferC = instance->device_result_buffer;
+
+	size_t matA_M = instance->matA_M,
+		matA_N = instance->matA_N,
+		matB_M = instance->matB_M,
+		matB_N = instance->matB_N,
+		block_M = instance->block_M,
+		block_N = instance->block_N,
+		neighbour_M = instance->neighbour_M,
+		neighbour_N = instance->neighbour_N,
+		stride_M = instance->stride_M,
+		stride_N = instance->stride_N,
 		result_dim1 = instance->result_dim1,
 		result_dim2 = instance->result_dim2,
 		result_dim3 = instance->result_dim3;
