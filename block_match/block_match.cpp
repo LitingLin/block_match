@@ -278,6 +278,145 @@ void copyPatchWithSymmetricPaddding(float *blockBuf, float *mat, size_t mat_M, s
 	}
 }
 
+void determineIndexPreMat(int64_t index, int64_t mat_length, int64_t block_length, int64_t &index_pre_begin, int64_t &index_pre_end)
+{
+	if (index >= 0) {
+		index_pre_begin = 0;
+		index_pre_end = 0;
+		return;
+	}
+
+	index_pre_begin = -index;
+	if (index + (int64_t)block_length < 0) {
+		index_pre_end = -(index + (int64_t)block_length);
+	}
+	else {
+		index_pre_end = 0;
+	}
+}
+
+void determineIndexInMat(int64_t index, int64_t mat_length, int64_t block_length, int64_t &index_begin, int64_t &index_end)
+{
+	if (index >= mat_length)
+	{
+		index_begin = 0;
+		index_end = 0;
+		return;
+	}
+
+	if (index < 0)
+		index_begin = 0;
+	else
+		index_begin = index;
+
+	if (index + block_length < 0)
+	{
+		index_end = 0;
+	}
+	else if (index + block_length < mat_length)
+	{
+		index_end = index + block_length;
+	}
+	else
+	{
+		index_end = mat_length;
+	}
+}
+
+void determinIndexPostMat(int64_t index, int64_t mat_length, int64_t block_length, int64_t &index_post_begin, int64_t &index_post_end)
+{
+	if (index < mat_length)
+		index_post_begin = 0;
+	else
+		index_post_begin = index - mat_length;
+
+	if (index + block_length < mat_length)
+		index_post_end = 0;
+	else
+		index_post_end = index + block_length - mat_length;
+}
+
+void determineIndex(int64_t index, int64_t mat_length, int64_t block_length, int64_t &index_pre_begin, int64_t &index_pre_end, int64_t &index_begin, int64_t &index_end, int64_t &index_post_begin, int64_t &index_post_end)
+{
+	determineIndexPreMat(index, mat_length, block_length, index_pre_begin, index_pre_end);
+	determineIndexInMat(index, mat_length, block_length, index_begin, index_end);
+	determinIndexPostMat(index, mat_length, block_length, index_post_begin, index_post_end);
+}
+
+void copyPatchWithSymmetricPaddding(float *buf, float *src, int64_t mat_M, int64_t mat_N, int64_t index_x, int64_t index_y, int64_t block_M, int64_t block_N)
+{
+	if (index_x >= 0 && index_y >= 0 && index_x + block_M < mat_M && index_y + block_N < mat_N)
+	{
+		copyPatch(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
+		return;
+	}
+
+	int64_t x_index_pre_begin, x_index_pre_end, x_index_begin, x_index_end, x_index_post_begin, x_index_post_end;
+	int64_t y_index_pre_begin, y_index_pre_end, y_index_begin, y_index_end, y_index_post_begin, y_index_post_end;
+
+	determineIndex(index_x, mat_M, block_M, x_index_pre_begin, x_index_pre_end, x_index_begin, x_index_end, x_index_post_begin, x_index_post_end);
+	determineIndex(index_y, mat_N, block_N, y_index_pre_begin, y_index_pre_end, y_index_begin, y_index_end, y_index_post_begin, y_index_post_end);
+
+	for (int64_t i = x_index_pre_begin; i>x_index_pre_end; --i)
+	{
+		float *c_mat = src + (i - 1) * mat_N;
+		for (int64_t j = y_index_pre_begin; j>y_index_pre_end; --j)
+		{
+			float *c_c_mat = c_mat + j - 1;
+			*buf++ = *c_c_mat;
+		}
+
+		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
+		buf += (y_index_end - y_index_begin);
+
+		c_mat += mat_N - 1;
+		for (int64_t j = y_index_post_begin; j<y_index_post_end; ++j)
+		{
+			float *c_c_mat = c_mat - j;
+			*buf++ = *c_c_mat;
+		}
+	}
+
+	for (int64_t i = x_index_begin; i<x_index_end; ++i)
+	{
+		float *c_mat = src + i * mat_N;
+		for (int64_t j = y_index_pre_begin; j>y_index_pre_end; --j)
+		{
+			float *c_c_mat = c_mat + j - 1;
+			*buf++ = *c_c_mat;
+		}
+
+		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
+		buf += (y_index_end - y_index_begin);
+
+		c_mat += mat_N - 1;
+		for (int64_t j = y_index_post_begin; j<y_index_post_end; ++j)
+		{
+			float *c_c_mat = c_mat - j;
+			*buf++ = *c_c_mat;
+		}
+	}
+
+	for (int64_t i = x_index_post_begin; i<x_index_post_end; ++i)
+	{
+		float *c_mat = src + (mat_M - i - 1) * mat_N;
+		for (int64_t j = y_index_pre_begin; j>y_index_pre_end; --j)
+		{
+			float *c_c_mat = c_mat + j - 1;
+			*buf++ = *c_c_mat;
+		}
+
+		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
+		buf += (y_index_end - y_index_begin);
+
+		c_mat += mat_N - 1;
+		for (int64_t j = y_index_post_begin; j<y_index_post_end; ++j)
+		{
+			float *c_c_mat = c_mat - j;
+			*buf++ = *c_c_mat;
+		}
+	}
+}
 
 struct Context_Async
 {
@@ -710,34 +849,14 @@ bool processWorker(float *matA, float *matB, float *result,
 
 			for (size_t ind_neighbour_M = 0; ind_neighbour_M < neighbour_M; ind_neighbour_M += stride_M)
 			{
-				size_t minus_index_x, index_x;
-				if (ind_A_M + ind_neighbour_M < neighbour_M_m)
-				{
-					minus_index_x = neighbour_M_m - ind_A_M - ind_neighbour_M;
-					index_x = 0;
-				}
-				else
-				{
-					minus_index_x = 0;
-					index_x = ind_A_M + ind_neighbour_M - neighbour_M_m;
-				}
+				int64_t index_x = int64_t(ind_A_M + ind_neighbour_M) - neighbour_M_m;
 
 				for (size_t ind_neighbour_N = 0; ind_neighbour_N < neighbour_N; ind_neighbour_N += stride_N)
 				{
-					size_t minus_index_y, index_y;
-					if (ind_A_N + ind_neighbour_N < neighbour_N_m)
-					{
-						minus_index_y = neighbour_N_m - ind_A_N - ind_neighbour_N;
-						index_y = 0;
-					}
-					else
-					{
-						minus_index_y = 0;
-						index_y = ind_A_N + ind_neighbour_N - neighbour_N_m;
-					}
+					int64_t index_y = int64_t(ind_A_N + ind_neighbour_N) - neighbour_N_m;
 
-					copyPatchWithSymmetricPaddding(c_bufferB, matB, matB_M, matB_N, index_x, minus_index_x, index_y, minus_index_y, block_M, block_N);
-					
+					copyPatchWithSymmetricPaddding(c_bufferB, matB, matB_M, matB_N, index_x, index_y, block_M, block_N);
+
 					c_bufferB += blockSize;
 				}
 			}
