@@ -18,7 +18,9 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_initialize.cpp" />
+    <ClCompile Include="block_match_initialize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block_match.cuh">
@@ -28,6 +30,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="thread_pool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="block_match_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

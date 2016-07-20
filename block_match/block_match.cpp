@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
+#include <functional>
 #include <cuda_runtime.h>
 
-#include "block_match.cuh"
 #include "thread_pool.h"
+#include "block_match_internal.h"
+#include "block_match.cuh"
 
 const uint32_t numSubmitThread = 2;
 thread_pool *pool = nullptr;
@@ -804,6 +806,7 @@ bool processWorker_bak(float *matA, float *matB, float *result,
 
 	return true;
 }
+
 bool processWorker(float *matA, float *matB, float *result,
 	float *bufferA, size_t matA_M, size_t matA_N, size_t index_A_M_begin, size_t index_A_M_end, size_t index_A_N_begin, size_t index_A_N_end,
 	float *bufferB, size_t matB_M, size_t matB_N,
@@ -1300,7 +1303,7 @@ bool process_async_submit(void *_instance, float *matA, float *matB, enum Method
 				c_device_buffer_A, c_device_buffer_B, c_device_buffer_C,
 				stream, numDeviceMultiProcessor, numThreadsPerProcessor, method);
 
-		task_handle[i] = pool.submit(processWorkerProxy, &para_tuple[i]);
+		task_handle[i] = thread_pool_launcher(pool, processWorker, para_tuple[i]);
 	}
 	for (uint32_t i = 0; i < numSubmitThread; ++i)
 	{

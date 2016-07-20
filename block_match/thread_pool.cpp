@@ -8,7 +8,7 @@
 struct thread_pool::_task
 {
 	std::atomic<task_state> state;
-	std::function<unsigned int(void *)> func;
+	unsigned int(*func)(void *);
 	void *para;
 	unsigned int rc;
 	std::atomic<HANDLE> hEvent;
@@ -52,10 +52,10 @@ thread_pool::~thread_pool()
 	delete[]m_wait_event;
 }
 
-void* thread_pool::submit(std::function<unsigned(void*)> task, void* para)
+void* thread_pool::submit(unsigned int(*func)(void *), void* para)
 {
 	_task *task_entity = new _task;
-	task_entity->func = task;
+	task_entity->func = func;
 	task_entity->state = task_state::NEW;
 	task_entity->hEvent = nullptr;
 	task_entity->para = para;
@@ -97,7 +97,7 @@ thread_pool::task_state thread_pool::query(void* task_handle) const
 	return static_cast<_task*>(task_handle)->state;
 }
 
-void thread_pool::release(void* task_handle)
+void thread_pool::release(void* task_handle) const
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 	HANDLE hEvent = task_entity->hEvent;
@@ -146,6 +146,8 @@ unsigned thread_pool::thread_helper(void* para)
 		task_entity->state = task_state::DONE;
 
 		HANDLE waiting_thread_handle = task_entity->hEvent;
+		if (!task_entity->hEvent.compare_exchange_strong(waiting_thread_handle, INVALID_HANDLE_VALUE))
+			waiting_thread_handle = task_entity->hEvent;
 		if (waiting_thread_handle)
 			SetEvent(waiting_thread_handle);
 	}
