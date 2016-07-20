@@ -33,17 +33,22 @@ struct Context
 {
 	Type type;
 
-	size_t matA_M;
-	size_t matA_N;
-	size_t matB_M;
-	size_t matB_N;
-	size_t block_M;
-	size_t block_N;
+	int matA_M;
+	int matA_N;
+	int matB_M;
+	int matB_N;
+	int block_M;
+	int block_N;
 
-	size_t neighbour_M;
-	size_t neighbour_N;
-	size_t stride_M;
-	size_t stride_N;
+	int neighbour_M;
+	int neighbour_N;
+
+	int strideA_M;
+	int strideA_N;
+
+	int strideB_M;
+	int strideB_N;
+
 
 
 	float *buffer_A;
@@ -52,14 +57,8 @@ struct Context
 	float *device_buffer_A;
 	float *device_buffer_B;
 	float *device_result_buffer;
-
-	size_t result_dim0;
-	size_t result_dim1;
-	size_t result_dim2;
-	size_t result_dim3;
-
+	
 	cudaStream_t *stream;
-	ThreadPool *pool;
 };
 
 
