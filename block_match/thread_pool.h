@@ -13,7 +13,7 @@
 #endif
 
 typedef void* HANDLE;
-class thread_pool
+class ThreadPool
 {
 public:
 	enum class task_state
@@ -25,11 +25,11 @@ public:
 private:
 	struct _task;
 public:
-	thread_pool(unsigned int num);
+	ThreadPool(unsigned int num);
 
-	thread_pool(const thread_pool&) = delete;
+	ThreadPool(const ThreadPool&) = delete;
 
-	~thread_pool();
+	~ThreadPool();
 
 	void* submit(unsigned int(*func)(void *), void* para);
 
@@ -42,7 +42,7 @@ public:
 	unsigned int get_rc(void* task_handle);
 private:
 #ifdef _MSC_VER
-	unsigned static int __stdcall thread_helper(void* para);
+	unsigned static int __stdcall start_routine(void* para);
 #else
     static void *start_routine(void *para);
 #endif

@@ -17,7 +17,7 @@
 #define THREAD_POOL_CHECK(x) x
 #endif
 
-struct thread_pool::_task
+struct ThreadPool::_task
 {
 	std::atomic<task_state> state;
 	unsigned int(*func)(void *);
@@ -27,7 +27,7 @@ struct thread_pool::_task
 	pthread_mutex_t *mutex;
 };
 
-thread_pool::thread_pool(unsigned num)
+ThreadPool::ThreadPool(unsigned num)
 	: m_exit_flag(false), m_max_task_id(0), m_size(num)
 {
 	m_threads = new pthread_t[m_size];
@@ -42,7 +42,7 @@ thread_pool::thread_pool(unsigned num)
 	}
 }
 
-thread_pool::~thread_pool()
+ThreadPool::~ThreadPool()
 {
 	m_exit_flag = true;
 
@@ -62,7 +62,7 @@ thread_pool::~thread_pool()
 	delete [] m_mutexes;
 }
 
-void* thread_pool::submit(unsigned int(*func)(void *), void* para)
+void* ThreadPool::submit(unsigned int(*func)(void *), void* para)
 {
 	_task *task_entity = new _task;
 	task_entity->func = func;
@@ -79,7 +79,7 @@ void* thread_pool::submit(unsigned int(*func)(void *), void* para)
 	return task_entity;
 }
 
-void thread_pool::join(void* task_handle) const
+void ThreadPool::join(void* task_handle) const
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 
@@ -111,12 +111,12 @@ void thread_pool::join(void* task_handle) const
     THREAD_POOL_CHECK(pthread_cond_wait(cond, mutex));
 }
 
-thread_pool::task_state thread_pool::query(void* task_handle) const
+ThreadPool::task_state thread_pool::query(void* task_handle) const
 {
 	return static_cast<_task*>(task_handle)->state;
 }
 
-void thread_pool::release(void* task_handle)
+void ThreadPool::release(void* task_handle)
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 	pthread_cond_t *cond = task_entity->cond;
@@ -130,12 +130,12 @@ void thread_pool::release(void* task_handle)
 	delete task_entity;
 }
 
-unsigned thread_pool::get_rc(void* task_handle)
+unsigned ThreadPool::get_rc(void* task_handle)
 {
 	return static_cast<_task*>(task_handle)->rc;
 }
 
-void *thread_pool::start_routine(void *para)
+void *ThreadPool::start_routine(void *para)
 {
     thread_pool *this_class = static_cast<thread_pool*>(para);
     tbb::concurrent_queue<_task*> &task_queue = this_class->m_task_queue;
@@ -181,7 +181,7 @@ void *thread_pool::start_routine(void *para)
     return 0;
 }
 
-unsigned thread_pool::new_tid()
+unsigned ThreadPool::new_tid()
 {
 	unsigned int task_id = m_max_task_id.fetch_add(1);
 

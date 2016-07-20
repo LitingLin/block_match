@@ -6,18 +6,11 @@
 #include <functional>
 #include <cuda_runtime.h>
 
-#include "thread_pool.h"
 #include "block_match_internal.h"
 #include "block_match.cuh"
 
 const uint32_t numSubmitThread = 2;
-thread_pool *pool = nullptr;
-
-enum Type
-{
-	FULL,
-	COMBILE,
-};
+ThreadPool *pool = nullptr;
 
 struct Context
 {
@@ -452,7 +445,7 @@ struct Context_Async
 	size_t result_dim3;
 
 	cudaStream_t stream[numSubmitThread];
-	thread_pool *pool;
+	ThreadPool *pool;
 };
 
 
@@ -1231,7 +1224,7 @@ unsigned processWorkerProxy(void *para)
 bool process_async_submit(void *_instance, float *matA, float *matB, enum Method method)
 {
 	struct Context_Async *instance = (struct Context_Async *)_instance;
-	thread_pool &pool = *instance->pool;
+	ThreadPool &pool = *instance->pool;
 
 	void *task_handle[numSubmitThread];
 
@@ -1323,7 +1316,7 @@ bool process_async_submit(void *_instance, float *matA, float *matB, enum Method
 bool process_async_submit_bak(void *_instance, float *matA, float *matB, enum Method method)
 {
 	struct Context_Async *instance = (struct Context_Async *)_instance;
-	thread_pool &pool = *instance->pool;
+	ThreadPool &pool = *instance->pool;
 
 	void *task_handle[numSubmitThread];
 
@@ -1597,7 +1590,7 @@ bool reset()
 extern "C"
 void onLoad(void)
 {
-	pool = new thread_pool(numSubmitThread);
+	pool = new ThreadPool(numSubmitThread);
 }
 
 extern "C"
