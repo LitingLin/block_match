@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <cstdlib>
 
-bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N)
+bool initialize(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N)
 {
 	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
 	if (!instance)
@@ -26,19 +26,17 @@ bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N
 	instance->stride_M = stride_M;
 	instance->stride_N = stride_N;
 
-	int result_dim0 = matA_M - block_M + 1;
-	int result_dim1 = matA_N - block_N + 1;
-	int result_dim2 = (neighbour_M + stride_M - 1) / stride_M;
-	int result_dim3 = (neighbour_N + stride_N - 1) / stride_N;
+	size_t result_dim0 = matA_M - block_M + 1;
+	size_t result_dim1 = matA_N - block_N + 1;
+	size_t result_dim2 = (neighbour_M + stride_M - 1) / stride_M;
+	size_t result_dim3 = (neighbour_N + stride_N - 1) / stride_N;
 	instance->result_dim0 = result_dim0;
 	instance->result_dim1 = result_dim1;
 	instance->result_dim2 = result_dim2;
 	instance->result_dim3 = result_dim3;
 
-	int numberOfThreads = globalContext.numberOfThreads;
-	int	numDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
+	int numDeviceMultiProcessor;
+	const int numProcessorThread = 512;
 
 	cudaError_t cuda_error = cudaDeviceGetAttribute(&numDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
 	if (cuda_error != cudaSuccess)
@@ -46,20 +44,25 @@ bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N
 		goto release_instance;
 	}
 
-	for (uint32_t i = 0; i < numberOfGPUProcessorThread; ++i)
+	instance->numDeviceMultiProcessor = numDeviceMultiProcessor;
+	instance->numProcessorThread = numProcessorThread;
+
+	instance->pool = pool;
+
+	for (uint32_t i = 0; i < numSubmitThread; ++i)
 	{
 		cuda_error = cudaStreamCreate(&instance->stream[i]);
 		if (cuda_error != cudaSuccess)
 			return false;
 	}
 
-	cuda_error = cudaMallocHost(&instance->buffer_A, numberOfThreads * numDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMallocHost(&instance->buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_instance;
 	}
 
-	cuda_error = cudaMallocHost(&instance->buffer_B, numberOfThreads * numDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMallocHost(&instance->buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_buffer_A;
@@ -71,18 +74,18 @@ bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N
 		goto release_buffer_B;
 	}
 
-	cuda_error = cudaMalloc(&instance->device_buffer_A, numberOfThreads * numDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_result_buffer;
 	}
 
-	cuda_error = cudaMalloc(&instance->device_buffer_B, numberOfThreads * numDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_device_buffer_A;
 	}
-	cuda_error = cudaMalloc(&instance->device_result_buffer, numberOfThreads * numDeviceMultiProcessor * numberOfGPUProcessorThread * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_result_buffer, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * sizeof(float));
 
 	if (cuda_error != cudaSuccess)
 	{
@@ -114,7 +117,7 @@ release_instance:
 }
 
 extern "C"
-bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N)
+bool initialize(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N)
 {
 	if (neighbour_M == 0)
 	{
