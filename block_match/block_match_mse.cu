@@ -1,4 +1,4 @@
-#include "block_match.h"
+#include "block_match_internal.h"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -82,20 +82,13 @@ block_match_mse_async_kernel(const float *blocks_A, const float *blocks_B, size_
 	resultsBuffer[tid] = temp;
 }
 
-cudaError_t block_match_mse(const float *block_A, const float *block_B, size_t numBlock_A, size_t numBlock_B, size_t blockSize, float *result, cudaStream_t stream)
-{
-	block_match_mse_kernel << <numBlock_A, numBlock_B,0,stream >> > (block_A, block_B, blockSize, result);
-	return cudaGetLastError();
-}
-
-
-cudaError_t block_match_mse_async(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
+cudaError_t block_match_mse(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
 	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result);
 	return cudaGetLastError();
 }
 
-cudaError_t block_match_mse_async(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, size_t numTasks, cudaStream_t stream)
+cudaError_t block_match_mse_ch(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, size_t numTasks, cudaStream_t stream)
 {
 	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result, numTasks);
 	return cudaGetLastError();

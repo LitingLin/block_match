@@ -30,6 +30,12 @@ ThreadPool::ThreadPool(unsigned num)
 
 ThreadPool::~ThreadPool()
 {
+	if (!m_exit_flag)
+		shutdown();
+}
+
+void ThreadPool::shutdown()
+{
 	m_exit_flag = true;
 
 	for (unsigned int i = 0; i != m_size; i++)

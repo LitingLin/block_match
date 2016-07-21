@@ -100,15 +100,18 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="block_match.cuh" />
     <ClInclude Include="block_match.h" />
     <ClInclude Include="block_match_internal.h" />
     <ClInclude Include="thread_pool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="block_match.cpp" />
+    <ClCompile Include="block_match_finalize.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="block_match_internal.cpp" />
+    <ClCompile Include="block_match_process.cpp" />
+    <ClCompile Include="block_padding.cpp" />
+    <ClCompile Include="stack_vector.hpp" />
     <ClCompile Include="thread_pool.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>

@@ -24,11 +24,18 @@
     <ClCompile Include="block_match_internal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="block_match_process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stack_vector.hpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_padding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match_finalize.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="block_match.cuh">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="block_match.h">
       <Filter>Header Files</Filter>
     </ClInclude>

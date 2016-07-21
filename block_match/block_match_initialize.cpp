@@ -4,14 +4,18 @@
 #include <cuda_runtime.h>
 #include <cstdlib>
 
-bool initialize(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N)
+bool initialize_local(void **_instance, 
+	int matA_M, int matA_N, int matB_M, int matB_N, 
+	int block_M, int block_N, int neighbour_M, int neighbour_N,
+	int strideA_M, int strideA_N,
+	int strideB_M, int strideB_N,
+	int paddingA_M, int paddingA_N,
+	int paddingB_M, int paddingB_N)
 {
 	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
 	if (!instance)
 		return false;
-
-	instance->type = COMBILE;
-
+	
 	instance->matA_M = matA_M;
 	instance->matA_N = matA_N;
 	instance->matB_M = matB_M;
@@ -23,69 +27,81 @@ bool initialize(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, s
 	instance->neighbour_M = neighbour_M;
 	instance->neighbour_N = neighbour_N;
 
-	instance->stride_M = stride_M;
-	instance->stride_N = stride_N;
+	instance->strideA_M = strideA_M;
+	instance->strideA_N = strideA_N;
+	instance->strideB_M = strideB_M;
+	instance->strideB_N = strideB_N;
 
-	size_t result_dim0 = matA_M - block_M + 1;
-	size_t result_dim1 = matA_N - block_N + 1;
-	size_t result_dim2 = (neighbour_M + stride_M - 1) / stride_M;
-	size_t result_dim3 = (neighbour_N + stride_N - 1) / stride_N;
-	instance->result_dim0 = result_dim0;
-	instance->result_dim1 = result_dim1;
-	instance->result_dim2 = result_dim2;
-	instance->result_dim3 = result_dim3;
+	int result_dim0 = (matA_M + 2 * paddingA_M - block_M + 1) / strideA_M;
+	int result_dim1 = (matA_N + 2 * paddingA_N - block_N + 1) / strideA_N;
+	int result_dim2 = (neighbour_M + strideB_M - 1) / strideB_M;
+	int result_dim3 = (neighbour_N + strideB_N - 1) / strideB_N;
 
-	int numDeviceMultiProcessor;
-	const int numProcessorThread = 512;
+	instance->result_dims[0] = result_dim0;
+	instance->result_dims[1] = result_dim1;
+	instance->result_dims[2] = result_dim2;
+	instance->result_dims[3] = result_dim3;
 
-	cudaError_t cuda_error = cudaDeviceGetAttribute(&numDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_instance;
-	}
+	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+	
+	cudaError_t cuda_error;
 
-	instance->numDeviceMultiProcessor = numDeviceMultiProcessor;
-	instance->numProcessorThread = numProcessorThread;
+	int numberOfThreads = globalContext.numberOfThreads;
 
-	instance->pool = pool;
+	instance->stream = new cudaStream_t[numberOfThreads];
+	if (!instance->stream)
+		goto release_cuda_stream;
 
-	for (uint32_t i = 0; i < numSubmitThread; ++i)
+	for (int i = 0; i < numberOfThreads; ++i)
 	{
 		cuda_error = cudaStreamCreate(&instance->stream[i]);
 		if (cuda_error != cudaSuccess)
-			return false;
+		{
+			for (int j=i-1; j>=0;j--)
+			{
+				cudaStreamDestroy(instance->stream[j]);
+			}
+			goto release_cuda_stream;
+		}
 	}
 
-	cuda_error = cudaMallocHost(&instance->buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMallocHost(&instance->buffer_A, 
+		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_instance;
 	}
 
-	cuda_error = cudaMallocHost(&instance->buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMallocHost(&instance->buffer_B,
+		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_buffer_A;
 	}
 
-	cuda_error = cudaMallocHost(&instance->result_buffer, result_dim0 * result_dim1 * result_dim2 * result_dim3 * sizeof(float));
+	cuda_error = cudaMallocHost(&instance->result_buffer,
+		result_dim0 * result_dim1 * result_dim2 * result_dim3 * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_buffer_B;
 	}
 
-	cuda_error = cudaMalloc(&instance->device_buffer_A, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_buffer_A,
+		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_result_buffer;
 	}
 
-	cuda_error = cudaMalloc(&instance->device_buffer_B, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * block_M * block_N * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_buffer_B,
+		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
 	if (cuda_error != cudaSuccess)
 	{
 		goto release_device_buffer_A;
 	}
-	cuda_error = cudaMalloc(&instance->device_result_buffer, numSubmitThread * numDeviceMultiProcessor * numProcessorThread * sizeof(float));
+	cuda_error = cudaMalloc(&instance->device_result_buffer,
+		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * sizeof(float));
 
 	if (cuda_error != cudaSuccess)
 	{
@@ -110,6 +126,9 @@ release_buffer_B:
 release_buffer_A:
 
 	cudaFreeHost(instance->buffer_A);
+release_cuda_stream:
+	delete [] instance->stream;
+
 release_instance:
 
 	free(instance);
@@ -117,14 +136,7 @@ release_instance:
 }
 
 extern "C"
-bool initialize(void **_instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N)
+bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N)
 {
-	if (neighbour_M == 0)
-	{
-		return initialize_TypeA(_instance, matA_M, matA_N, matB_M, matB_N, block_M, block_N);
-	}
-	else
-	{
-		return initialize_async_submit(_instance, matA_M, matA_N, matB_M, matB_N, block_M, block_N, neighbour_M, neighbour_N, stride_M, stride_N);
-	}
+	abort();
 }

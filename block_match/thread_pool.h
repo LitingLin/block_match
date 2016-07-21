@@ -31,6 +31,8 @@ public:
 
 	~ThreadPool();
 
+	void shutdown();
+
 	void* submit(unsigned int(*func)(void *), void* para);
 
 	void join(void* task_handle) const;

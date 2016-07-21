@@ -1,12 +1,12 @@
 #include "block_match.h"
-
+#include "block_match_internal.h"
+/*
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
 #include <functional>
 #include <cuda_runtime.h>
 
-#include "block_match_internal.h"
 #include "block_match.cuh"
 
 const uint32_t numSubmitThread = 2;
@@ -1546,58 +1546,19 @@ void getResult(void *_instance, float **result, size_t *result_dim0, size_t *res
 		abort();
 }
 
-extern "C"
-void finalize(void *_instance)
-{
-	Type type = *(Type*)_instance;
-	if (type == FULL) {
-		struct Context *instance = (struct Context *)_instance;
-
-		cudaFreeHost(instance->buffer_A);
-		cudaFreeHost(instance->buffer_B);
-		cudaFreeHost(instance->result_buffer);
-		cudaFree(instance->device_buffer_A);
-		cudaFree(instance->device_buffer_B);
-		cudaFree(instance->device_result_buffer);
-
-		free(instance);
-	}
-	else if (type == COMBILE)
-	{
-		struct Context_Async *instance = (struct Context_Async *)_instance;
-
-		for (uint32_t i = 0; i < numSubmitThread; ++i) {
-			cudaStreamDestroy(instance->stream[i]);
-		}
-
-		cudaFreeHost(instance->buffer_A);
-		cudaFreeHost(instance->buffer_B);
-		cudaFreeHost(instance->result_buffer);
-		cudaFree(instance->device_buffer_A);
-		cudaFree(instance->device_buffer_B);
-		cudaFree(instance->device_result_buffer);
-
-		free(instance);
-	}
-}
-
 bool reset()
 {
 	cudaError_t cuda_error = cudaDeviceReset();
 	return cuda_error == cudaSuccess;
 }
-
+*/
 extern "C"
 void onLoad(void)
 {
-	pool = new ThreadPool(numSubmitThread);
 }
 
 extern "C"
 void atExit(void)
 {
-	if (pool) {
-		delete pool;
-		pool = nullptr;
-	}
+	globalContext.pool.shutdown();
 }
