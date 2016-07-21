@@ -208,7 +208,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 			return;
 		}
 	}
-	if (!process(instance, sequence1, sequence2, method))
+	float *result;
+	int result_dims[4];
+	if (!process(instance, sequence1, sequence2, method, &result, result_dims))
 	{
 		free(sequence1);
 		free(sequence2);
@@ -216,9 +218,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt("unknown cuda error\n");
 		return;
 	}
-	float *result;
-	size_t result_dims[4];
-	getResult(instance, &result, result_dims + 1, result_dims, result_dims + 3, result_dims + 2);
 	mxArray *block = mxCreateNumericArray(4, result_dims, mxDOUBLE_CLASS, mxREAL);
 	void *block_p = mxGetData(block);
 	floatToDouble(result, block_p, result_dims[0] * result_dims[1] * result_dims[2] * result_dims[3]);

@@ -11,11 +11,9 @@
 
 enum Method { MSE, CC };
 LIB_BLOCK_MATCH_EXPORT
-bool initialize(void **instance, size_t matA_M, size_t matA_N, size_t matB_M, size_t matB_N, size_t block_M, size_t block_N, size_t neighbour_M, size_t neighbour_N, size_t stride_M, size_t stride_N);
+bool initialize(void **instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N);
 LIB_BLOCK_MATCH_EXPORT
-bool process(void *instance, float *matA, float *matB, enum Method method);
-LIB_BLOCK_MATCH_EXPORT
-void getResult(void *instance, float **result, size_t *result_dim0, size_t *result_dim1, size_t *result_dim2, size_t *result_dim3);
+bool process(void *instance, float *matA, float *matB, enum Method method, float **result, int *dimensionOfResult);
 LIB_BLOCK_MATCH_EXPORT
 void finalize(void *instance);
 LIB_BLOCK_MATCH_EXPORT
