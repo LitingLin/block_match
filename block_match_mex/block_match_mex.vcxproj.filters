@@ -30,6 +30,9 @@
     <ClCompile Include="parse_para.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="generate_result.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mxUtils.h">

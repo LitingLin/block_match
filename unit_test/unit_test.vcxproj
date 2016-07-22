@@ -78,6 +78,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="test_main.cpp" />
     <ClCompile Include="test_padding.cpp" />
     <ClCompile Include="test_sort.cpp" />
   </ItemGroup>

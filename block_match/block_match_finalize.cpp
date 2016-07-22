@@ -21,6 +21,7 @@ void finalize(void *_instance)
 	cudaFree(instance->device_result_buffer);
 
 	delete[] instance->stream;
+	delete[] instance->index;
 
 	free(instance);
 }

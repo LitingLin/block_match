@@ -141,7 +141,7 @@ unsigned ThreadPool::start_routine(void* para)
 
 			free_thread_queue.push(tid);
 
-			WaitForSingleObjectEx(hEvnet, INFINITE, FALSE) == WAIT_OBJECT_0;
+			WaitForSingleObjectEx(hEvnet, INFINITE, FALSE);
 
 			continue;
 		}

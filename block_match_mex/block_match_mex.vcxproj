@@ -87,6 +87,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.c" />
+    <ClCompile Include="generate_result.c" />
     <ClCompile Include="mexFunction.c" />
     <ClCompile Include="mxUtils.c" />
     <ClCompile Include="parse_para.c" />

@@ -52,6 +52,8 @@ struct Context
 	float *device_buffer_B;
 	float *device_result_buffer;
 
+	int *index;
+
 	int result_dims[4];
 
 	cudaStream_t *stream;
