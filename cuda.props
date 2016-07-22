@@ -5,6 +5,9 @@
     <CUDA_Dir>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\</CUDA_Dir>
   </PropertyGroup>
   <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(CUDA_Dir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(CUDA_Dir)lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>

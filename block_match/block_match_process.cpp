@@ -203,7 +203,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, floa
 	if (para_tuple.bad_alloc())
 		return false;
 
-	for (uint32_t i = 0; i < numberOfThreads; ++i)
+	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
 		int c_index_A_M_begin = ind_A_M_end / numberOfThreads * i;
 		int c_index_A_M_end;

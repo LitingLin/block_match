@@ -91,3 +91,5 @@ cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, in
 	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
 cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
+
+void block_sort(int *index, float *value, int size);
