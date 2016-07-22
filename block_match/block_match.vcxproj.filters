@@ -33,7 +33,9 @@
     <ClCompile Include="block_padding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_finalize.cpp" />
+    <ClCompile Include="block_match_finalize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block_match.h">

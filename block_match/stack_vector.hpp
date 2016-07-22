@@ -38,7 +38,7 @@ public:
 	}
 	bool bad_alloc()
 	{
-		if (!m_isOnStack && ptr == null)
+		if (!m_isOnStack && ptr == nullptr)
 			return true;
 		else
 			return false;

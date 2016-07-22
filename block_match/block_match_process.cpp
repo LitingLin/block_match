@@ -4,12 +4,12 @@
 #include <tuple>
 #include "stack_vector.hpp"
 
-typedef cudaError_t(*ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-typedef cudaError_t(*ProcessFunction_borderCheck)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
-typedef void(*CopyBlockMethod)(float *buf, float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-typedef void(*SequenceBIndexMethod)(float *buf, float *src, int);
+typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+typedef cudaError_t(ProcessFunction_BorderCheck)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
+typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+typedef void(SequenceBIndexMethod)(float *buf, float *src, int);
 
-template <ProcessFunction processFunction, ProcessFunction_borderCheck processFunction_borderCheck,
+template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFunction_borderCheck,
 	CopyBlockMethod copyBlockAMethod, CopyBlockMethod copyBlockBMethod>
 	bool processWorker(float *matA, float *matB, float *result,
 		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
@@ -179,7 +179,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method)
 		result_dim3 = instance->result_dims[3];
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
 	int ind_A_N_begin = 0;
 	int ind_A_M_end = result_dim0;
@@ -194,7 +194,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method)
 		int, int,
 		int, int,
 		float *, float *, float *,
-		cudaStream_t, int, const int >, 4>
+		cudaStream_t, int, int >, 4>
 		para_tuple(numberOfThreads);
 
 	if (para_tuple.bad_alloc())
@@ -234,11 +234,11 @@ bool process(void *_instance, float *matA, float *matB, enum Method method)
 				stream, numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
 		if (method == MSE)
-			task_handle[i] = block_match_internal::thread_pool_launcher_helper(pool, processWorker<block_match_mse, block_match_mse, copyBlock, copyBlockWithSymmetricPaddding>, para_tuple[i]);
-		/*else if (method == CC)
-			task_handle[i] = thread_pool_launcher(pool, processWorker<block_match_cc, block_match_cc, copyBlock, copyBlockWithSymmetricPaddding>, para_tuple[i]);*/
-
+			task_handle[i] = thread_pool_launcher(pool, (processWorker<block_match_mse, block_match_mse, copyBlock, copyBlockWithSymmetricPaddding>), para_tuple[i]);
+		else if (method == CC)
+			task_handle[i] = thread_pool_launcher(pool, (processWorker<block_match_cc, block_match_cc, copyBlock, copyBlockWithSymmetricPaddding>), para_tuple[i]);
 	}
+
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
 		pool.join(task_handle[i]);

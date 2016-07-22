@@ -71,19 +71,19 @@ namespace block_match_internal {
 		return thread_pool_base_function_helper(function, params, std::index_sequence_for<Args...>{});
 	}
 	template <typename FunctionType, FunctionType function, template<typename...> class Params, typename... Args>
-	void* thread_pool_launcher_helper(ThreadPool &pool, FunctionType function, Params<Args...> & params)
+	void* thread_pool_launcher_helper(ThreadPool &pool, Params<Args...> & params)
 	{
 		return pool.submit(thread_pool_base_function< FunctionType, function, Params, Args... >, &params);
 	}
 }
 
-#define thread_pool_launcher(threadPool, function, parameters) block_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters);
+#define thread_pool_launcher(threadPool, function, parameters) block_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
 
 
-void copyBlock(float *buf, float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-void copyBlockWithSymmetricPaddding(float *buf, float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
-cudaError_t block_match_mse(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-cudaError_t block_match_mse_ch(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, size_t numTasks, cudaStream_t stream);
-cudaError_t block_match_cc(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_blockSize, size_t blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-cudaError_t block_match_cc(float *blocks_A, float *blocks_B, size_t numBlocks_A, size_t numBlocks_B, size_t block_B_groupSize, size_t blockSize, float *result, int numProcessors, int numThreads, size_t numTasks, cudaStream_t stream);
+cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
+cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
