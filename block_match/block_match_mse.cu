@@ -82,13 +82,15 @@ block_match_mse_async_kernel(const float *blocks_A, const float *blocks_B, int b
 	resultsBuffer[tid] = temp;
 }
 
-cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
+cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
 	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result);
 	return cudaGetLastError();
 }
 
-cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream)
+cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream)
 {
 	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result, numTasks);
 	return cudaGetLastError();

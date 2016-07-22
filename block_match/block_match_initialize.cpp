@@ -136,7 +136,8 @@ release_instance:
 }
 
 extern "C"
-bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N)
+bool initialize(void **_instance, int matA_M, int matA_N, int matB_M, int matB_N, 
+	int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N)
 {
 	abort();
 }

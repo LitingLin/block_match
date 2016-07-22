@@ -1546,12 +1546,13 @@ void getResult(void *_instance, float **result, size_t *result_dim0, size_t *res
 		abort();
 }
 
+*/
+extern "C"
 bool reset()
 {
 	cudaError_t cuda_error = cudaDeviceReset();
 	return cuda_error == cudaSuccess;
 }
-*/
 extern "C"
 void onLoad(void)
 {

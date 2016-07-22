@@ -4,8 +4,10 @@
 #include <tuple>
 #include "stack_vector.hpp"
 
-typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-typedef cudaError_t(ProcessFunction_BorderCheck)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
+typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+typedef cudaError_t(ProcessFunction_BorderCheck)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
 typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 typedef void(SequenceBIndexMethod)(float *buf, float *src, int);
 
@@ -144,7 +146,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	return true;
 }
 
-bool process(void *_instance, float *matA, float *matB, enum Method method)
+extern "C"
+bool process(void *_instance, float *matA, float *matB, enum Method method, float **result, int *dimensionOfResult)
 {
 	struct Context *instance = (struct Context *)_instance;
 	ThreadPool &pool = globalContext.pool;
@@ -249,6 +252,12 @@ bool process(void *_instance, float *matA, float *matB, enum Method method)
 		if (pool.get_rc(task_handle[i]) != 0)
 			isFailed = true;
 		pool.release(task_handle[i]);
+	}
+
+	if (!isFailed)
+	{
+		*result = result_buffer;
+		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
 	}
 
 	return !isFailed;

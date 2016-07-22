@@ -145,7 +145,8 @@ vector_multiply_add_async(const float *blocks_A, const float *blocks_B, int bloc
 	resultsBuffer[tid] = temp;
 }
 
-cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream)
+cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream)
 {
 	standardize_block << <(numBlocks_A + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_A, blockSize, numBlocks_A);
 
@@ -165,7 +166,8 @@ cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, in
 	return cuda_error;
 }
 
-cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B, int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
+cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
 	standardize_block << <(numBlocks_A + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_A, blockSize, numBlocks_A);
 

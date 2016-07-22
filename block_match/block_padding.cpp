@@ -70,7 +70,10 @@ void determinIndexPostMat(int index, int mat_length, int block_length, int &inde
 		index_post_end = index + block_length - mat_length;
 }
 
-void determineIndex(int index, int mat_length, int block_length, int &index_pre_begin, int &index_pre_end, int &index_begin, int &index_end, int &index_post_begin, int &index_post_end)
+void determineIndex(int index, int mat_length, int block_length, 
+	int &index_pre_begin, int &index_pre_end,
+	int &index_begin, int &index_end, 
+	int &index_post_begin, int &index_post_end)
 {
 	determineIndexPreMat(index, mat_length, block_length, index_pre_begin, index_pre_end);
 	determineIndexInMat(index, mat_length, block_length, index_begin, index_end);

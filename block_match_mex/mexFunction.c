@@ -190,7 +190,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	doubleToFloat(sequence2MatrixPointer, sequence2, sequence1Size);
 
 	void *instance;
-	if (!initialize(&instance, sequence1MatrixDimensions[0], sequence1MatrixDimensions[1], sequence2MatrixDimensions[0], sequence2MatrixDimensions[1], blockWidth, blockHeight, neighbourWidth, neighbourHeight, stride_M, stride_N))
+	if (!initialize(&instance, sequence1MatrixDimensions[0], sequence1MatrixDimensions[1], sequence2MatrixDimensions[0], sequence2MatrixDimensions[1],
+		blockWidth, blockHeight, neighbourWidth, neighbourHeight, stride_M, stride_N))
 	{
 		if (!reset())
 		{
@@ -199,7 +200,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 			mexErrMsgTxt("reset failed");
 			return;
 		}
-		if (!initialize(&instance, sequence1MatrixDimensions[0], sequence1MatrixDimensions[1], sequence2MatrixDimensions[0], sequence2MatrixDimensions[1], blockWidth, blockHeight, neighbourWidth, neighbourHeight, stride_M, stride_N))
+		if (!initialize(&instance, sequence1MatrixDimensions[0], sequence1MatrixDimensions[1], sequence2MatrixDimensions[0], sequence2MatrixDimensions[1],
+			blockWidth, blockHeight, neighbourWidth, neighbourHeight, stride_M, stride_N))
 		{
 			free(sequence1);
 			free(sequence2);

@@ -10,16 +10,22 @@
 #include <stddef.h>
 
 enum Method { MSE, CC };
+
 LIB_BLOCK_MATCH_EXPORT
-bool initialize(void **instance, int matA_M, int matA_N, int matB_M, int matB_N, int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N);
+bool initialize(void **instance, int matA_M, int matA_N, int matB_M, int matB_N,
+	int block_M, int block_N, int neighbour_M, int neighbour_N, int stride_M, int stride_N);
+
 LIB_BLOCK_MATCH_EXPORT
 bool process(void *instance, float *matA, float *matB, enum Method method, float **result, int *dimensionOfResult);
+
 LIB_BLOCK_MATCH_EXPORT
 void finalize(void *instance);
+
 LIB_BLOCK_MATCH_EXPORT
 bool reset();
 
 LIB_BLOCK_MATCH_EXPORT
 void onLoad();
+
 LIB_BLOCK_MATCH_EXPORT
 void atExit();
