@@ -4,8 +4,11 @@
 
 enum LibBlockMatchMexError getString(const mxArray *pa, char *buffer, int bufferLength)
 {
-	if (mxGetString(pa, buffer, bufferLength) == 0)
+	mxClassID classId = mxGetClassID(pa);
+	if (classId != mxCHAR_CLASS)
 		return blockMatchMexErrorTypeOfArgument;
+
+	mxGetNChars(pa, buffer, bufferLength);
 
 	return blockMatchMexOk;
 }
@@ -101,6 +104,9 @@ enum LibBlockMatchMexError parseSequenceAStrideSize(struct LibBlockMatchMexConte
 		return blockMatchMexErrorNumberOfMatrixDimension;
 	}
 
+	if (sequenceAStrideHeight == 0 || sequenceAStrideWidth == 0)
+		return blockMatchMexErrorInvalidValue;
+
 	context->sequenceAStrideWidth = sequenceAStrideWidth;
 	context->sequenceAStrideHeight = sequenceAStrideHeight;
 
@@ -126,6 +132,9 @@ enum LibBlockMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexConte
 	{
 		return blockMatchMexErrorNumberOfMatrixDimension;
 	}
+
+	if (sequenceBStrideHeight == 0 || sequenceBStrideWidth == 0)
+		return blockMatchMexErrorInvalidValue;
 
 	context->sequenceBStrideWidth = sequenceBStrideWidth;
 	context->sequenceBStrideHeight = sequenceBStrideHeight;
@@ -341,9 +350,11 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 		return generateErrorMessage(error, "BlockSize cannot be smaller then Matrix A\n");
 	}
 
+	++index;
+
 	if ((nrhs - index) % 2)
 	{
-		return generateErrorMessage(error, "Wrong number of input arguments\n");
+		return generateErrorMessage(blockMatchMexErrorNumberOfArguments, "Wrong number of input arguments\n");
 	}
 
 	while (index < nrhs)
@@ -360,7 +371,7 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 
 		++index;
 
-		if (strncmp(buffer, "SearchRegionSize", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		if (strncmp(buffer, "SearchRegion", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSearchRegion(context, prhs[index]);
 			if (error == blockMatchMexErrorNumberOfMatrixDimension)
@@ -375,20 +386,28 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 				goto NotImplemented;
 		}
 
-		else if (strncmp(buffer, "SequencAStrideSize", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceAStride", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAStrideSize(context, prhs[index]);
 			if (error == blockMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceAStrideSize must be 2\n");
 			}
+			else if (error == blockMatchMexErrorInvalidValue)
+			{
+				return generateErrorMessage(error, "SequenceAStride can not be zero\n");
+			}
 		}
-		else if (strncmp(buffer, "SequenceBStrideSize", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceBStride", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceBStrideSize(context, prhs[index]);
 			if (error == blockMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceBStrideSize must be 2\n");
+			}
+			else if (error == blockMatchMexErrorInvalidValue)
+			{
+				return generateErrorMessage(error, "SequenceBStride can not be zero\n");
 			}
 		}
 		else if (strncmp(buffer, "SequenceAPadding", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)

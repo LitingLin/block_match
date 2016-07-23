@@ -18,7 +18,7 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 			double *mat_ptr = mxGetPr(mat);
 			intToDouble(c_index, mat_ptr, size);
 			floatToDouble(c_value, mat_ptr + size, size);
-			mxSetCell(pa, i, mat);
+			mxSetCell(pa, i*sequenceAWidth + j, mat);
 
 			c_index += size;
 			c_value += size;

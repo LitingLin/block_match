@@ -15,7 +15,6 @@ BOOL WINAPI DllMain(
 		onLoad();
 		break;
 	case DLL_PROCESS_DETACH:
-		atExit();
 		break;
 	default:
 		break;

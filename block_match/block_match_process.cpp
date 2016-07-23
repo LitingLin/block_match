@@ -181,8 +181,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	int indexB_M_end = matB_M + padB_m - block_M;
 	int indexB_N_end = matB_N + padB_n - block_N;
 
-	int group_M = (matB_M + 2 * padB_m + strideB_M - 1) / strideB_M;
-	int group_N = (matB_N + 2 * padB_n + strideB_N - 1) / strideB_N;
+	int group_M = (matB_M + 2 * padB_m -block_M + strideB_M - 1) / strideB_M;
+	int group_N = (matB_N + 2 * padB_n -block_N + strideB_N - 1) / strideB_N;
 	int blockB_groupSize = group_M * group_N;
 
 	for (int ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ind_A_M += strideA_M)
@@ -197,7 +197,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 			for (int indexB_M = -padB_m; indexB_M < indexB_M_end; indexB_M += strideB_M)
 			{
 
-				for (int indexB_N = 0; indexB_N < indexB_N_end; indexB_N += strideB_N)
+				for (int indexB_N = -padB_n; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
 					copyBlockBMethod(c_bufferB, matB, matB_M, matB_N, indexB_M, indexB_N, block_M, block_N);
 
@@ -262,6 +262,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 						for (int j=0;j<blockB_groupSize;++j)
 						{
 							bufferA[j] = c_result[c_index[j]];
+							c_index[j]++;
 						}
 
 						memcpy(c_result, bufferA, sizeof(*c_result)*blockB_groupSize);
@@ -319,9 +320,12 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 			for (int j = 0; j<blockB_groupSize; ++j)
 			{
 				bufferA[j] = c_result[c_index[j]];
+				c_index[j]++;
 			}
 
 			memcpy(c_result, bufferA, sizeof(*c_result)*blockB_groupSize);
+			c_index += blockB_groupSize;
+			c_result += blockB_groupSize;
 		}
 	}
 
@@ -442,7 +446,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 	bool isFailed = false;
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
-		if (pool.get_rc(task_handle[i]) != 0)
+		if (pool.get_rc(task_handle[i]) == false)
 			isFailed = true;
 		pool.release(task_handle[i]);
 	}

@@ -159,6 +159,10 @@ bool initialize_full(void **_instance,
 	instance->strideA_N = strideA_N;
 	instance->strideB_M = strideB_M;
 	instance->strideB_N = strideB_N;
+	instance->sequenceAPadding_M = paddingA_M;
+	instance->sequenceAPadding_N = paddingA_N;
+	instance->sequenceBPadding_M = paddingB_M;
+	instance->sequenceBPadding_N = paddingB_N;
 
 	int result_dim0 = (matA_M + 2 * paddingA_M - block_M + strideA_M - 1) / strideA_M;
 	int result_dim1 = (matA_N + 2 * paddingA_N - block_N + strideA_N - 1) / strideA_N;

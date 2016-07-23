@@ -39,10 +39,6 @@ SearchRegion = 'full';
 % scalar, 1x2 matrix
 % SearchRegion = [5,5];
 
-% Stride size of sequence B, can be
-% scalar, 1x2 matrix
-% SequenceBStride = [2,2];
-
 % Or define search region in blocks directly
 % In this case, SequenceBStride = BlockSize and
 % SearchRegion = SearchBlock.*SequenceBStride
@@ -56,6 +52,16 @@ SearchRegion = 'full';
 % 'mse': Mean Sequare Error
 % 'cc': Pearson Correlation Coefficient
 MeasureMethod = 'mse';
+
+%% Stride
+
+% Stride size of sequence A, can be
+% scalar, 1x2 matrix
+SequenceAStride = [1,1];
+
+% Stride size of sequence B, can be
+% scalar, 1x2 matrix
+SequenceBStride = [1,1];
 
 %% Padding Method
 % Padding size of sequence A, can be
@@ -81,7 +87,7 @@ SequenceBPaddingMethod = 'symmetric';
 Threshold = 0;
 % Sort result, can be
 % boolean
-Sort = false;
+Sort = true;
 % After sort the result blocks, retain specified number of blocks, can be
 % scalar
 Retain = 0;
@@ -104,11 +110,14 @@ Sparse = 'auto';
 
 %% Parse option parameter
 if nargin == 4
-    if isfield(Options, 'SearchRegionSize')
+    if isfield(Options, 'SearchRegion')
         SearchRegion = Options.SearchRegionSize;
     end
-    if isfield(Options, 'SequenceBStrideSize')
-        SequenceBStride = Options.SequenceBStrideSize;
+    if isfield(Options, 'SequenceAStride')
+        SequenceAStride = Options.SequenceAStride;
+    end
+    if isfield(Options, 'SequenceBStride')
+        SequenceBStride = Options.SequenceBStride;
     end
     if isfield(Options, 'SearchBlock')
         SearchBlock = Options.SearchBlock;
@@ -151,10 +160,12 @@ if nargin == 4
 end
 
 %% Call mex
-if ~exist('SearchRegion', 'val') ...
+if ~exist('SearchRegion', 'var') ...
         || ischar(SearchRegion)
     Result = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
     'SearchRegion', SearchRegion, ...
+    'SequenceAStride', SequenceAStride, ...
+    'SequenceBStride', SequenceBStride, ...
     'MeasureMethod', MeasureMethod, ...
     'SequenceAPadding', SequenceAPadding, ...
     'SequenceAPaddingMethod', SequenceAPaddingMethod, ...

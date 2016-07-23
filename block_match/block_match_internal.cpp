@@ -26,7 +26,7 @@ unsigned getNumberOfPhysicalProcessor()
 }
 
 GlobalContext::GlobalContext()
-	: numberOfThreads(getNumberOfPhysicalProcessor()), pool(numberOfThreads), numberOfGPUProcessorThread(numberOfGPUProcessorThread)
+	: numberOfThreads(getNumberOfPhysicalProcessor()), pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {
 	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
 	if (cuda_error != cudaSuccess) hasGPU = false;
