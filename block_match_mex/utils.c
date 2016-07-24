@@ -23,3 +23,10 @@ void intToDouble(const int *in, double *out, size_t n)
 		out[i] = in[i];
 	}
 }
+
+struct LibBlockMatchMexErrorWithMessage generateErrorMessage(enum LibBlockMatchMexError error, char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH])
+{
+	struct LibBlockMatchMexErrorWithMessage error_with_message = { error, "" };
+	strncpy_s(error_with_message.message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH, message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH);
+	return error_with_message;
+}

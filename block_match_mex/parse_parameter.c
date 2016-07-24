@@ -13,6 +13,44 @@ enum LibBlockMatchMexError getString(const mxArray *pa, char *buffer, int buffer
 	return blockMatchMexOk;
 }
 
+enum LibBlockMatchMexError parseRetain(struct LibBlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	int retain;
+	mxClassID classId = mxGetClassID(pa);
+	if (classId == mxCHAR_CLASS)
+		goto StringClass;
+	else if (classId == mxDOUBLE_CLASS)
+		goto ValueClass;
+	else
+		return blockMatchMexErrorTypeOfArgument;
+
+StringClass:
+
+	char buffer[4];
+	getString(pa, buffer, 4);
+	if (strncmp(buffer, "all", 4) != 0)
+		return blockMatchMexErrorInvalidValue;
+
+	context->retain = 0;
+
+	return blockMatchMexOk;
+ValueClass:
+	
+	size_t numberOfDimensions = mxGetNumberOfDimensions(pa);
+	if (numberOfDimensions != 1 && numberOfDimensions != 2)
+		return blockMatchMexErrorNumberOfMatrixDimension;
+
+	retain = mxGetScalar(pa);
+
+	if (retain <= 0)
+		return blockMatchMexErrorInvalidValue;
+
+	context->retain = retain;
+
+	return blockMatchMexOk;
+}
+
 enum LibBlockMatchMexError parseSort(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -171,7 +209,7 @@ enum LibBlockMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *con
 
 	if (context->sequenceAMatrixDimensions[0] - context->blockWidth < searchRegionWidth || context->sequenceAMatrixDimensions[1] - context->blockHeight < searchRegionHeight)
 	{
-		return blockMatchMexErrorSizeOfMatrixDimension;
+		return blockMatchMexErrorSizeOfMatrix;
 	}
 	context->searchRegionWidth = searchRegionWidth;
 	context->searchRegionHeight = searchRegionHeight;
@@ -200,7 +238,7 @@ enum LibBlockMatchMexError parseBlockSize(struct LibBlockMatchMexContext *contex
 
 	if (context->sequenceAMatrixDimensions[0] < blockWidth || context->sequenceAMatrixDimensions[1] < blockHeight)
 	{
-		return blockMatchMexErrorSizeOfMatrixDimension;
+		return blockMatchMexErrorSizeOfMatrix;
 	}
 	
 	context->blockWidth = blockWidth;
@@ -230,7 +268,7 @@ enum LibBlockMatchMexError parseSequenceB(struct LibBlockMatchMexContext *contex
 
 	if (sequenceBMatrixDimensions[0] < context->sequenceAMatrixDimensions[0] || sequenceBMatrixDimensions[1] < context->sequenceAMatrixDimensions[1])
 	{
-		return blockMatchMexErrorSizeOfMatrixDimension;
+		return blockMatchMexErrorSizeOfMatrix;
 	}
 
 	context->sequenceBMatrixPointer = mxGetData(pa);
@@ -291,13 +329,6 @@ enum LibBlockMatchMexError parseOutputArgument(struct LibBlockMatchMexContext *c
 	return blockMatchMexOk;
 }
 
-inline
-struct LibBlockMatchMexErrorWithMessage generateErrorMessage(enum LibBlockMatchMexError error, char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH])
-{
-	struct LibBlockMatchMexErrorWithMessage error_with_message = { error, "" };
-	strncpy_s(error_with_message.message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH, message, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH);
-	return error_with_message;
-}
 
 struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
@@ -345,7 +376,7 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 	{
 		return generateErrorMessage(error, "Number of dimension of BlockSize must be 1 or 2\n");
 	}
-	else if (error == blockMatchMexErrorSizeOfMatrixDimension)
+	else if (error == blockMatchMexErrorSizeOfMatrix)
 	{
 		return generateErrorMessage(error, "BlockSize cannot be smaller then Matrix A\n");
 	}
@@ -378,7 +409,7 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 			{
 				return generateErrorMessage(error, "Number of dimension of SearchRegionSize must be 2\n");
 			}
-			else if (error == blockMatchMexErrorSizeOfMatrixDimension)
+			else if (error == blockMatchMexErrorSizeOfMatrix)
 			{
 				return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
 			}
@@ -453,7 +484,16 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 				return generateErrorMessage(error, "Argument Sort must be logical(boolean)\n");
 			}
 		}
-		else if (strncmp(buffer, "Retain", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "Retain", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseRetain(context, prhs[index]);
+			if (error == blockMatchMexErrorNumberOfMatrixDimension || error == blockMatchMexErrorSizeOfMatrix)
+				return generateErrorMessage(error, "Argument Retain must be scalar\n");
+			else if (error == blockMatchMexErrorTypeOfArgument)
+				return generateErrorMessage(error, "Argument Retain must be integer or string\n");
+			else if (error == blockMatchMexErrorInvalidValue)
+				return generateErrorMessage(error, "Value of argument Retain must be 'all' or positive integer\n");
+		}
 		else if (strncmp(buffer, "ResultDataType", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
 		else if (strncmp(buffer, "IntermediateDataType", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
 		else if (strncmp(buffer, "Sparse", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);

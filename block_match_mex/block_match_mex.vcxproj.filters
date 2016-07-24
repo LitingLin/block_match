@@ -27,10 +27,13 @@
     <ClCompile Include="dllmain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parse_para.c">
+    <ClCompile Include="generate_result.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="generate_result.c">
+    <ClCompile Include="validate_parameter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parse_parameter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

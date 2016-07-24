@@ -159,19 +159,22 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	bool processWorker_full(float *matA, float *matB, float *result,
 		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
 		float *bufferB, int matB_M, int matB_N,
+		float *result_buffer,
 		int block_M, int block_N,
 		int padB_m, int padB_n,
 		int strideA_M, int strideA_N,
 		int strideB_M, int strideB_N,
 		float *device_bufferA, float *device_bufferB, float *device_bufferC,
-		int *index,
+		int *index, int *index_buffer,
+		int retain,
 		cudaStream_t stream, int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
 {
 	int blockSize = block_M * block_N;
 	float *c_bufferA = bufferA;
 	float *c_bufferB = bufferB;
 	float *c_result = result;
-	int *c_index = index, *c_c_index = index;
+	float *c_result_buffer = result_buffer;
+	int *c_index = index, *c_index_buffer = index_buffer;
 
 	int blocksPerProcessor = 0;
 	int filledProcessor = 0;
@@ -181,9 +184,11 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	int indexB_M_end = matB_M + padB_m - block_M;
 	int indexB_N_end = matB_N + padB_n - block_N;
 
-	int group_M = (matB_M + 2 * padB_m -block_M + strideB_M - 1) / strideB_M;
-	int group_N = (matB_N + 2 * padB_n -block_N + strideB_N - 1) / strideB_N;
+	int group_M = (matB_M + 2 * padB_m - block_M + strideB_M - 1) / strideB_M;
+	int group_N = (matB_N + 2 * padB_n - block_N + strideB_N - 1) / strideB_N;
 	int blockB_groupSize = group_M * group_N;
+	if (!retain)
+		retain = blockB_groupSize;
 
 	for (int ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ind_A_M += strideA_M)
 	{
@@ -209,8 +214,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 				}
 			}
 
-			generateSequenceIndex(c_c_index, blockB_groupSize);
-			c_c_index += blockB_groupSize;
+			generateSequenceIndex(c_index_buffer, blockB_groupSize);
+			c_index_buffer += blockB_groupSize;
 
 #ifndef NDEBUG
 			if (sequenceBCount != blockB_groupSize) abort();
@@ -226,9 +231,14 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 
 			if (blocksPerProcessor + blockB_groupSize > numberOfGPUProcessorThread)
 			{
-				filledProcessor++;
+				if (blocksPerProcessor > numberOfGPUProcessorThread) {
+					filledProcessor = (blocksPerProcessor + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread;
+					blocksPerProcessor = numberOfGPUProcessorThread;
+				}
+				else
+					filledProcessor++;
 
-				if (filledProcessor == numberOfGPUDeviceMultiProcessor)
+				if (filledProcessor >= numberOfGPUDeviceMultiProcessor)
 				{
 					cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
 					if (cuda_error != cudaSuccess)
@@ -238,8 +248,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					if (cuda_error != cudaSuccess)
 						return false;
 
-					cuda_error = processFunction(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, blockB_groupSize, blockSize, device_bufferC,
-						filledProcessor, blocksPerProcessor, stream);
+					cuda_error = processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, blockB_groupSize, blockSize, device_bufferC,
+						filledProcessor, blocksPerProcessor, numTasks,stream);
 					if (cuda_error != cudaSuccess)
 						return false;
 
@@ -247,7 +257,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					if (cuda_error != cudaSuccess)
 						return false;
 
-					cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+					cuda_error = cudaMemcpyAsync(result_buffer, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
 					if (cuda_error != cudaSuccess)
 						return false;
 
@@ -255,22 +265,25 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					if (cuda_error != cudaSuccess)
 						return false;
 
-					for (int i=0;i<numBlocks_A;++i)
+					c_index_buffer = index_buffer;
+
+					for (int i = 0; i < numBlocks_A; ++i)
 					{
-						block_sort(c_index, c_result, blockB_groupSize);
+						block_sort_partial(c_index_buffer, c_result_buffer, blockB_groupSize, retain);
 
-						for (int j=0;j<blockB_groupSize;++j)
+						for (int j = 0; j < retain; ++j)
 						{
-							bufferA[j] = c_result[c_index[j]];
-							c_index[j]++;
+							*c_result++ = c_result_buffer[c_index_buffer[j]];
+							*c_index++ = c_index_buffer[j] + 1;
 						}
-
-						memcpy(c_result, bufferA, sizeof(*c_result)*blockB_groupSize);
-
-						c_index += blockB_groupSize;
-						c_result += blockB_groupSize;
+						
+						c_index_buffer += blockB_groupSize;
+						c_result_buffer += blockB_groupSize;
 					}
-					
+
+					c_index_buffer = index_buffer;
+					c_result_buffer = result_buffer;
+
 					//c_result += numTasks;
 					c_bufferA = bufferA;
 					c_bufferB = bufferB;
@@ -313,19 +326,20 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 		if (cuda_error != cudaSuccess)
 			return false;
 
-		for (int i = 0; i<numBlocks_A; ++i)
-		{
-			block_sort(c_index, c_result, blockB_groupSize);
+		c_index_buffer = index_buffer;
 
-			for (int j = 0; j<blockB_groupSize; ++j)
+		for (int i = 0; i < numBlocks_A; ++i)
+		{
+			block_sort_partial(c_index_buffer, c_result_buffer, blockB_groupSize, retain);
+
+			for (int j = 0; j < retain; ++j)
 			{
-				bufferA[j] = c_result[c_index[j]];
-				c_index[j]++;
+				*c_result++ = c_result_buffer[c_index_buffer[j]];
+				*c_index++ = c_index_buffer[j] + 1;
 			}
 
-			memcpy(c_result, bufferA, sizeof(*c_result)*blockB_groupSize);
-			c_index += blockB_groupSize;
-			c_result += blockB_groupSize;
+			c_index_buffer += blockB_groupSize;
+			c_result_buffer += blockB_groupSize;
 		}
 	}
 
@@ -333,7 +347,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 }
 
 extern "C"
-bool process(void *_instance, float *matA, float *matB, enum Method method, int **index, float **result, int *dimensionOfResult)
+bool process(void *_instance, float *matA, float *matB, enum Method method, int **_index, float **_result, int *dimensionOfResult)
 {
 	struct Context *instance = (struct Context *)_instance;
 	ThreadPool &pool = globalContext.pool;
@@ -343,9 +357,10 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 	StackVector<void *, 4>task_handle(numberOfThreads);
 	if (task_handle.bad_alloc()) return false;
 
-	float *result_buffer = instance->result_buffer,
+	float *result = instance->result,
 		*bufferA = instance->buffer_A,
 		*bufferB = instance->buffer_B,
+		*result_buffer = instance->result_buffer,
 		*device_bufferA = instance->device_buffer_A,
 		*device_bufferB = instance->device_buffer_B,
 		*device_bufferC = instance->device_result_buffer;
@@ -368,7 +383,10 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		result_dim1 = instance->result_dims[1],
 		result_dim2 = instance->result_dims[2],
 		result_dim3 = instance->result_dims[3],
-		* index_buffer= instance->index;
+		retain = instance->retain,
+		perThreadBufferSize = instance->perThreadBufferSize,
+		*index = instance->index,
+		*index_buffer = instance->index_buffer;
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -378,12 +396,14 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		std::tuple<float *, float *, float *,
 		float *, int, int, int, int, int, int,
 		float *, int, int,
+		float *,
 		int, int,
 		int, int,
 		int, int,
 		int, int,
 		float *, float *, float *,
-		int *,
+		int *, int*,
+		int,
 		cudaStream_t, int, int >, 4>
 		para_tuple(numberOfThreads);
 
@@ -413,30 +433,35 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 
 		float *c_buffer_A = bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_buffer_B = bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_buffer_result = result_buffer + buffer_index* result_dim1 * result_dim2;
-		int *c_buffer_index = index_buffer + buffer_index* result_dim1 * result_dim2;
+		float *c_result = result + buffer_index * result_dim1 * result_dim2;
+		float *c_result_buffer = result_buffer + i * perThreadBufferSize;
+		int *c_index = index + buffer_index * result_dim1 * result_dim2;
+		int *c_index_buffer = index_buffer + i*perThreadBufferSize;
+
 		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_device_buffer_C = device_bufferC + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
+		float *c_device_buffer_C = device_bufferC + i * perThreadBufferSize;
 
 		cudaStream_t stream = instance->stream[i];
 
 		para_tuple[i] =
-			std::make_tuple(matA, matB, c_buffer_result,
+			std::make_tuple(matA, matB, c_result,
 				c_buffer_A, matA_M, matA_N, c_index_A_M_begin, c_index_A_M_end, ind_A_N_begin, ind_A_N_end,
 				c_buffer_B, matB_M, matB_N,
+				c_result_buffer,
 				block_M, block_N,
 				sequenceBPadding_M, sequenceBPadding_N,
 				strideA_M, strideA_N,
 				strideB_M, strideB_N,
 				c_device_buffer_A, c_device_buffer_B, c_device_buffer_C,
-				c_buffer_index,
+				c_index, c_index_buffer,
+				retain,
 				stream, numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
 		if (method == MSE)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse, block_match_mse, copyBlock, copyBlockWithSymmetricPaddding>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse, block_match_mse, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
 		else if (method == CC)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_cc, block_match_cc, copyBlock, copyBlockWithSymmetricPaddding>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_cc, block_match_cc, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
 	}
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
@@ -453,8 +478,8 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 
 	if (!isFailed)
 	{
-		*index = index_buffer;
-		*result = result_buffer;
+		*_index = index;
+		*_result = result;
 		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
 	}
 

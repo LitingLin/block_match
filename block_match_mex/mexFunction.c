@@ -24,6 +24,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
+	errorMessage = validateParameter(&context);
+
+	if (errorMessage.error != blockMatchMexOk)
+	{
+		mexErrMsgTxt(errorMessage.message);
+		return;
+	}
 
 	int sequenceASize = context.sequenceAMatrixDimensions[0] * context.sequenceAMatrixDimensions[1];
 	int sequenceBSize = context.sequenceBMatrixDimensions[0] * context.sequenceBMatrixDimensions[1];
@@ -49,7 +56,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	void *instance;
 	if (!initialize(&instance, context.sequenceAMatrixDimensions[0], context.sequenceAMatrixDimensions[1], context.sequenceBMatrixDimensions[0], context.sequenceBMatrixDimensions[1],
 		context.blockHeight, context.blockWidth, context.sequenceAStrideHeight, context.sequenceAStrideWidth, context.sequenceBStrideHeight, context.sequenceBStrideWidth,
-		context.sequenceAPaddingHeight, context.sequenceAPaddingWidth, context.sequenceBPaddingHeight, context.sequenceBPaddingWidth))
+		context.sequenceAPaddingHeight, context.sequenceAPaddingWidth, context.sequenceBPaddingHeight, context.sequenceBPaddingWidth,
+		context.retain))
 	{
 		free(sequenceAPointer_converted);
 		free(sequenceBPointer_converted);

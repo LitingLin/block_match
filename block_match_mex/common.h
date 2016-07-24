@@ -12,7 +12,7 @@ enum LibBlockMatchMexError
 	blockMatchMexErrorTypeOfArgument,
 	blockMatchMexErrorNumberOfMatrixDimension,
 	blockMatchMexErrorNumberOfMatrixDimensionMismatch,
-	blockMatchMexErrorSizeOfMatrixDimension,
+	blockMatchMexErrorSizeOfMatrix,
 	blockMatchMexErrorInvalidValue,
 	blockMatchMexErrorNotImplemented
 };
@@ -53,11 +53,15 @@ struct LibBlockMatchMexContext
 	int sequenceBPaddingHeight;
 
 	bool sort;
+	int retain;
 };
 
+struct LibBlockMatchMexErrorWithMessage generateErrorMessage(enum LibBlockMatchMexError error, char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH]);
 
 struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[]);
+
+struct LibBlockMatchMexErrorWithMessage validateParameter(struct LibBlockMatchMexContext *context);
 
 bool generate_result(mxArray **pa, const int sequenceAHeight, const int sequenceAWidth, const int *index, const float *value, const int size);

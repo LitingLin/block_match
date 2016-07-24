@@ -18,7 +18,8 @@ bool initialize(void **_instance,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
 	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N);
+	int paddingB_M, int paddingB_N,
+	int retain);
 
 LIB_BLOCK_MATCH_EXPORT
 bool process(void *instance, float *matA, float *matB, enum Method method, int** index, float **result, int *dimensionOfResult);

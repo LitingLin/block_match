@@ -14,11 +14,7 @@ void finalize(void *_instance)
 	}
 
 	cudaFreeHost(instance->buffer_A);
-	cudaFreeHost(instance->buffer_B);
-	cudaFreeHost(instance->result_buffer);
 	cudaFree(instance->device_buffer_A);
-	cudaFree(instance->device_buffer_B);
-	cudaFree(instance->device_result_buffer);
 
 	delete[] instance->stream;
 	delete[] instance->index;

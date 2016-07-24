@@ -88,9 +88,10 @@ Threshold = 0;
 % Sort result, can be
 % boolean
 Sort = true;
-% After sort the result blocks, retain specified number of blocks, can be
+% After sorting the result, retain specified number of blocks, can be
 % scalar
-Retain = 0;
+% 'all': retain all blocks
+Retain = 'all';
 
 %% Data type
 % Data type of result, can be

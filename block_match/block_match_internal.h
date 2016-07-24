@@ -48,14 +48,18 @@ struct Context
 	float *buffer_A;
 	float *buffer_B;
 	float *result_buffer;
+	float *result;
 	float *device_buffer_A;
 	float *device_buffer_B;
 	float *device_result_buffer;
 
+	int *index_buffer;
+	int perThreadBufferSize;
 	int *index;
 
 	int result_dims[4];
 
+	int retain;
 	cudaStream_t *stream;
 };
 
@@ -95,3 +99,4 @@ cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, in
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
 
 void block_sort(int *index, float *value, int size);
+void block_sort_partial(int *index, float *value, int size, int retain);
