@@ -167,8 +167,8 @@ bool initialize_full(void **_instance,
 
 	instance->retain = retain;
 
-	int result_dim0 = (matA_M + 2 * paddingA_M - block_M + strideA_M - 1) / strideA_M;
-	int result_dim1 = (matA_N + 2 * paddingA_N - block_N + strideA_N - 1) / strideA_N;
+	int result_dim0 = determineEndOfIndex(matA_M, paddingA_M, block_M, strideA_M);
+	int result_dim1 = determineEndOfIndex(matA_N, paddingA_N, block_N, strideA_N);
 	int result_dim2;
 
 	int numberOfThreads = globalContext.numberOfThreads;
@@ -178,15 +178,20 @@ bool initialize_full(void **_instance,
 	if (retain)
 		result_dim2 = retain;
 	else
-		result_dim2 = (matB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M * (matA_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
+		result_dim2 = determineEndOfIndex(matB_M, paddingB_M, block_M, strideB_M)* determineEndOfIndex(matA_N, paddingB_N, block_N, strideB_N);
 	//int result_dim2 = (matB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M;
 	//int result_dim3 = (matA_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
-
-	int group_M = (matB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M;
-	int group_N = (matB_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
+	
+	int group_M = determineEndOfIndex(matB_M, paddingB_M, block_M, strideB_M);
+	int group_N = determineEndOfIndex(matB_N, paddingB_N, block_N, strideB_N);
 	int blockB_groupSize = group_M * group_N;
 	if (blockB_groupSize > numberOfGPUProcessorThread)
 		numberOfGPUProcessorThread = blockB_groupSize;
+
+	if (retain > blockB_groupSize)
+		return false;
+	if (result_dim0 < globalContext.numberOfThreads)
+		return false;
 
 	int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 	int resultSize = result_dim0 * result_dim1 * result_dim2;
@@ -220,7 +225,7 @@ bool initialize_full(void **_instance,
 			goto release_instance;
 		}
 	}
-	
+
 	// Remember to * sizeof(type size)
 
 	cuda_error = cudaMallocHost(&instance->buffer_A,

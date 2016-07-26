@@ -3,12 +3,12 @@
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
 {
 	float *c_buf = buf;
-	const float *c_src = src + index_x * mat_N + index_y;
-	for (int i = 0; i < block_M; ++i)
+	const float *c_src = src + index_x * mat_M + index_y;
+	for (int i = 0; i < block_N; ++i)
 	{
-		memcpy(c_buf, c_src, block_N * sizeof(float));
-		c_buf += block_N;
-		c_src += mat_N;
+		memcpy(c_buf, c_src, block_M * sizeof(float));
+		c_buf += block_M;
+		c_src += mat_M;
 	}
 }
 
@@ -96,7 +96,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 
 	for (int i = x_index_pre_begin; i>x_index_pre_end; --i)
 	{
-		const float *c_mat = src + (i - 1) * mat_N;
+		const float *c_mat = src + (i - 1) * mat_M;
 		for (int j = y_index_pre_begin; j>y_index_pre_end; --j)
 		{
 			const float *c_c_mat = c_mat + j - 1;
@@ -106,7 +106,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
 		buf += (y_index_end - y_index_begin);
 
-		c_mat += mat_N - 1;
+		c_mat += mat_M - 1;
 		for (int j = y_index_post_begin; j<y_index_post_end; ++j)
 		{
 			const float *c_c_mat = c_mat - j;
@@ -116,7 +116,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 
 	for (int i = x_index_begin; i<x_index_end; ++i)
 	{
-		const float *c_mat = src + i * mat_N;
+		const float *c_mat = src + i * mat_M;
 		for (int j = y_index_pre_begin; j>y_index_pre_end; --j)
 		{
 			const float *c_c_mat = c_mat + j - 1;
@@ -126,7 +126,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
 		buf += (y_index_end - y_index_begin);
 
-		c_mat += mat_N - 1;
+		c_mat += mat_M - 1;
 		for (int j = y_index_post_begin; j<y_index_post_end; ++j)
 		{
 			const float *c_c_mat = c_mat - j;
@@ -136,7 +136,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 
 	for (int i = x_index_post_begin; i<x_index_post_end; ++i)
 	{
-		const float *c_mat = src + (mat_M - i - 1) * mat_N;
+		const float *c_mat = src + (mat_N - i - 1) * mat_M;
 		for (int j = y_index_pre_begin; j>y_index_pre_end; --j)
 		{
 			const float *c_c_mat = c_mat + j - 1;
@@ -146,7 +146,7 @@ void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int
 		memcpy(buf, c_mat + y_index_begin, (y_index_end - y_index_begin) * sizeof(float));
 		buf += (y_index_end - y_index_begin);
 
-		c_mat += mat_N - 1;
+		c_mat += mat_M - 1;
 		for (int j = y_index_post_begin; j<y_index_post_end; ++j)
 		{
 			const float *c_c_mat = c_mat - j;

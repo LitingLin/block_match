@@ -181,11 +181,11 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	int numTasks = 0;
 	int numBlocks_A = 0, numBlocks_B = 0;
 
-	int indexB_M_end = matB_M + padB_m - block_M;
-	int indexB_N_end = matB_N + padB_n - block_N;
+	int indexB_M_end = matB_M + padB_m - block_M + 1;
+	int indexB_N_end = matB_N + padB_n - block_N + 1;
 
-	int group_M = (matB_M + 2 * padB_m - block_M + strideB_M - 1) / strideB_M;
-	int group_N = (matB_N + 2 * padB_n - block_N + strideB_N - 1) / strideB_N;
+	int group_M = determineEndOfIndex(matB_M, padB_m , block_M , strideB_M);
+	int group_N = determineEndOfIndex(matB_N , padB_n , block_N , strideB_N);
 	int blockB_groupSize = group_M * group_N;
 	if (!retain)
 		retain = blockB_groupSize;
@@ -317,7 +317,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 		if (cuda_error != cudaSuccess)
 			return false;
 
-		cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+		cuda_error = cudaMemcpyAsync(result_buffer, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
 		if (cuda_error != cudaSuccess)
 			return false;
 
@@ -411,7 +411,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		return false;
 
 	int ind_A_N_begin = -sequenceAPadding_N;
-	int ind_A_N_end = matA_N - block_N + sequenceAPadding_N;
+	int ind_A_N_end = matA_N - block_N + sequenceAPadding_N + 1;
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{

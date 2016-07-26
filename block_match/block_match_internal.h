@@ -85,6 +85,7 @@ namespace block_match_internal {
 
 #define thread_pool_launcher(threadPool, function, parameters) block_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
 
+int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideSize);
 
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);

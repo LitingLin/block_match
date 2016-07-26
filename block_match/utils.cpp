@@ -1,4 +1,8 @@
 
+int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideSize)
+{
+	return (matSize + 2 * paddingSize - blockSize) / strideSize + 1;
+}
 
 template <typename TypeA, typename TypeB>
 void type_convert(TypeA *a, TypeB *b, size_t n)
