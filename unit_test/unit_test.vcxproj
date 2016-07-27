@@ -81,6 +81,7 @@
     <ClCompile Include="test_main.cpp" />
     <ClCompile Include="test_padding.cpp" />
     <ClCompile Include="test_sort.cpp" />
+    <ClCompile Include="test_whole_program.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_common.h" />

@@ -6,7 +6,7 @@ bool validate_pad_result(float *to_validate, float *truth_array, int src_m, int 
 	int truth_index_n = index_n + padding_n;
 	for (int i = 0; i < block_m; i++)
 		for (int j = 0; j < block_n; j++)
-			if (to_validate[i*block_m + j] != truth_array[(truth_index_m + i)*src_m + truth_index_n + j])
+			if (to_validate[i*block_n + j] != truth_array[(truth_index_m + i)*src_n + truth_index_n + j])
 				return false;
 	return true;
 }
@@ -84,12 +84,12 @@ BOOST_AUTO_TEST_CASE(test_padding)
 	memcpy(to_pad, to_pad_2, 2 * 3 * sizeof(float));
 	memcpy(padded, padded_2, 6 * 7 * sizeof(float));
 
-	mat_m = 2, mat_n = 3;
+	mat_m = 3, mat_n = 2;
 	test_index_m = 1, test_index_n = 1, test_block_m = 2, test_block_n = 2;
 
 	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
-	BOOST_CHECK(validate_pad_result(buf, padded, 6, 7, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
+	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = -2;
 	test_index_n = -1;
 	test_block_m = 1;
@@ -97,21 +97,21 @@ BOOST_AUTO_TEST_CASE(test_padding)
 
 	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
-	BOOST_CHECK(validate_pad_result(buf, padded, 6, 7, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
+	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = -1;
 	test_index_n = 0;
 	test_block_m = 3;
 	test_block_n = 1;
 	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
-	BOOST_CHECK(validate_pad_result(buf, padded, 6, 7, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
+	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = 1;
 	test_index_n = -2;
 	test_block_m = 2;
 	test_block_n = 1;
 	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
-	BOOST_CHECK(validate_pad_result(buf, padded, 6, 7, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
+	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 
 
 

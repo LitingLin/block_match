@@ -54,9 +54,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	doubleToFloat(context.sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
 
 	void *instance;
-	if (!initialize(&instance, context.sequenceAMatrixDimensions[0], context.sequenceAMatrixDimensions[1], context.sequenceBMatrixDimensions[0], context.sequenceBMatrixDimensions[1],
-		context.blockHeight, context.blockWidth, context.sequenceAStrideHeight, context.sequenceAStrideWidth, context.sequenceBStrideHeight, context.sequenceBStrideWidth,
-		context.sequenceAPaddingHeight, context.sequenceAPaddingWidth, context.sequenceBPaddingHeight, context.sequenceBPaddingWidth,
+	if (!initialize(&instance, context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
+		context.blockWidth, context.blockHeight, context.sequenceAStrideWidth, context.sequenceAStrideHeight, context.sequenceBStrideWidth, context.sequenceBStrideHeight,
+		context.sequenceAPaddingWidth, context.sequenceAPaddingHeight, context.sequenceBPaddingWidth, context.sequenceBPaddingHeight,
 		context.retain))
 	{
 		free(sequenceAPointer_converted);
