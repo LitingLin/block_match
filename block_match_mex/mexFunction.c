@@ -77,7 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	if (!generate_result(&plhs[0], result_dims[0], result_dims[1], index, result, result_dims[2]))
+	if (!generate_result(&context, &plhs[0], index, result))
 	{
 		finalize(instance);
 

@@ -274,7 +274,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 						for (int j = 0; j < retain; ++j)
 						{
 							*c_result++ = c_result_buffer[c_index_buffer[j]];
-							*c_index++ = c_index_buffer[j] + 1;
+							*c_index++ = c_index_buffer[j];
 						}
 						
 						c_index_buffer += blockB_groupSize;

@@ -64,4 +64,4 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 
 struct LibBlockMatchMexErrorWithMessage validateParameter(struct LibBlockMatchMexContext *context);
 
-bool generate_result(mxArray **pa, const int sequenceAHeight, const int sequenceAWidth, const int *index, const float *value, const int size);
+bool generate_result(struct LibBlockMatchMexContext *context, mxArray **_pa, const int *index, const float *value);
