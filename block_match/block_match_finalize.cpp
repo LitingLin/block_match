@@ -9,7 +9,7 @@ void finalize(void *_instance)
 
 	const unsigned numberOfThreads = globalContext.numberOfThreads;
 
-	for (unsigned i = 0; i < numberOfThreads; ++i) {
+	for (unsigned i = 0; i < numberOfThreads * 2; ++i) {
 		cudaStreamDestroy(instance->stream[i]);
 	}
 

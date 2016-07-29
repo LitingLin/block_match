@@ -1,7 +1,7 @@
 #pragma once
-#include <mex.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <mex.h>
 
 #include <block_match.h>
 

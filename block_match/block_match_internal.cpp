@@ -28,9 +28,13 @@ unsigned getNumberOfPhysicalProcessor()
 GlobalContext::GlobalContext()
 	: numberOfThreads(getNumberOfPhysicalProcessor()), pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {
-	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
+	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);	
 	if (cuda_error != cudaSuccess) hasGPU = false;
-	else hasGPU = true;
+	else {
+		hasGPU = true;
+		cuda_error = cudaSetDeviceFlags(cudaDeviceScheduleYield); // save cpu time
+		if (cuda_error != cudaSuccess) abort();
+	}
 }
 
 GlobalContext globalContext;

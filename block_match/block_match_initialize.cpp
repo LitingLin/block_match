@@ -53,7 +53,7 @@ bool initialize_local(void **_instance,
 	if (!instance->stream)
 		goto release_cuda_stream;
 
-	for (int i = 0; i < numberOfThreads; ++i)
+	for (int i = 0; i < numberOfThreads * 2; ++i)
 	{
 		cuda_error = cudaStreamCreate(&instance->stream[i]);
 		if (cuda_error != cudaSuccess)
@@ -207,12 +207,12 @@ bool initialize_full(void **_instance,
 
 	cudaError_t cuda_error;
 
-	instance->stream = new cudaStream_t[numberOfThreads];
+	instance->stream = new cudaStream_t[numberOfThreads*2];
 	if (!instance->stream) {
 		goto release_instance;
 	}
 
-	for (int i = 0; i < numberOfThreads; ++i)
+	for (int i = 0; i < numberOfThreads * 2; ++i)
 	{
 		cuda_error = cudaStreamCreate(&instance->stream[i]);
 		if (cuda_error != cudaSuccess)
@@ -268,7 +268,7 @@ release_page_locked_memory:
 	cudaFreeHost(instance->buffer_A);
 
 release_cuda_stream:
-	for (int i = 0; i < numberOfThreads; ++i)
+	for (int i = 0; i < numberOfThreads * 2; ++i)
 	{
 		cudaStreamDestroy(instance->stream[i]);
 	}

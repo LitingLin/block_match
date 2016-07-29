@@ -7,150 +7,196 @@
 typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
 typedef cudaError_t(ProcessFunction_BorderCheck)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, int numTasks, cudaStream_t stream);
+	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
 typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 typedef void(SequenceBIndexMethod)(float *buf, float *src, int);
-
-template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFunction_borderCheck,
-	CopyBlockMethod copyBlockAMethod, CopyBlockMethod copyBlockBMethod>
-	bool processWorker(float *matA, float *matB, float *result,
-		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
-		float *bufferB, int matB_M, int matB_N,
-		int block_M, int block_N,
-		int neighbour_M, int neighbour_N,
-		int strideA_M, int strideA_N,
-		int strideB_M, int strideB_N,
-		float *device_bufferA, float *device_bufferB, float *device_bufferC,
-		cudaStream_t stream, int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
-{
-	int blockSize = block_M * block_N;
-	int neighbourSize = (neighbour_M + strideB_M - 1) / strideB_M * (neighbour_N + strideB_N - 1) / strideB_N;
-
-	float *c_bufferA = bufferA;
-	float *c_bufferB = bufferB;
-	float *c_result = result;
-
-	int neighbour_M_middle = neighbour_M / 2;
-	int neighbour_N_middle = neighbour_N / 2;
-
-	int blocksPerProcessor = 0;
-	int filledProcessor = 0;
-	int numTasks = 0;
-	int numBlocks_A = 0, numBlocks_B = 0;
-
-	for (int ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ind_A_M += strideA_M)
-	{
-		for (int ind_A_N = index_A_N_begin; ind_A_N < index_A_N_end; ind_A_N += strideA_N)
-		{
-			copyBlockAMethod(c_bufferA, matA, matA_M, matA_N, ind_A_M, ind_A_N, block_M, block_N);
-
-#ifndef NDEBUG
-			int sequenceBCount = 0;
-#endif
-
-			for (int ind_neighbour_M = 0; ind_neighbour_M < neighbour_M; ind_neighbour_M += strideB_M)
-			{
-				int index_x = ind_A_M - neighbour_M_middle + ind_neighbour_M;
-
-				for (int ind_neighbour_N = 0; ind_neighbour_N < neighbour_N; ind_neighbour_N += strideB_N)
-				{
-					int index_y = ind_A_N - neighbour_N_middle + ind_neighbour_N;
-
-					copyBlockBMethod(c_bufferB, matB, matB_M, matB_N, index_x, index_y, block_M, block_N);
-
-					c_bufferB += blockSize;
-
-#ifndef NDEBUG
-					sequenceBCount++;
-#endif
-				}
-			}
-
-#ifndef NDEBUG
-			if (sequenceBCount != neighbourSize) abort();
-#endif
-
-			numBlocks_B += neighbourSize;
-			numBlocks_A += 1;
-
-			numTasks += neighbourSize;
-
-			blocksPerProcessor += neighbourSize;
-			c_bufferA += blockSize;
-
-			if (blocksPerProcessor + neighbourSize > numberOfGPUProcessorThread)
-			{
-				filledProcessor++;
-
-				if (filledProcessor == numberOfGPUDeviceMultiProcessor)
-				{
-					cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = processFunction(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC,
-						filledProcessor, blocksPerProcessor, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaStreamSynchronize(stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					c_result += numTasks;
-					c_bufferA = bufferA;
-					c_bufferB = bufferB;
-
-					numBlocks_A = 0;
-					numBlocks_B = 0;
-					numTasks = 0;
-					filledProcessor = 0;
-				}
-				blocksPerProcessor = 0;
-			}
-		}
-	}
-
-	if (numTasks)
-	{
-		cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC,
-			(numTasks + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread, numTasks, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = cudaStreamSynchronize(stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-	}
-
-	return true;
-}
+//
+//template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFunction_borderCheck,
+//	CopyBlockMethod copyBlockAMethod, CopyBlockMethod copyBlockBMethod>
+//	bool processWorker(float *matA, float *matB, float *result,
+//		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
+//		float *bufferB, int matB_M, int matB_N,
+//		int block_M, int block_N,
+//		int neighbour_M, int neighbour_N,
+//		int strideA_M, int strideA_N,
+//		int strideB_M, int strideB_N,
+//		float *device_bufferA, float *device_bufferB, float *device_bufferC,
+//		cudaStream_t stream, int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
+//{
+//	int blockSize = block_M * block_N;
+//	int neighbourSize = (neighbour_M + strideB_M - 1) / strideB_M * (neighbour_N + strideB_N - 1) / strideB_N;
+//
+//	float *c_bufferA = bufferA;
+//	float *c_bufferB = bufferB;
+//	float *c_result = result;
+//
+//	int neighbour_M_middle = neighbour_M / 2;
+//	int neighbour_N_middle = neighbour_N / 2;
+//
+//	int blocksPerProcessor = 0;
+//	int filledProcessor = 0;
+//	int numTasks = 0;
+//	int numBlocks_A = 0, numBlocks_B = 0;
+//
+//	for (int ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ind_A_M += strideA_M)
+//	{
+//		for (int ind_A_N = index_A_N_begin; ind_A_N < index_A_N_end; ind_A_N += strideA_N)
+//		{
+//			copyBlockAMethod(c_bufferA, matA, matA_M, matA_N, ind_A_M, ind_A_N, block_M, block_N);
+//
+//#ifndef NDEBUG
+//			int sequenceBCount = 0;
+//#endif
+//
+//			for (int ind_neighbour_M = 0; ind_neighbour_M < neighbour_M; ind_neighbour_M += strideB_M)
+//			{
+//				int index_x = ind_A_M - neighbour_M_middle + ind_neighbour_M;
+//
+//				for (int ind_neighbour_N = 0; ind_neighbour_N < neighbour_N; ind_neighbour_N += strideB_N)
+//				{
+//					int index_y = ind_A_N - neighbour_N_middle + ind_neighbour_N;
+//
+//					copyBlockBMethod(c_bufferB, matB, matB_M, matB_N, index_x, index_y, block_M, block_N);
+//
+//					c_bufferB += blockSize;
+//
+//#ifndef NDEBUG
+//					sequenceBCount++;
+//#endif
+//				}
+//			}
+//
+//#ifndef NDEBUG
+//			if (sequenceBCount != neighbourSize) abort();
+//#endif
+//
+//			numBlocks_B += neighbourSize;
+//			numBlocks_A += 1;
+//
+//			numTasks += neighbourSize;
+//
+//			blocksPerProcessor += neighbourSize;
+//			c_bufferA += blockSize;
+//
+//			if (blocksPerProcessor + neighbourSize > numberOfGPUProcessorThread)
+//			{
+//				filledProcessor++;
+//
+//				if (filledProcessor == numberOfGPUDeviceMultiProcessor)
+//				{
+//					cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+//					if (cuda_error != cudaSuccess)
+//						return false;
+//
+//					cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+//					if (cuda_error != cudaSuccess)
+//						return false;
+//
+//					cuda_error = processFunction(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC,
+//						filledProcessor, blocksPerProcessor, stream);
+//					if (cuda_error != cudaSuccess)
+//						return false;
+//
+//					cuda_error = cudaStreamSynchronize(stream);
+//					if (cuda_error != cudaSuccess)
+//						return false;
+//
+//					cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+//					if (cuda_error != cudaSuccess)
+//						return false;
+//
+//					c_result += numTasks;
+//					c_bufferA = bufferA;
+//					c_bufferB = bufferB;
+//
+//					numBlocks_A = 0;
+//					numBlocks_B = 0;
+//					numTasks = 0;
+//					filledProcessor = 0;
+//				}
+//				blocksPerProcessor = 0;
+//			}
+//		}
+//	}
+//
+//	if (numTasks)
+//	{
+//		cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+//		if (cuda_error != cudaSuccess)
+//			return false;
+//
+//		cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+//		if (cuda_error != cudaSuccess)
+//			return false;
+//
+//		cuda_error = processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, neighbourSize, blockSize, device_bufferC,
+//			(numTasks + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread, numTasks, stream);
+//		if (cuda_error != cudaSuccess)
+//			return false;
+//
+//		cuda_error = cudaStreamSynchronize(stream);
+//		if (cuda_error != cudaSuccess)
+//			return false;
+//
+//		cuda_error = cudaMemcpyAsync(c_result, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
+//		if (cuda_error != cudaSuccess)
+//			return false;
+//	}
+//
+//	return true;
+//}
 
 void generateSequenceIndex(int *index, int size)
 {
 	for (int i = 0; i < size; ++i)
 	{
 		index[i] = i;
+	}
+}
+
+template <ProcessFunction_BorderCheck processFunction_borderCheck>
+bool submitGpuTask(float *bufferA, float *bufferB, float *resultBuffer, float *deviceBufferA, float *deviceBufferB, float *deviceResultBuffer,
+	int blockSize,
+	int numberOfBlockA, int numberOfBlockBPerBlockA,
+	int numberOfGpuProcessors, int numberOfGpuThreads,
+	cudaStream_t stream)
+{
+	int numberOfBlockB = numberOfBlockA * numberOfBlockBPerBlockA;
+
+	cudaError_t cuda_error = cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+	if (cuda_error != cudaSuccess)
+		return false;
+
+	cuda_error = cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+	if (cuda_error != cudaSuccess)
+		return false;
+
+	cuda_error = processFunction_borderCheck(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockB, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
+		numberOfGpuProcessors, numberOfGpuThreads, stream);
+	if (cuda_error != cudaSuccess)
+		return false;
+
+	cuda_error = cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(float), cudaMemcpyDeviceToHost, stream);
+	if (cuda_error != cudaSuccess)
+		return false;
+
+	return true;
+}
+
+void sortAndGenerateIndex(int *&index_buffer, float *&result_buffer, int *&index, float *&result, int numberOfBlockA,int numberOfBlockBPerBlockA,int retain)
+{
+	for (int i = 0; i < numberOfBlockA; ++i)
+	{
+		block_sort_partial(index_buffer, result_buffer, numberOfBlockBPerBlockA, retain);
+
+		for (int j = 0; j < retain; ++j)
+		{
+			*result++ = result_buffer[index_buffer[j]];
+			*index++ = index_buffer[j];
+		}
+
+		index_buffer += numberOfBlockBPerBlockA;
+		result_buffer += numberOfBlockBPerBlockA;
 	}
 }
 
@@ -167,7 +213,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 		float *device_bufferA, float *device_bufferB, float *device_bufferC,
 		int *index, int *index_buffer,
 		int retain,
-		cudaStream_t stream, int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
+		cudaStream_t streamA, cudaStream_t streamB,
+		int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
 {
 	int blockSize = block_M * block_N;
 	float *c_bufferA = bufferA;
@@ -178,17 +225,16 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 
 	int blocksPerProcessor = 0;
 	int filledProcessor = 0;
-	int numTasks = 0;
-	int numBlocks_A = 0, numBlocks_B = 0;
+	int numberOfBlockA = 0;
 
 	int indexB_M_end = matB_M + padB_m - block_M + 1;
 	int indexB_N_end = matB_N + padB_n - block_N + 1;
 
-	int group_M = determineEndOfIndex(matB_M, padB_m , block_M , strideB_M);
-	int group_N = determineEndOfIndex(matB_N , padB_n , block_N , strideB_N);
-	int blockB_groupSize = group_M * group_N;
+	int group_M = determineEndOfIndex(matB_M, padB_m, block_M, strideB_M);
+	int group_N = determineEndOfIndex(matB_N, padB_n, block_N, strideB_N);
+	int numberOfBlockBPerBlockA = group_M * group_N;
 	if (!retain)
-		retain = blockB_groupSize;
+		retain = numberOfBlockBPerBlockA;
 
 	for (int ind_A_M = index_A_M_begin; ind_A_M < index_A_M_end; ind_A_M += strideA_M)
 	{
@@ -214,22 +260,19 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 				}
 			}
 
-			generateSequenceIndex(c_index_buffer, blockB_groupSize);
-			c_index_buffer += blockB_groupSize;
+			generateSequenceIndex(c_index_buffer, numberOfBlockBPerBlockA);
+			c_index_buffer += numberOfBlockBPerBlockA;
 
 #ifndef NDEBUG
 			if (sequenceBCount != blockB_groupSize) abort();
 #endif
 
-			numBlocks_B += blockB_groupSize;
-			numBlocks_A += 1;
+			numberOfBlockA += 1;
 
-			numTasks += blockB_groupSize;
-
-			blocksPerProcessor += blockB_groupSize;
+			blocksPerProcessor += numberOfBlockBPerBlockA;
 			c_bufferA += blockSize;
 
-			if (blocksPerProcessor + blockB_groupSize > numberOfGPUProcessorThread)
+			if (blocksPerProcessor + numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
 			{
 				if (blocksPerProcessor > numberOfGPUProcessorThread) {
 					filledProcessor = (blocksPerProcessor + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread;
@@ -240,46 +283,20 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 
 				if (filledProcessor >= numberOfGPUDeviceMultiProcessor)
 				{
-					cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+					if (!submitGpuTask<processFunction>(bufferA, bufferB, result_buffer, device_bufferA, device_bufferB, device_bufferC,
+						blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
+						filledProcessor, blocksPerProcessor, streamA))
+						return false;
+
+					cudaError_t cuda_error = cudaStreamSynchronize(streamA);
 					if (cuda_error != cudaSuccess)
 						return false;
 
-					cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, blockB_groupSize, blockSize, device_bufferC,
-						filledProcessor, blocksPerProcessor, numTasks,stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaStreamSynchronize(stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaMemcpyAsync(result_buffer, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
-					if (cuda_error != cudaSuccess)
-						return false;
-
-					cuda_error = cudaStreamSynchronize(stream);
-					if (cuda_error != cudaSuccess)
-						return false;
+					//std::swap(streamA, streamB);
 
 					c_index_buffer = index_buffer;
 
-					for (int i = 0; i < numBlocks_A; ++i)
-					{
-						block_sort_partial(c_index_buffer, c_result_buffer, blockB_groupSize, retain);
-
-						for (int j = 0; j < retain; ++j)
-						{
-							*c_result++ = c_result_buffer[c_index_buffer[j]];
-							*c_index++ = c_index_buffer[j];
-						}
-						
-						c_index_buffer += blockB_groupSize;
-						c_result_buffer += blockB_groupSize;
-					}
+					sortAndGenerateIndex(c_index_buffer, c_result_buffer, index, result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
 
 					c_index_buffer = index_buffer;
 					c_result_buffer = result_buffer;
@@ -288,9 +305,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					c_bufferA = bufferA;
 					c_bufferB = bufferB;
 
-					numBlocks_A = 0;
-					numBlocks_B = 0;
-					numTasks = 0;
+					numberOfBlockA = 0;
 					filledProcessor = 0;
 				}
 				blocksPerProcessor = 0;
@@ -298,49 +313,21 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 		}
 	}
 
-	if (numTasks)
+	if (numberOfBlockA)
 	{
-		cudaError_t cuda_error = cudaMemcpyAsync(device_bufferA, bufferA, numBlocks_A * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-		if (cuda_error != cudaSuccess)
+		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
+		if (!submitGpuTask<processFunction_borderCheck>(bufferA, bufferB, result_buffer, device_bufferA, device_bufferB, device_bufferC,
+			blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
+			(remainBlocks + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread, streamA))
 			return false;
 
-		cuda_error = cudaMemcpyAsync(device_bufferB, bufferB, numBlocks_B * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = processFunction_borderCheck(device_bufferA, device_bufferB, numBlocks_A, numBlocks_B, blockB_groupSize, blockSize, device_bufferC,
-			(numTasks + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread, numTasks, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = cudaStreamSynchronize(stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-		cuda_error = cudaMemcpyAsync(result_buffer, device_bufferC, numTasks * sizeof(float), cudaMemcpyDeviceToHost, stream);
-		if (cuda_error != cudaSuccess)
-			return false;
-
-
-		cuda_error = cudaStreamSynchronize(stream);
+		cudaError_t cuda_error = cudaStreamSynchronize(streamA);
 		if (cuda_error != cudaSuccess)
 			return false;
 
 		c_index_buffer = index_buffer;
 
-		for (int i = 0; i < numBlocks_A; ++i)
-		{
-			block_sort_partial(c_index_buffer, c_result_buffer, blockB_groupSize, retain);
-
-			for (int j = 0; j < retain; ++j)
-			{
-				*c_result++ = c_result_buffer[c_index_buffer[j]];
-				*c_index++ = c_index_buffer[j] + 1;
-			}
-
-			c_index_buffer += blockB_groupSize;
-			c_result_buffer += blockB_groupSize;
-		}
+		sortAndGenerateIndex(c_index_buffer, c_result_buffer, index, result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
 	}
 
 	return true;
@@ -404,7 +391,8 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		float *, float *, float *,
 		int *, int*,
 		int,
-		cudaStream_t, int, int >, 4>
+		cudaStream_t, cudaStream_t,
+		int, int >, 4>
 		para_tuple(numberOfThreads);
 
 	if (para_tuple.bad_alloc())
@@ -442,7 +430,9 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_device_buffer_C = device_bufferC + i * perThreadBufferSize;
 
-		cudaStream_t stream = instance->stream[i];
+		cudaStream_t streamA = instance->stream[2 * i],
+			streamB = instance->stream[2 * i + 1];
+
 
 		para_tuple[i] =
 			std::make_tuple(matA, matB, c_result,
@@ -456,12 +446,13 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 				c_device_buffer_A, c_device_buffer_B, c_device_buffer_C,
 				c_index, c_index_buffer,
 				retain,
-				stream, numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
+				streamA, streamB,
+				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
 		if (method == MSE)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse, block_match_mse, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
 		else if (method == CC)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_cc, block_match_cc, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlockWithSymmetricPaddding, copyBlockWithSymmetricPaddding>), para_tuple[i]);
 	}
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)

@@ -14,10 +14,10 @@ bool generate_result(struct LibBlockMatchMexContext *context,mxArray **_pa, cons
 	const int sequenceBStrideHeight = context->sequenceBStrideHeight;
 	const int sequenceBStrideWidth = context->sequenceBStrideWidth;
 
-	const int sequenceAHeight = (context->sequenceAMatrixDimensions[0] + 2 * context->sequenceAPaddingHeight - context->blockHeight) / context->sequenceAStrideHeight + 1,
-		sequenceAWidth = (context->sequenceAMatrixDimensions[1] + 2 * context->sequenceAPaddingWidth - context->blockWidth) / context->sequenceAStrideWidth + 1;
-	const int sequenceBHeight = (context->sequenceBMatrixDimensions[0] + 2 * sequenceBPaddingHeight - blockHeight) / sequenceBStrideHeight + 1;
-	const int sequenceBWidth = (context->sequenceBMatrixDimensions[1] + 2 * sequenceBPaddingWidth - blockWidth) / sequenceBStrideWidth + 1;
+	const int sequenceAHeight = (context->sequenceAMatrixDimensions[0] + 2 * context->sequenceAPaddingHeight - context->blockHeight + 1) / context->sequenceAStrideHeight + 1,
+		sequenceAWidth = (context->sequenceAMatrixDimensions[1] + 2 * context->sequenceAPaddingWidth - context->blockWidth + 1) / context->sequenceAStrideWidth + 1;
+	const int sequenceBHeight = (context->sequenceBMatrixDimensions[0] + 2 * sequenceBPaddingHeight - blockHeight + 1) / sequenceBStrideHeight + 1;
+	const int sequenceBWidth = (context->sequenceBMatrixDimensions[1] + 2 * sequenceBPaddingWidth - blockWidth + 1) / sequenceBStrideWidth + 1;
 	int size = context->retain;
 	if (!size)
 		size = sequenceBHeight * sequenceBWidth;

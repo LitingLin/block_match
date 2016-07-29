@@ -1,7 +1,7 @@
 
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideSize)
 {
-	return (matSize + 2 * paddingSize - blockSize) / strideSize + 1;
+	return (matSize + 2 * paddingSize - blockSize + 1) / strideSize + 1;
 }
 
 template <typename TypeA, typename TypeB>
