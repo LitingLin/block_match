@@ -108,6 +108,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="block_match.cpp" />
     <ClCompile Include="block_match_cc_cpu.cpp" />
     <ClCompile Include="block_match_finalize.cpp" />
+    <ClCompile Include="block_match_index_covert.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="block_match_internal.cpp" />
     <ClCompile Include="block_match_mse_cpu.cpp" />

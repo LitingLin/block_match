@@ -183,7 +183,7 @@ bool submitGpuTask(float *bufferA, float *bufferB, float *resultBuffer, float *d
 	return true;
 }
 
-void sortAndGenerateIndex(int *&index_buffer, float *&result_buffer, int *&index, float *&result, int numberOfBlockA,int numberOfBlockBPerBlockA,int retain)
+void sortAndGenerateIndex(int *&index_buffer, float *&result_buffer, int *&index_x,int *&index_y, float *&result, int numberOfBlockA,int numberOfBlockBPerBlockA,int retain)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
@@ -296,7 +296,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 
 					c_index_buffer = index_buffer;
 
-					sortAndGenerateIndex(c_index_buffer, c_result_buffer, index, result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
+					sortAndGenerateIndex(c_index_buffer, c_result_buffer, c_index, c_result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
 
 					c_index_buffer = index_buffer;
 					c_result_buffer = result_buffer;
@@ -308,6 +308,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					numberOfBlockA = 0;
 					filledProcessor = 0;
 				}
+
 				blocksPerProcessor = 0;
 			}
 		}
@@ -327,7 +328,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 
 		c_index_buffer = index_buffer;
 
-		sortAndGenerateIndex(c_index_buffer, c_result_buffer, index, result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
+		sortAndGenerateIndex(c_index_buffer, c_result_buffer, c_index, c_result, numberOfBlockA, numberOfBlockBPerBlockA, retain);
 	}
 
 	return true;

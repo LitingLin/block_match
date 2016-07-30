@@ -55,6 +55,9 @@
     <ClCompile Include="block_match_cc_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="block_match_index_covert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block_match.h">
