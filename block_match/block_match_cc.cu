@@ -1,9 +1,8 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <math_functions.h>
 
 __global__ void
-standardize_block(float *data, int blockSize)
+standardize_block_kernel(float *data, int blockSize)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -24,7 +23,7 @@ standardize_block(float *data, int blockSize)
 	}
 
 	sd /= blockSize;
-	sd = sqrtf(sd);
+	sd = sqrt(sd);
 
 	for (int i = 0; i < blockSize; ++i)
 	{
@@ -33,7 +32,7 @@ standardize_block(float *data, int blockSize)
 }
 
 __global__ void
-standardize_block(float *data, int blockSize, int n)
+standardize_block_kernel(float *data, int blockSize, int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -83,7 +82,7 @@ vector_multiply_add(float *block_A, float *block_B, int blockSize, float *result
 }
 
 __global__ void
-vector_multiply_add_async(const float *blocks_A, const float *blocks_B, int block_B_groupSize, int blockSize, float *resultsBuffer)
+vector_multiply_add(const float *blocks_A, const float *blocks_B, int block_B_groupSize, int blockSize, float *resultsBuffer)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -112,10 +111,10 @@ vector_multiply_add_async(const float *blocks_A, const float *blocks_B, int bloc
 }
 
 __global__ void
-vector_multiply_add_async(const float *blocks_A, const float *blocks_B, int block_B_groupSize, int blockSize, float *resultsBuffer, int n)
+vector_multiply_add(const float *blocks_A, const float *blocks_B, int block_B_groupSize, int blockSize, float *resultsBuffer, int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
-	
+
 	if (tid >= n)
 		return;
 
@@ -143,22 +142,27 @@ vector_multiply_add_async(const float *blocks_A, const float *blocks_B, int bloc
 	resultsBuffer[tid] = temp;
 }
 
+cudaError_t standardize(float *sequence, int numberOfBlocks, int size, int numThreads, cudaStream_t stream)
+{
+	standardize_block_kernel << <(numberOfBlocks + numThreads - 1) / numThreads, numThreads, 0, stream >> > (sequence, size, numberOfBlocks);
+	cudaError_t cuda_error = cudaGetLastError();
+	return cuda_error;
+}
+
 cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	standardize_block << <(numBlocks_A + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_A, blockSize, numBlocks_A);
+	cudaError_t cuda_error = standardize(blocks_A, numBlocks_A, blockSize, numThreads, stream);
 
-	cudaError_t cuda_error = cudaGetLastError();
 	if (cuda_error != cudaSuccess)
 		return cuda_error;
 
-	standardize_block << <(numBlocks_B + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_B, blockSize, numBlocks_B);
+	cuda_error = standardize(blocks_B, numBlocks_B, blockSize, numThreads, stream);
 
-	cuda_error = cudaGetLastError();
 	if (cuda_error != cudaSuccess)
 		return cuda_error;
-	
-	vector_multiply_add_async << <numProcessors, numThreads,0,stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result);
+
+	vector_multiply_add << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result);
 	cuda_error = cudaGetLastError();
 
 	return cuda_error;
@@ -167,19 +171,17 @@ cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, in
 cudaError_t block_match_cc_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	standardize_block << <(numBlocks_A + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_A, blockSize, numBlocks_A);
+	cudaError_t cuda_error = standardize(blocks_A, numBlocks_A, blockSize, numThreads, stream);
 
-	cudaError_t cuda_error = cudaGetLastError();
 	if (cuda_error != cudaSuccess)
 		return cuda_error;
 
-	standardize_block << <(numBlocks_B + numThreads - 1) / numThreads, numThreads, 0, stream >> > (blocks_B, blockSize, numBlocks_B);
+	cuda_error = standardize(blocks_B, numBlocks_B, blockSize, numThreads, stream);
 
-	cuda_error = cudaGetLastError();
 	if (cuda_error != cudaSuccess)
 		return cuda_error;
 
-	vector_multiply_add_async << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result, numBlocks_B);
+	vector_multiply_add << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result, numBlocks_B);
 	cuda_error = cudaGetLastError();
 
 	return cuda_error;

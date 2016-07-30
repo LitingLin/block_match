@@ -78,9 +78,14 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="test_cc_gpu.cpp" />
     <ClCompile Include="test_main.cpp" />
+    <ClCompile Include="test_mse_cpu.cpp" />
+    <ClCompile Include="test_mse_gpu.cpp" />
     <ClCompile Include="test_padding.cpp" />
     <ClCompile Include="test_sort.cpp" />
+    <ClCompile Include="test_standardize_cpu.cpp" />
+    <ClCompile Include="test_standardize_gpu.cpp" />
     <ClCompile Include="test_whole_program.cpp" />
   </ItemGroup>
   <ItemGroup>

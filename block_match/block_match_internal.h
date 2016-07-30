@@ -90,6 +90,9 @@ int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideS
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
+void standardize_cpu(float *sequence, int size);
+cudaError_t standardize(float *sequence, int numberOfBlocks, int size, int numThreads, cudaStream_t stream);
+
 cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
 cudaError_t block_match_mse_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
@@ -98,6 +101,9 @@ cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, in
 	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
 cudaError_t block_match_cc_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+
+void block_match_mse_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, float *result);
+void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, float *result);
 
 void block_sort(int *index, float *value, int size);
 void block_sort_partial(int *index, float *value, int size, int retain);
