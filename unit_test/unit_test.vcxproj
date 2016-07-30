@@ -78,6 +78,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="func_isnormal.cpp" />
     <ClCompile Include="test_cc_gpu.cpp" />
     <ClCompile Include="test_main.cpp" />
     <ClCompile Include="test_mse_cpu.cpp" />

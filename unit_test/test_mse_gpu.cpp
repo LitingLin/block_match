@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(test_mse_gpu)
 	float c;
 	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	BOOST_CHECK(c > 18.1078 && c<18.1080); // c ~= 18.1079
+	BOOST_CHECK_CLOSE(c, 18.1079, 0.0001);
 	cuda_error = cudaFree(dev_a);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 }
