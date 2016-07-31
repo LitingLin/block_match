@@ -489,9 +489,9 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
 		if (method == MSE)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlock, copyBlock>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding>), para_tuple[i]);
 		else if (method == CC)
-			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlock, copyBlock>), para_tuple[i]);
+			task_handle[i] = thread_pool_launcher(pool, (processWorker_full<block_match_mse_check_border, block_match_mse_check_border, copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding>), para_tuple[i]);
 	}
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)

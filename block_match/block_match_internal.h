@@ -102,7 +102,7 @@ int determineEndOfIndex(int matSize, int paddingSize, int blockSize);
 void generateIndexSequence(int *index, int size);
 
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+void copyBlockWithSymmetricPadding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
 void standardize_cpu(float *sequence, int size);
 cudaError_t standardize(float *sequence, int numberOfBlocks, int size, int numThreads, cudaStream_t stream);

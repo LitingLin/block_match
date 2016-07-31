@@ -80,7 +80,7 @@ void determineIndex(int index, int mat_length, int block_length,
 	determinIndexPostMat(index, mat_length, block_length, index_post_begin, index_post_end);
 }
 
-void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
+void copyBlockWithSymmetricPadding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
 {
 	if (index_x >= 0 && index_y >= 0 && index_x + block_M < mat_M && index_y + block_N < mat_N)
 	{

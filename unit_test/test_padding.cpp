@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(test_padding)
 	int mat_m = 3, mat_n = 3;
 	int test_index_m = 1, test_index_n = 1, test_block_m = 2, test_block_n = 2;
 
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 9, 9, 3, 3, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = -2;
@@ -41,28 +41,28 @@ BOOST_AUTO_TEST_CASE(test_padding)
 	test_block_m = 1;
 	test_block_n = 3;
 
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 9, 9, 3, 3, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = 5;
 	test_index_n = 4;
 	test_block_m = 1;
 	test_block_n = 2;
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 9, 9, 3, 3, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = 2;
 	test_index_n = 0;
 	test_block_m = 3;
 	test_block_n = 1;
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 9, 9, 3, 3, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = 1;
 	test_index_n = -2;
 	test_block_m = 2;
 	test_block_n = 1;
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 9, 9, 3, 3, test_index_m, test_index_n, test_block_m, test_block_n));
 
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(test_padding)
 	mat_m = 3, mat_n = 2;
 	test_index_m = 1, test_index_n = 1, test_block_m = 2, test_block_n = 2;
 
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = -2;
@@ -95,21 +95,21 @@ BOOST_AUTO_TEST_CASE(test_padding)
 	test_block_m = 1;
 	test_block_n = 3;
 
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = -1;
 	test_index_n = 0;
 	test_block_m = 3;
 	test_block_n = 1;
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 	test_index_m = 1;
 	test_index_n = -2;
 	test_block_m = 2;
 	test_block_n = 1;
-	copyBlockWithSymmetricPaddding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
+	copyBlockWithSymmetricPadding(buf, to_pad, mat_m, mat_n, test_index_m, test_index_n, test_block_m, test_block_n);
 
 	BOOST_CHECK(validate_pad_result(buf, padded, 7, 6, 2, 2, test_index_m, test_index_n, test_block_m, test_block_n));
 

@@ -48,6 +48,12 @@
     <ClCompile Include="func_isnormal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_get_length.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_determine_end_of_index.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_common.h">

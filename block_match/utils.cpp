@@ -1,6 +1,6 @@
 int getLength(int matSize, int paddingSize, int blockSize, int strideSize)
 {
-	return (matSize + 2 * paddingSize - blockSize + 1) / strideSize;
+	return (matSize + 2 * paddingSize - blockSize) / strideSize + 1;
 }
 
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize)
@@ -10,7 +10,7 @@ int determineEndOfIndex(int matSize, int paddingSize, int blockSize)
 
 void generateIndexSequence(int *index, int size)
 {
-	for (int i=0;i<size;++i)
+	for (int i = 0; i < size; ++i)
 	{
 		index[i] = i;
 	}
