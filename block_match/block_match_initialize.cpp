@@ -173,8 +173,8 @@ bool initialize_full(void **_instance,
 
 	instance->retain = retain;
 
-	int result_dim0 = determineEndOfIndex(matA_M, paddingA_M, block_M, strideA_M);
-	int result_dim1 = determineEndOfIndex(matA_N, paddingA_N, block_N, strideA_N);
+	int result_dim0 = getLength(matA_M, paddingA_M, block_M, strideA_M);
+	int result_dim1 = getLength(matA_N, paddingA_N, block_N, strideA_N);
 	int result_dim2;
 
 	int numberOfThreads = globalContext.numberOfThreads;
@@ -184,12 +184,12 @@ bool initialize_full(void **_instance,
 	if (retain)
 		result_dim2 = retain;
 	else
-		result_dim2 = determineEndOfIndex(matB_M, paddingB_M, block_M, strideB_M)* determineEndOfIndex(matA_N, paddingB_N, block_N, strideB_N);
+		result_dim2 = getLength(matB_M, paddingB_M, block_M, strideB_M)* getLength(matA_N, paddingB_N, block_N, strideB_N);
 	//int result_dim2 = (matB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M;
 	//int result_dim3 = (matA_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
 	
-	int group_M = determineEndOfIndex(matB_M, paddingB_M, block_M, strideB_M);
-	int group_N = determineEndOfIndex(matB_N, paddingB_N, block_N, strideB_N);
+	int group_M = getLength(matB_M, paddingB_M, block_M, strideB_M);
+	int group_N = getLength(matB_N, paddingB_N, block_N, strideB_N);
 	int numberOfBlockBPerBlockA = group_M * group_N;
 	if (numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
 		numberOfGPUProcessorThread = numberOfBlockBPerBlockA;

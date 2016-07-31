@@ -202,18 +202,18 @@ void sortAndGenerateIndex(int *&index_buffer, float *&result_buffer, int *&index
 }*/
 
 inline
-void sortWithIndex(int *&index_x, int *&index_y, float *&result, 
+void sortWithIndex(int *&index_x, int *&index_y, float *&result,
 	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
-	for (int i=0;i<numberOfBlockA;++i)
+	for (int i = 0; i < numberOfBlockA; ++i)
 	{
 		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
 
 		block_sort_partial(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
 
-		for (int j=0;j<retain;++j)
+		for (int j = 0; j < retain; ++j)
 		{
 			*result++ = result_buffer[index_buffer_sort[j]];
 
@@ -223,6 +223,7 @@ void sortWithIndex(int *&index_x, int *&index_y, float *&result,
 
 		index_x_buffer += numberOfBlockBPerBlockA;
 		index_y_buffer += numberOfBlockBPerBlockA;
+		result_buffer += numberOfBlockBPerBlockA;
 	}
 }
 
@@ -261,8 +262,8 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 	int filledProcessor = 0;
 	int numberOfBlockA = 0;
 
-	int indexB_M_end = matB_M + padB_m - block_M + 2;
-	int indexB_N_end = matB_N + padB_n - block_N + 2;
+	int indexB_M_end = determineEndOfIndex(matB_M, padB_m, block_M);
+	int indexB_N_end = determineEndOfIndex(matB_N, padB_n, block_N);
 
 	if (!retain)
 		retain = numberOfBlockBPerBlockA;
@@ -290,7 +291,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 #endif
 				}
 			}
-			
+
 #ifndef NDEBUG
 			if (sequenceBCount != numberOfBlockBPerBlockA)
 				logger.critical("Internal logical error: sequenceBCount != numberOfBlockBPerBlockA");
@@ -326,9 +327,9 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 					c_index_x_buffer = index_x_buffer;
 					c_index_y_buffer = index_y_buffer;
 
-					sortWithIndex(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, result_buffer, 
+					sortWithIndex(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, result_buffer,
 						numberOfBlockA, numberOfBlockBPerBlockA, retain, index_buffer, index_buffer_sort);
-					
+
 					//c_result += numTasks;
 					c_bufferA = bufferA;
 					c_bufferB = bufferB;
@@ -353,7 +354,7 @@ template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFu
 		cudaError_t cuda_error = cudaStreamSynchronize(streamA);
 		if (cuda_error != cudaSuccess)
 			return false;
-		
+
 		sortWithIndex(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, result_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, retain, index_buffer, index_buffer_sort);
 	}
@@ -432,7 +433,7 @@ bool process(void *_instance, float *matA, float *matB, enum Method method, int 
 		return false;
 
 	int ind_A_N_begin = -sequenceAPadding_N;
-	int ind_A_N_end = matA_N - block_N + sequenceAPadding_N + 2;
+	int ind_A_N_end = determineEndOfIndex(matA_N, sequenceAPadding_N, block_N);
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
