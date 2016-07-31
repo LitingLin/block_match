@@ -1,8 +1,6 @@
-#include "block_match.h"
-
 #include "block_match_internal.h"
+
 #include <cuda_runtime.h>
-#include <cstdlib>
 
 bool initialize_local(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
@@ -12,6 +10,13 @@ bool initialize_local(void **_instance,
 	int paddingA_M, int paddingA_N,
 	int paddingB_M, int paddingB_N)
 {
+	static bool isGlobalContextInitialized = false;
+	if (!isGlobalContextInitialized)
+	{
+		globalContext.initialize();
+		isGlobalContextInitialized = true;
+	}
+
 	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
 	if (!instance)
 		return false;
@@ -144,6 +149,7 @@ bool initialize_full(void **_instance,
 	int paddingB_M, int paddingB_N,
 	int retain)
 {
+
 	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
 	if (!instance)
 		return false;
@@ -184,11 +190,13 @@ bool initialize_full(void **_instance,
 	
 	int group_M = determineEndOfIndex(matB_M, paddingB_M, block_M, strideB_M);
 	int group_N = determineEndOfIndex(matB_N, paddingB_N, block_N, strideB_N);
-	int blockB_groupSize = group_M * group_N;
-	if (blockB_groupSize > numberOfGPUProcessorThread)
-		numberOfGPUProcessorThread = blockB_groupSize;
+	int numberOfBlockBPerBlockA = group_M * group_N;
+	if (numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
+		numberOfGPUProcessorThread = numberOfBlockBPerBlockA;
 
-	if (retain > blockB_groupSize)
+	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
+
+	if (retain > numberOfBlockBPerBlockA)
 		return false;
 	if (result_dim0 < globalContext.numberOfThreads)
 		return false;
@@ -196,7 +204,7 @@ bool initialize_full(void **_instance,
 	int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 	int resultSize = result_dim0 * result_dim1 * result_dim2;
 
-	int	bufferSize = numberOfGPUProcessorThread / blockB_groupSize * blockB_groupSize * numberOfGPUDeviceMultiProcessor;
+	int	bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
 	instance->perThreadBufferSize = bufferSize;
 	bufferSize *= numberOfThreads;
 
@@ -237,14 +245,20 @@ bool initialize_full(void **_instance,
 
 	instance->buffer_B = instance->buffer_A + matBufferSize;
 	instance->result_buffer = instance->buffer_B + matBufferSize;
-
-	instance->index = (int *)malloc((resultSize + bufferSize) * sizeof(int) + resultSize * sizeof(float));
-	if (instance->index == nullptr)
+	
+	instance->index_x = (int *)malloc((resultSize + bufferSize) * 2 * sizeof(int) + resultSize * sizeof(float) + numberOfBlockBPerBlockA*(numberOfThreads + 1) * sizeof(int));
+	if (instance->index_x == nullptr)
 		goto release_page_locked_memory;
+	instance->index_y = instance->index_x + resultSize;
+	instance->index_x_buffer = instance->index_y + resultSize;
+	instance->index_y_buffer = instance->index_x_buffer + bufferSize;
 
-	instance->index_buffer = instance->index + resultSize;
-	instance->result = (float*)instance->index_buffer + bufferSize;
+	instance->result = (float*)instance->index_y_buffer + bufferSize;
+	
+	instance->index_buffer = (int*)(instance->result + resultSize);
+	instance->index_buffer_sort = instance->index_buffer + numberOfBlockBPerBlockA;
 
+	generateIndexSequence(instance->index_buffer, numberOfBlockBPerBlockA);
 
 	cuda_error = cudaMalloc(&instance->device_buffer_A,
 		(matBufferSize * 2 + bufferSize) * sizeof(float));
@@ -262,7 +276,7 @@ release_device_memory:
 	cudaFree(instance->device_buffer_A);
 
 release_memory:
-	delete[] instance->index;
+	delete[] instance->index_x;
 release_page_locked_memory:
 
 	cudaFreeHost(instance->buffer_A);
@@ -290,6 +304,14 @@ bool initialize(void **_instance,
 	int paddingB_M, int paddingB_N,
 	int retain)
 {
+	static bool isGlobalContextInitialized = false;
+	if (!isGlobalContextInitialized)
+	{
+		if (!globalContext.initialize())
+			return false;
+		isGlobalContextInitialized = true;
+	}
+
 	return initialize_full(_instance,
 		matA_M, matA_N, matB_M, matB_N,
 		block_M, block_N,

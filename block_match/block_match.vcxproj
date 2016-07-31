@@ -30,6 +30,7 @@
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\spdlog\spdlog.props" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.props" />
   </ImportGroup>
@@ -108,13 +109,13 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="block_match.cpp" />
     <ClCompile Include="block_match_cc_cpu.cpp" />
     <ClCompile Include="block_match_finalize.cpp" />
-    <ClCompile Include="block_match_index_covert.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="block_match_internal.cpp" />
     <ClCompile Include="block_match_mse_cpu.cpp" />
     <ClCompile Include="block_match_process.cpp" />
     <ClCompile Include="block_match_sort.cpp" />
     <ClCompile Include="block_padding.cpp" />
+    <ClCompile Include="logging.cpp" />
     <ClCompile Include="stack_vector.hpp" />
     <ClCompile Include="thread_pool.cpp" />
     <ClCompile Include="utils.cpp" />

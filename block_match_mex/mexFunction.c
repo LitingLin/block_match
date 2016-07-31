@@ -6,7 +6,6 @@
 #include "mxUtils.h"
 #include "utils.h"
 
-
 bool onLoaded = false;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
@@ -14,6 +13,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 {
 	if (!onLoaded) {
 		mexAtExit(atExit);
+		
 		onLoaded = true;
 	}
 	struct LibBlockMatchMexContext context;
@@ -34,7 +34,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 	int sequenceASize = context.sequenceAMatrixDimensions[0] * context.sequenceAMatrixDimensions[1];
 	int sequenceBSize = context.sequenceBMatrixDimensions[0] * context.sequenceBMatrixDimensions[1];
-	
+
 	float *sequenceAPointer_converted, *sequenceBPointer_converted;
 	sequenceAPointer_converted = malloc(sequenceASize * sizeof(float));
 	if (!sequenceAPointer_converted) {
@@ -67,8 +67,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	}
 	float *result;
 	int result_dims[4];
-	int *index;
-	if (!process(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index, &result, result_dims))
+	int *index_x, *index_y;
+	if (!process(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index_y, &index_x, &result, result_dims))
 	{
 		free(sequenceAPointer_converted);
 		free(sequenceBPointer_converted);
@@ -77,7 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	if (!generate_result(&context, &plhs[0], index, result))
+	if (!generate_result(&plhs[0], result_dims[1], result_dims[0], index_x, index_y, result, result_dims[2]))
 	{
 		finalize(instance);
 

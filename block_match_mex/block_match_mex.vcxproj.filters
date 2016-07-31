@@ -36,6 +36,9 @@
     <ClCompile Include="parse_parameter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="logging.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mxUtils.h">

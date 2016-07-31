@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <stddef.h>
 
+#include <spdlog/spdlog.h>
+
 const int numberOfGPUProcessorThread = 512;
 
 // Hyper-Threading do harms to arithmetic computation
@@ -26,15 +28,33 @@ unsigned getNumberOfPhysicalProcessor()
 }
 
 GlobalContext::GlobalContext()
-	: numberOfThreads(getNumberOfPhysicalProcessor()), pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
+	: 
+#ifdef NDEBUG
+	numberOfThreads(getNumberOfPhysicalProcessor()),
+#else
+	numberOfThreads(1),
+#endif
+	pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {
-	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);	
-	if (cuda_error != cudaSuccess) hasGPU = false;
+}
+
+bool GlobalContext::initialize()
+{
+	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
+	if (cuda_error != cudaSuccess) {
+		hasGPU = false;
+		return false;
+	}
 	else {
 		hasGPU = true;
 		cuda_error = cudaSetDeviceFlags(cudaDeviceScheduleYield); // save cpu time
-		if (cuda_error != cudaSuccess) abort();
+		if (cuda_error != cudaSuccess) {
+			logger.warn("cudaSetDeviceFlags(cudaDeviceScheduleYield) return {}, message:{}.", cuda_error, cudaGetErrorString(cuda_error));
+			return false;
+		}
 	}
+
+	return true;
 }
 
 GlobalContext globalContext;

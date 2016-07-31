@@ -22,7 +22,7 @@ bool initialize(void **_instance,
 	int retain);
 
 LIB_BLOCK_MATCH_EXPORT
-bool process(void *instance, float *matA, float *matB, enum Method method, int** index, float **result, int *dimensionOfResult);
+bool process(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
 
 LIB_BLOCK_MATCH_EXPORT
 void finalize(void *instance);
@@ -35,3 +35,7 @@ void onLoad();
 
 LIB_BLOCK_MATCH_EXPORT
 void atExit();
+
+typedef void SinkFunction(const char *);
+LIB_BLOCK_MATCH_EXPORT
+void registerLoggingSinkFunction(SinkFunction sinkFunction);

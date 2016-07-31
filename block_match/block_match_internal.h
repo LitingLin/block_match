@@ -1,5 +1,9 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
+extern spdlog::logger logger;
+
 #include <cuda_runtime.h>
 
 #if defined _MSC_VER
@@ -13,6 +17,7 @@
 struct GlobalContext
 {
 	GlobalContext();
+	bool initialize();
 
 	unsigned numberOfThreads;
 	ThreadPool pool;
@@ -53,9 +58,16 @@ struct Context
 	float *device_buffer_B;
 	float *device_result_buffer;
 
+	int *index_x_buffer;
+	int *index_y_buffer;
+	int *index_x;
+	int *index_y;
+
 	int *index_buffer;
+	int *index_buffer_sort;
+
 	int perThreadBufferSize;
-	int *index;
+	int numberOfBlockBPerBlockA;
 
 	int result_dims[4];
 
@@ -86,6 +98,7 @@ namespace block_match_internal {
 #define thread_pool_launcher(threadPool, function, parameters) block_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
 
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideSize);
+void generateIndexSequence(int *index, int size);
 
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 void copyBlockWithSymmetricPaddding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);

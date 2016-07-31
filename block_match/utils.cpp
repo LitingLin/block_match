@@ -1,7 +1,14 @@
-
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize, int strideSize)
 {
 	return (matSize + 2 * paddingSize - blockSize + 1) / strideSize + 1;
+}
+
+void generateIndexSequence(int *index, int size)
+{
+	for (int i=0;i<size;++i)
+	{
+		index[i] = i;
+	}
 }
 
 template <typename TypeA, typename TypeB>

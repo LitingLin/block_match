@@ -1,4 +1,4 @@
-#include "block_match_internal.h"
+#include <memory>
 
 void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
 {
