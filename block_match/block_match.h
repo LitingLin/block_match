@@ -22,7 +22,7 @@ bool initialize(void **_instance,
 	int retain);
 
 LIB_BLOCK_MATCH_EXPORT
-bool process(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
+bool execute(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
 
 LIB_BLOCK_MATCH_EXPORT
 void finalize(void *instance);

@@ -140,6 +140,11 @@ release_instance:
 	return false;
 }
 
+void determineGpuTaskDistribution(int *)
+{
+
+}
+
 bool initialize_full(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int block_M, int block_N,

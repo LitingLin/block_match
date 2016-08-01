@@ -52,6 +52,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../block_match;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>block_match.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -67,6 +68,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../block_match;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -82,6 +84,7 @@
   <ItemGroup>
     <ClCompile Include="func_isnormal.cpp" />
     <ClCompile Include="test_cc_gpu.cpp" />
+    <ClCompile Include="test_determine_block_index.cpp" />
     <ClCompile Include="test_determine_end_of_index.cpp" />
     <ClCompile Include="test_get_length.cpp" />
     <ClCompile Include="test_main.cpp" />

@@ -68,7 +68,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	float *result;
 	int result_dims[4];
 	int *index_x, *index_y;
-	if (!process(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index_y, &index_x, &result, result_dims))
+	if (!execute(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index_y, &index_x, &result, result_dims))
 	{
 		free(sequenceAPointer_converted);
 		free(sequenceBPointer_converted);

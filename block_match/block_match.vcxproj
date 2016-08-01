@@ -54,6 +54,7 @@
       <WarningVersion>
       </WarningVersion>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -82,6 +83,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
       <WarningVersion>
       </WarningVersion>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -108,11 +110,12 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
   <ItemGroup>
     <ClCompile Include="block_match.cpp" />
     <ClCompile Include="block_match_cc_cpu.cpp" />
+    <ClCompile Include="block_match_execute.hpp" />
     <ClCompile Include="block_match_finalize.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="block_match_internal.cpp" />
     <ClCompile Include="block_match_mse_cpu.cpp" />
-    <ClCompile Include="block_match_process.cpp" />
+    <ClCompile Include="block_match_execution_launcher.cpp" />
     <ClCompile Include="block_match_sort.cpp" />
     <ClCompile Include="block_padding.cpp" />
     <ClCompile Include="logging.cpp" />

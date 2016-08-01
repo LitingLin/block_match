@@ -34,9 +34,6 @@
     <ClCompile Include="block_match_internal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_process.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stack_vector.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
@@ -56,6 +53,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match_execution_launcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match_execute.hpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,12 +2,12 @@
 
 #include "block_match.h"
 
-SinkFunction *sink_function = nullptr;
+SinkFunction *sinkFunction = nullptr;
 
 extern "C"
 void registerLoggingSinkFunction(SinkFunction sinkFunction)
 {
-	sink_function = sinkFunction;
+	::sinkFunction = sinkFunction;
 }
 
 class custom_sink : public spdlog::sinks::base_sink<std::mutex>
@@ -24,8 +24,8 @@ void custom_sink::flush()
 }
 void custom_sink::_sink_it(const spdlog::details::log_msg& msg)
 {
-	if (sink_function != nullptr)
-		sink_function(msg.formatted.c_str());
+	if (sinkFunction != nullptr)
+		sinkFunction(msg.formatted.c_str());
 }
 
 spdlog::logger logger("logging", std::make_shared<custom_sink>());
