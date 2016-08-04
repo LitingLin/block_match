@@ -140,9 +140,13 @@ release_instance:
 	return false;
 }
 
-void determineGpuTaskDistribution(int *)
+void determineGpuTaskDistribution(int *numberOfGpuThreads, int *numberOfGpuProcessor, int *numberOfQueuedData, int numberOfBlockBPerBlockA)
 {
-
+	int maxNumberOfGpuThreads = *numberOfGpuThreads;
+	if (numberOfBlockBPerBlockA > maxNumberOfGpuThreads)
+	{
+		
+	}
 }
 
 bool initialize_full(void **_instance,
