@@ -147,6 +147,12 @@ void determineGpuTaskDistribution(int *numberOfGpuThreads, int *numberOfGpuProce
 	{
 		
 	}
+	else
+	{
+		*numberOfQueuedData = *numberOfGpuThreads / numberOfBlockBPerBlockA;
+
+		*numberOfGpuThreads = numberOfBlockBPerBlockA / *numberOfGpuProcessor * (*numberOfGpuProcessor);
+	}
 }
 
 bool initialize_full(void **_instance,

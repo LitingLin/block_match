@@ -16,8 +16,8 @@ unsigned getNumberOfPhysicalProcessor()
 	GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &bufferLength);
 
 	// Guess actual size
-	const unsigned structSize = offsetof(_SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, DUMMYUNIONNAME.Processor)
-		+ sizeof(_SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX::DUMMYUNIONNAME.Processor);
+	const unsigned structSize = offsetof(_SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, Processor)
+		+ sizeof(_SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX::Processor);
 
 #ifndef NDEBUG
 	// Check it
