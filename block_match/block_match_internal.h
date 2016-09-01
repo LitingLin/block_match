@@ -75,6 +75,18 @@ struct Context
 	cudaStream_t *stream;
 };
 
+struct ArrayMatchContext
+{
+	int numberOfArray;
+	int lengthOfArray;
+	float *result;
+
+	float *deviceBufferA;
+	float *deviceBufferB;
+	float *deviceBufferC;
+
+	int numberOfThreads;
+};
 
 namespace block_match_internal {
 	template<typename R, template<typename...> class Params, typename... Args, std::size_t... I>
@@ -121,3 +133,27 @@ void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, in
 
 void block_sort(int *index, float *value, int size);
 void block_sort_partial(int *index, float *value, int size, int retain);
+
+void setLastErrorString(const char *string, ...);
+
+cudaError_t arrayMatchMse(float *A, float *B, float *C,
+	int lengthOfArray,
+	int numberOfProcessors, int numberOfThreads);
+cudaError_t arrayMatchMse(float *A, float *B, float *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);
+cudaError_t arrayMatchCc(float *A, float *B, float *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);
+
+
+size_t arrayMatchPerThreadDeviceBufferASize(const int numberOfGpuDeviceMultiProcessor,
+const int numberOfGpuProcessorThread,
+const int lengthOfArray);
+
+size_t arrayMatchPerThreadDeviceBufferBSize(const int numberOfGpuDeviceMultiProcessor,
+	const int numberOfGpuProcessorThread,
+	const int lengthOfArray);
+
+size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProcessor,
+	const int numberOfGpuProcessorThread);

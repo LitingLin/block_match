@@ -1,0 +1,2 @@
+LIBRARY "arrayMatchMex.mexw64"
+EXPORTS mexFunction

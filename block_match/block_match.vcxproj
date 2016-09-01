@@ -106,6 +106,8 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClInclude Include="thread_pool.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="array_match_execute.cpp" />
+    <ClCompile Include="array_match_initialize.cpp" />
     <ClCompile Include="block_match.cpp" />
     <ClCompile Include="block_match_cc_cpu.cpp" />
     <ClCompile Include="block_match_execute.hpp" />

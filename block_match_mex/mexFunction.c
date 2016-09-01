@@ -6,15 +6,15 @@
 #include "mxUtils.h"
 #include "utils.h"
 
-bool onLoaded = false;
+bool isLoaded = false;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
-	if (!onLoaded) {
+	if (!isLoaded) {
 		mexAtExit(atExit);
 		
-		onLoaded = true;
+		isLoaded = true;
 	}
 	struct LibBlockMatchMexContext context;
 	struct LibBlockMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);

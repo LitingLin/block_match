@@ -335,7 +335,7 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 	int nrhs, const mxArray *prhs[])
 {
 	enum LibBlockMatchMexError error = parseOutputArgument(context, nlhs, plhs);
-	if (error == blockMatchMexErrorTypeOfArgument)
+	if (error == blockMatchMexErrorNumberOfArguments)
 		return generateErrorMessage(error, "Too many output arguments\n");
 
 	if (nrhs < 3)

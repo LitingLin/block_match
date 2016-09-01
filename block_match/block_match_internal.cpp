@@ -36,12 +36,14 @@ GlobalContext::GlobalContext()
 #endif
 	pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {
+	initialize();
 }
 
 bool GlobalContext::initialize()
 {
 	cudaError_t cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor, cudaDevAttrMultiProcessorCount, 0);
 	if (cuda_error != cudaSuccess) {
+		setLastErrorString(cudaGetErrorString(cuda_error));
 		hasGPU = false;
 		return false;
 	}
@@ -49,7 +51,7 @@ bool GlobalContext::initialize()
 		hasGPU = true;
 		cuda_error = cudaSetDeviceFlags(cudaDeviceScheduleYield); // save cpu time
 		if (cuda_error != cudaSuccess) {
-			logger.warn("cudaSetDeviceFlags(cudaDeviceScheduleYield) return {}, message:{}.", cuda_error, cudaGetErrorString(cuda_error));
+			setLastErrorString("cudaSetDeviceFlags(cudaDeviceScheduleYield) return %d, message: %s", cuda_error, cudaGetErrorString(cuda_error));
 			return false;
 		}
 	}
