@@ -20,7 +20,16 @@ void convertDoubleToFloat(const double *source, float *destination, size_t size)
 	}
 }
 
-size_t conjectureMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray)
+void convertFloatToDouble(const float *source, double *destination, size_t size)
+{
+	for (size_t i = 0; i < size; ++i)
+	{
+		destination[i] = source[i];
+	}
+}
+
+
+size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray)
 {
 	return (lengthOfArray * numberOfArray * 2 + numberOfArray) * sizeof(float);
 }

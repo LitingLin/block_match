@@ -135,6 +135,7 @@ void block_sort(int *index, float *value, int size);
 void block_sort_partial(int *index, float *value, int size, int retain);
 
 void setLastErrorString(const char *string, ...);
+void setCudaLastErrorString(cudaError_t cudaError, char *message);
 
 cudaError_t arrayMatchMse(float *A, float *B, float *C,
 	int lengthOfArray,

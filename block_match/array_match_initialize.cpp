@@ -20,13 +20,6 @@ size_t getPageLockedMemoryAllocationSize(int numberOfArray)
 	return numberOfArray * sizeof(float);
 }
 
-void setCudaLastErrorString(cudaError_t cudaError, char *message)
-{
-	setLastErrorString("%s"
-		"Cuda Error Code: %d, Message: %s",
-		message, cudaError, cudaGetErrorString(cudaError));
-}
-
 extern "C"
 enum ErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray)

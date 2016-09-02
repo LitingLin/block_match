@@ -185,12 +185,15 @@ cudaError_t arrayMatchCc(float *A, float *B, float *C,
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	cudaError_t cudaError = standardize(B, numberOfArray, lengthOfArray, numberOfThreads);
+	cudaError = standardize(B, numberOfArray, lengthOfArray, numberOfThreads);
 
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	vector_multiply_add << <numberOfProcessors, numberOfThreads >> > (A, B, lengthOfArray, numberOfArray);
+	vector_multiply_add << <numberOfProcessors, numberOfThreads >> > (A, B, lengthOfArray, C, numberOfArray);
+	cudaError = cudaGetLastError();
+
+	return cudaError;
 }
 
 

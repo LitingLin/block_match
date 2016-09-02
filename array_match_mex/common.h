@@ -44,5 +44,8 @@ struct ArrayMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext 
 
 
 void convertDoubleToFloat(const double *source, float *destination, size_t size);
+void convertFloatToDouble(const float *source, double *destination, size_t size);
 
-size_t conjectureMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray);
+size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray);
+
+void logging_function(const char* msg);

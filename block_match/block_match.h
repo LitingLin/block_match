@@ -17,6 +17,7 @@ enum ErrorCode
 	LibMatchErrorPageLockedMemoryAllocation,
 	LibMatchErrorGpuMemoryAllocation,
 	LibMatchErrorCuda,
+	LibMatchErrorInternal,
 	LibMatchErrorOk
 };
 
@@ -35,14 +36,16 @@ enum ErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray);
 
 LIB_BLOCK_MATCH_EXPORT
-bool arrayMatchExecute(void *instance, float *A, float *B, enum Method method,
-	float *result);
+enum ErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum Method method,
+	float **result);
 
 LIB_BLOCK_MATCH_EXPORT
-void arrayMatchFinalize(void *instance);
+enum ErrorCode arrayMatchFinalize(void *instance);
+
+#define LIB_MATCH_MAX_MESSAGE_LENGTH 128
 
 LIB_BLOCK_MATCH_EXPORT
-void getLastErrorString(char *buffer, size_t size);
+void libMatchGetLastErrorString(char *buffer, size_t size);
 
 LIB_BLOCK_MATCH_EXPORT
 size_t arrayMatchGetMaximumMemoryAllocationSize(int numberOfArray, int lengthOfArray);
