@@ -85,7 +85,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	errorCode = arrayMatchFinalize(arrayMatchInstance);
 	if (errorCode != LibMatchErrorOk)
 	{
-		free(A);
 		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
 		mexErrMsgTxt(buffer);
 		return;
