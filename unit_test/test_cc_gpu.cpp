@@ -1,5 +1,7 @@
 #include "test_common.h"
 
+// TODO fix fail
+// But it seems like the precision problem of float
 BOOST_AUTO_TEST_CASE(test_cc_gpu)
 {
 	float a[] = { 1.7339,3.9094,8.3138,8.0336,0.6047,3.9926,5.2688,

@@ -84,6 +84,7 @@
   <ItemGroup>
     <ClCompile Include="func_isnormal.cpp" />
     <ClCompile Include="test_cc_gpu.cpp" />
+    <ClCompile Include="test_determine_gpu_task_configuration.cpp" />
     <ClCompile Include="test_determine_block_index.cpp" />
     <ClCompile Include="test_determine_end_of_index.cpp" />
     <ClCompile Include="test_get_length.cpp" />

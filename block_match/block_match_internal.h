@@ -73,6 +73,23 @@ struct Context
 
 	int retain;
 	cudaStream_t *stream;
+
+	void *threadHandle;
+	std::tuple<float *, float *, float *,
+		float *, int, int, int, int, int, int,
+		float *, int, int,
+		float *,
+		int, int,
+		int, int,
+		int, int,
+		int, int,
+		int,
+		float *, float *, float *,
+		int *, int *, int *, int *,
+		int *, int *,
+		int,
+		cudaStream_t, cudaStream_t,
+		int, int > *parameterBuffer;
 };
 
 struct ArrayMatchContext
@@ -133,6 +150,9 @@ void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, in
 
 void block_sort(int *index, float *value, int size);
 void block_sort_partial(int *index, float *value, int size, int retain);
+
+void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
+	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations);
 
 void setLastErrorString(const char *string, ...);
 void setCudaLastErrorString(cudaError_t cudaError, char *message);

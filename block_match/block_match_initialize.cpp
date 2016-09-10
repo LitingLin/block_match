@@ -140,18 +140,34 @@ release_instance:
 	return false;
 }
 
-void determineGpuTaskDistribution(int *numberOfGpuThreads, int *numberOfGpuProcessor, int *numberOfQueuedData, int numberOfBlockBPerBlockA)
+void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
+	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
 {
-	int maxNumberOfGpuThreads = *numberOfGpuThreads;
-	if (numberOfBlockBPerBlockA > maxNumberOfGpuThreads)
+	double numberOfBlockAPerProcessor = (double)maxNumberOfGpuThreads / (double)numberOfBlockBPerBlockA;
+	if (numberOfBlockAPerProcessor > 1.0)
 	{
-		
+		int fixedNumberOfBlockAPerProcessor = (int)numberOfBlockAPerProcessor;
+		*numberOfSubmitThreadsPerProcessor = (int)numberOfBlockAPerProcessor * numberOfBlockBPerBlockA;
+		*numberOfSubmitProcessors = numberOfGpuProcessors;
+		*numberOfIterations = fixedNumberOfBlockAPerProcessor * numberOfGpuProcessors;
 	}
 	else
 	{
-		*numberOfQueuedData = *numberOfGpuThreads / numberOfBlockBPerBlockA;
-
-		*numberOfGpuThreads = numberOfBlockBPerBlockA / *numberOfGpuProcessor * (*numberOfGpuProcessor);
+		double numberOfProcessorPerBlockA = 1.0 / numberOfBlockAPerProcessor;
+		if (numberOfProcessorPerBlockA < numberOfGpuProcessors)
+		{
+			int _numberOfIterations = (int)((double)numberOfGpuProcessors / numberOfProcessorPerBlockA);
+			int _numberOfSubmitProcessors = (int)(_numberOfIterations * numberOfProcessorPerBlockA);
+			*numberOfSubmitThreadsPerProcessor = maxNumberOfGpuThreads;
+			*numberOfSubmitProcessors = _numberOfSubmitProcessors;
+			*numberOfIterations = _numberOfIterations;
+		}
+		else
+		{
+			*numberOfSubmitThreadsPerProcessor = maxNumberOfGpuThreads;
+			*numberOfSubmitProcessors = std::ceil(numberOfProcessorPerBlockA);
+			*numberOfIterations = 1;
+		}
 	}
 }
 

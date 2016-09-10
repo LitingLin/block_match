@@ -28,7 +28,6 @@ void convertFloatToDouble(const float *source, double *destination, size_t size)
 	}
 }
 
-
 size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray)
 {
 	return (lengthOfArray * numberOfArray * 2 + numberOfArray) * sizeof(float);

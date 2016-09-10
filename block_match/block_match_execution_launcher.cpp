@@ -369,31 +369,11 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 		*index_buffer = instance->index_buffer,
 		*index_buffer_sort = instance->index_buffer_sort;
 
+	auto *parameterBuffer = instance->parameterBuffer;
+
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-
-	StackVector<
-		std::tuple<float *, float *, float *,
-		float *, int, int, int, int, int, int,
-		float *, int, int,
-		float *,
-		int, int,
-		int, int,
-		int, int,
-		int, int,
-		int,
-		float *, float *, float *,
-		int *, int *, int *, int *,
-		int *, int *,
-		int,
-		cudaStream_t, cudaStream_t,
-		int, int >, 4>
-		para_tuple(numberOfThreads);
-
-	if (para_tuple.bad_alloc())
-		return false;
-
+	
 	int ind_A_N_begin = -sequenceAPadding_N;
 	int ind_A_N_end = determineEndOfIndex(matA_N, sequenceAPadding_N, block_N);
 
@@ -433,7 +413,7 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 			streamB = instance->stream[2 * i + 1];
 
 
-		para_tuple[i] =
+		parameterBuffer[i] =
 			std::make_tuple(matA, matB, c_result,
 				c_buffer_A, matA_M, matA_N, c_index_A_M_begin, c_index_A_M_end, ind_A_N_begin, ind_A_N_end,
 				c_buffer_B, matB_M, matB_N,
@@ -457,27 +437,27 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 				(processWorker_full<block_match_mse_check_border, block_match_mse_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex_partial>),
-					para_tuple[i]);
+					parameterBuffer[i]);
 			else
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_mse_check_border, block_match_mse_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex>),
-					para_tuple[i]);
+					parameterBuffer[i]);
 		else if (method == CC)
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
-					sortWithIndex_partial>), para_tuple[i]);
+					sortWithIndex_partial>), parameterBuffer[i]);
 			else
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
-					sortWithIndex>), para_tuple[i]);
+					sortWithIndex>), parameterBuffer[i]);
 	}
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
