@@ -37,6 +37,9 @@ struct Context
 	int block_M;
 	int block_N;
 
+	int searchRegion_M;
+	int searchRegion_N;
+
 	int neighbour_M;
 	int neighbour_N;
 	

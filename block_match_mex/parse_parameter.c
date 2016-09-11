@@ -180,6 +180,7 @@ enum LibBlockMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexConte
 	return blockMatchMexOk;
 }
 
+// SearchRegion size 0 for full search
 enum LibBlockMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -187,30 +188,36 @@ enum LibBlockMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *con
 
 	char buffer[6];
 
-	if (getString(pa, buffer, 6) == blockMatchMexOk && strncmp(buffer, "full", 6) == 0)
-		return blockMatchMexOk;
-	else
-		return blockMatchMexErrorNotImplemented;
+	if (getString(pa, buffer, 6) == blockMatchMexOk)
+	{
+		if (strncmp(buffer, "full", 6) != 0)
+			return blockMatchMexErrorInvalidValue;
 
-	if (mxGetNumberOfElements(pa) == 1)
-	{
-		searchRegionWidth = searchRegionHeight = mxGetScalar(pa);
-	}
-	else if (mxGetNumberOfElements(pa) == 2)
-	{
-		const double *pr = mxGetData(pa);
-		searchRegionHeight = pr[0];
-		searchRegionWidth = pr[1];
+		searchRegionWidth = searchRegionHeight = 0;
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		if (mxGetNumberOfElements(pa) == 1)
+		{
+			searchRegionWidth = searchRegionHeight = mxGetScalar(pa);
+		}
+		else if (mxGetNumberOfElements(pa) == 2)
+		{
+			const double *pr = mxGetData(pa);
+			searchRegionHeight = pr[0];
+			searchRegionWidth = pr[1];
+		}
+		else
+		{
+			return blockMatchMexErrorNumberOfMatrixDimension;
+		}
+
+		if (context->sequenceAMatrixDimensions[0] - context->blockWidth < searchRegionWidth || context->sequenceAMatrixDimensions[1] - context->blockHeight < searchRegionHeight)
+		{
+			return blockMatchMexErrorSizeOfMatrix;
+		}
 	}
 
-	if (context->sequenceAMatrixDimensions[0] - context->blockWidth < searchRegionWidth || context->sequenceAMatrixDimensions[1] - context->blockHeight < searchRegionHeight)
-	{
-		return blockMatchMexErrorSizeOfMatrix;
-	}
 	context->searchRegionWidth = searchRegionWidth;
 	context->searchRegionHeight = searchRegionHeight;
 

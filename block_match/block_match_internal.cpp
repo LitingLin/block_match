@@ -5,8 +5,6 @@
 #include <Windows.h>
 #include <stddef.h>
 
-#include <spdlog/spdlog.h>
-
 const int numberOfGPUProcessorThread = 512;
 
 // Hyper-Threading do harms to arithmetic computation

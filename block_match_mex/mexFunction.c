@@ -55,6 +55,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 	void *instance;
 	if (!initialize(&instance, context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
+		context.searchRegionWidth, context.searchRegionHeight,
 		context.blockWidth, context.blockHeight, context.sequenceAStrideWidth, context.sequenceAStrideHeight, context.sequenceBStrideWidth, context.sequenceBStrideHeight,
 		context.sequenceAPaddingWidth, context.sequenceAPaddingHeight, context.sequenceBPaddingWidth, context.sequenceBPaddingHeight,
 		context.retain))

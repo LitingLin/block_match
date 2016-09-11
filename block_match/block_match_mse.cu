@@ -6,8 +6,8 @@ array_match_mse_kernel(const float *block_A, const float *block_B, int blockSize
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
-	const float *c_block_A = block_A + blockIdx.x * blockSize;
-	const float *c_block_B = block_B + threadIdx.x * blockSize;
+	const float *c_block_A = block_A + tid * blockSize;
+	const float *c_block_B = block_B + tid * blockSize;
 
 	float temp = 0;
 	for (int i = 0;i<blockSize;++i)
@@ -25,9 +25,9 @@ array_match_mse_kernel(const float *block_A, const float *block_B, int blockSize
 
 	if (tid >= n)
 		return;
-
-	const float *c_block_A = block_A + blockIdx.x * blockSize;
-	const float *c_block_B = block_B + threadIdx.x * blockSize;
+	
+	const float *c_block_A = block_A + tid * blockSize;
+	const float *c_block_B = block_B + tid * blockSize;
 
 	float temp = 0;
 	for (int i = 0; i<blockSize; ++i)

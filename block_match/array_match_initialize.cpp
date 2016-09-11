@@ -53,7 +53,12 @@ enum ErrorCode arrayMatchInitialize(void **instance,
 
 	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+#ifndef NDEBUG
+	const int numberOfThreads = 1;
+#else
 	const int numberOfThreads = 2; // enough
+#endif
 
 	size_t deviceBufferASize = arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
 	size_t deviceBufferBSize = deviceBufferASize;

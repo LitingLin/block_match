@@ -32,8 +32,7 @@ cudaError_t submitGpuTask(float *A, float *B, float *C,
 		return cudaError;
 
 	cudaError = cudaMemcpy(C,deviceBufferC ,dataSizeC, cudaMemcpyDeviceToHost);
-	if (cudaError != cudaSuccess)
-		return cudaError;
+	return cudaError;
 }
 
 template <ProcessFunction processFunction>

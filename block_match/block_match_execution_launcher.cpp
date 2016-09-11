@@ -146,7 +146,7 @@
 
 extern "C"
 bool process_local(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
-{
+{/*
 	struct Context *instance = (struct Context *)_instance;
 	ThreadPool &pool = globalContext.pool;
 
@@ -274,14 +274,14 @@ bool process_local(void *_instance, float *matA, float *matB, enum Method method
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
-				(processWorker_full<block_match_mse_check_border, block_match_mse_check_border,
+				(processWorker<block_match_mse_check_border, block_match_mse_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex_partial>),
 					para_tuple[i]);
 			else
 				task_handle[i] =
 				thread_pool_launcher(pool,
-				(processWorker_full<block_match_mse_check_border, block_match_mse_check_border,
+				(processWorker<block_match_mse_check_border, block_match_mse_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex>),
 					para_tuple[i]);
@@ -289,13 +289,13 @@ bool process_local(void *_instance, float *matA, float *matB, enum Method method
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
-				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,
+				(processWorker<block_match_cc_check_border, block_match_cc_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex_partial>), para_tuple[i]);
 			else
 				task_handle[i] =
 				thread_pool_launcher(pool,
-				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,
+				(processWorker<block_match_cc_check_border, block_match_cc_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex>), para_tuple[i]);
 	}
@@ -320,7 +320,8 @@ bool process_local(void *_instance, float *matA, float *matB, enum Method method
 		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
 	}
 
-	return !isFailed;
+	return !isFailed;*/
+return false;
 }
 
 
@@ -429,7 +430,7 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 				retain,
 				streamA, streamB,
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
-
+		/*
 		if (method == MSE)
 			if (retain)
 				task_handle[i] =
@@ -457,7 +458,7 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
-					sortWithIndex>), parameterBuffer[i]);
+					sortWithIndex>), parameterBuffer[i]);*/
 	}
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)

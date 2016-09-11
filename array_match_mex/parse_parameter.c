@@ -47,11 +47,11 @@ enum ArrayMatchMexError parseB(struct ArrayMatchMexContext *context,
 	}
 
 	const size_t *sequenceAMatrixDimensions = mxGetDimensions(pa);
-	if (context->numberOfArray != sequenceAMatrixDimensions[0])
+	if (context->numberOfArray != sequenceAMatrixDimensions[1])
 	{
 		return arrayMatchMexErrorSizeOfMatrixMismatch;
 	}
-	if (context->lengthOfArray != sequenceAMatrixDimensions[1])
+	if (context->lengthOfArray != sequenceAMatrixDimensions[0])
 	{
 		return arrayMatchMexErrorSizeOfMatrixMismatch;
 	}
@@ -76,12 +76,12 @@ enum ArrayMatchMexError parseA(struct ArrayMatchMexContext *context,
 	}
 
 	const size_t *sequenceAMatrixDimensions = mxGetDimensions(pa);
-	if (sequenceAMatrixDimensions[0] > INT_MAX)
-		return arrayMatchMexErrorOverFlow;
-	context->numberOfArray = sequenceAMatrixDimensions[0];
 	if (sequenceAMatrixDimensions[1] > INT_MAX)
 		return arrayMatchMexErrorOverFlow;
-	context->lengthOfArray = sequenceAMatrixDimensions[1];
+	context->numberOfArray = sequenceAMatrixDimensions[1];
+	if (sequenceAMatrixDimensions[0] > INT_MAX)
+		return arrayMatchMexErrorOverFlow;
+	context->lengthOfArray = sequenceAMatrixDimensions[0];
 
 	if (sequenceAMatrixDimensions[0] * sequenceAMatrixDimensions[1] > INT_MAX)
 		return arrayMatchMexErrorOverFlow;

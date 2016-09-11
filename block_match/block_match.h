@@ -21,9 +21,11 @@ enum ErrorCode
 	LibMatchErrorOk
 };
 
+// SearchRegion size 0 for full search
 LIB_BLOCK_MATCH_EXPORT
 bool initialize(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
+	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
