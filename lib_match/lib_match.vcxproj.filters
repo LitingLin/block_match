@@ -75,13 +75,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="block_match.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="block_match_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="thread_pool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\block_match.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
