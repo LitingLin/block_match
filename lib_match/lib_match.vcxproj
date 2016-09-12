@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6A32AFD3-16B3-469E-820D-7CE42B939FBC}</ProjectGuid>
-    <RootNamespace>block_match</RootNamespace>
+    <RootNamespace>lib_match</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
     <ProjectName>lib_match</ProjectName>
   </PropertyGroup>
