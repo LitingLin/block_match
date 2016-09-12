@@ -36,10 +36,7 @@ struct Context
 	int matB_N;
 	int block_M;
 	int block_N;
-
-	int searchRegion_M;
-	int searchRegion_N;
-
+	
 	int neighbour_M;
 	int neighbour_N;
 	
@@ -181,3 +178,8 @@ size_t arrayMatchPerThreadDeviceBufferBSize(const int numberOfGpuDeviceMultiProc
 
 size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProcessor,
 	const int numberOfGpuProcessorThread);
+
+void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
+	int *M_left, int *M_right, int *N_left, int *N_right);
+void zeroPadding(float *old_ptr, float *new_ptr, 
+	size_t channels, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);

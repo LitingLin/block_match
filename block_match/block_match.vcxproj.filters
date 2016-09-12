@@ -70,6 +70,9 @@
     <ClCompile Include="array_match_finalize.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="padding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block_match.h">

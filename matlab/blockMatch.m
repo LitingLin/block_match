@@ -1,4 +1,4 @@
-function Result = blockMatch(SequenceA, SequenceB, BlockSize, Options)
+function (Result,Padded) = blockMatch(SequenceA, SequenceB, BlockSize, Options)
 %%
 % Input:
 % SequenceA:

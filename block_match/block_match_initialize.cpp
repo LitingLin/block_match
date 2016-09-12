@@ -332,7 +332,7 @@ release_instance:
 
 bool initialize_(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
-	int searchRegion_M, int searchRegion_N,
+	int neighbour_M, int neighbour_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
@@ -352,6 +352,9 @@ bool initialize_(void **_instance,
 	instance->block_M = block_M;
 	instance->block_N = block_N;
 
+	instance->neighbour_M = neighbour_M;
+	instance->neighbour_N = neighbour_N;
+
 	instance->strideA_M = strideA_M;
 	instance->strideA_N = strideA_N;
 	instance->strideB_M = strideB_M;
@@ -365,7 +368,8 @@ bool initialize_(void **_instance,
 
 	int result_dim0 = getLength(matA_M, paddingA_M, block_M, strideA_M);
 	int result_dim1 = getLength(matA_N, paddingA_N, block_N, strideA_N);
-	int result_dim2;
+
+	int result_dim2, result_dim3;
 
 	int numberOfThreads = globalContext.numberOfThreads;
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
