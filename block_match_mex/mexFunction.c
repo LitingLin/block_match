@@ -42,7 +42,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	convertArrayFromDoubleToFloat(context.sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
 
 	void *instance;
-	if (!initialize(&instance, context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
+	if (!blockMatchInitialize(&instance, context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
 		context.searchRegionWidth, context.searchRegionHeight,
 		context.blockWidth, context.blockHeight, context.sequenceAStrideWidth, context.sequenceAStrideHeight, context.sequenceBStrideWidth, context.sequenceBStrideHeight,
 		context.sequenceAPaddingWidth, context.sequenceAPaddingHeight, context.sequenceBPaddingWidth, context.sequenceBPaddingHeight,
@@ -57,18 +57,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	float *result;
 	int result_dims[4];
 	int *index_x, *index_y;
-	if (!execute(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index_y, &index_x, &result, result_dims))
+	if (!blockMatchExecute(instance, sequenceAPointer_converted, sequenceBPointer_converted, context.method, &index_y, &index_x, &result, result_dims))
 	{
 		free(sequenceAPointer_converted);
 		free(sequenceBPointer_converted);
-		finalize(instance);
+		blockMatchFinalize(instance);
 		mexErrMsgTxt("unknown cuda error\n");
 		return;
 	}
 
 	if (!generate_result(&plhs[0], result_dims[1], result_dims[0], index_x, index_y, result, result_dims[2]))
 	{
-		finalize(instance);
+		blockMatchFinalize(instance);
 
 		free(sequenceAPointer_converted);
 		free(sequenceBPointer_converted);
@@ -77,7 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	finalize(instance);
+	blockMatchFinalize(instance);
 
 	free(sequenceAPointer_converted);
 	free(sequenceBPointer_converted);

@@ -2,10 +2,10 @@
 
 #include "lib_match.h"
 
-SinkFunction *sinkFunction = nullptr;
+LibMatchSinkFunction *sinkFunction = nullptr;
 
 extern "C"
-void registerLoggingSinkFunction(SinkFunction sinkFunction)
+void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction)
 {
 	::sinkFunction = sinkFunction;
 }

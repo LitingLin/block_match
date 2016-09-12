@@ -1,7 +1,7 @@
 #include "lib_match_internal.h"
 
 extern "C"
-void finalize(void *_instance)
+void blockMatchFinalize(void *_instance)
 {
 	cudaError_t cuda_error;
 	BlockMatchContext *instance = (BlockMatchContext *)_instance;

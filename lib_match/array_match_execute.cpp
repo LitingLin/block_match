@@ -73,10 +73,10 @@ unsigned arrayMatchWorker(float *A, float *B, float *C,
 }
 
 extern "C"
-enum ErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum Method method,
+enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum LibMatchMeasureMethod method,
 	float **_result)
 {
-	ErrorCode errorCode = LibMatchErrorOk;
+	LibMatchErrorCode errorCode = LibMatchErrorOk;
 	ArrayMatchContext *context = (ArrayMatchContext *)instance;
 
 	int numberOfArray = context->numberOfArray;
@@ -137,10 +137,10 @@ enum ErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum Method
 		c_numberOfArray, lengthOfArray,
 		numberOfGPUDeviceMultiProcessor,numberOfGPUProcessorThread };
 
-		if (method == MSE)
+		if (method == LIB_MATCH_MSE)
 			taskHandle[indexOfThread] =
 			thread_pool_launcher(pool, (arrayMatchWorker<arrayMatchMse>), parameterBuffer[indexOfThread]);
-		else if (method == CC)
+		else if (method == LIB_MATCH_CC)
 			taskHandle[indexOfThread] =
 			thread_pool_launcher(pool, (arrayMatchWorker<arrayMatchCc>), parameterBuffer[indexOfThread]);
 		else

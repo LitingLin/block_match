@@ -494,7 +494,7 @@ release_instance:
 }
 
 extern "C"
-bool initialize(void **_instance,
+bool blockMatchInitialize(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,

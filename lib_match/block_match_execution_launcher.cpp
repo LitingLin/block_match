@@ -145,7 +145,7 @@
 
 
 extern "C"
-bool process_local(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
+bool process_local(void *_instance, float *matA, float *matB, enum LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {/*
 	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
 	ThreadPool &pool = globalContext.pool;
@@ -270,7 +270,7 @@ bool process_local(void *_instance, float *matA, float *matB, enum Method method
 				streamA, streamB,
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
-		if (method == MSE)
+		if (method == LIB_MATCH_MSE)
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
@@ -285,7 +285,7 @@ bool process_local(void *_instance, float *matA, float *matB, enum Method method
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex>),
 					para_tuple[i]);
-		else if (method == CC)
+		else if (method == LIB_MATCH_CC)
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
@@ -326,7 +326,7 @@ return false;
 
 
 extern "C"
-bool execute(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
+bool blockMatchExecute(void *_instance, float *matA, float *matB, enum LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {
 	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
 	ThreadPool &pool = globalContext.pool;
@@ -431,7 +431,7 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 				streamA, streamB,
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 		/*
-		if (method == MSE)
+		if (method == LIB_MATCH_MSE)
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
@@ -446,7 +446,7 @@ bool execute(void *_instance, float *matA, float *matB, enum Method method, int 
 					copyBlockWithSymmetricPadding, copyBlockWithSymmetricPadding,
 					sortWithIndex>),
 					parameterBuffer[i]);
-		else if (method == CC)
+		else if (method == LIB_MATCH_CC)
 			if (retain)
 				task_handle[i] =
 				thread_pool_launcher(pool,

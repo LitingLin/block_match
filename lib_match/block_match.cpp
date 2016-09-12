@@ -2,18 +2,18 @@
 #include "lib_match_internal.h"
 
 extern "C"
-bool reset()
+bool libMatchReset()
 {
 	cudaError_t cuda_error = cudaDeviceReset();
 	return cuda_error == cudaSuccess;
 }
 extern "C"
-void onLoad(void)
+void libMatchOnLoad(void)
 {
 }
 
 extern "C"
-void atExit(void)
+void libMatchAtExit(void)
 {
 	globalContext.pool.shutdown();
 }

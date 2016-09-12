@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH + LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
 
 	void *arrayMatchInstance;
-	enum ErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance, numberOfArray, lengthOfArray);
+	enum LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance, numberOfArray, lengthOfArray);
 	if (errorCode != LibMatchErrorOk)
 	{		
 		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);

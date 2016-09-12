@@ -4,7 +4,7 @@
 
 struct LibBlockMatchMexContext
 {
-	enum Method method;
+	enum LibMatchMeasureMethod method;
 	int sequenceMatrixNumberOfDimensions;
 
 	int sequenceAMatrixDimensions[4];

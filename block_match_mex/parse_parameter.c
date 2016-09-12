@@ -306,9 +306,9 @@ enum LibMatchMexError parseMethod(struct LibBlockMatchMexContext *context,
 		return error;
 
 	if (strncmp(buffer, "mse", 4) == 0)
-		context->method = MSE;
+		context->method = LIB_MATCH_MSE;
 	else if (strncmp(buffer, "cc", 4) == 0)
-		context->method = CC;
+		context->method = LIB_MATCH_CC;
 	else
 		return libMatchMexErrorInvalidValue;
 

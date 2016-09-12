@@ -6,9 +6,9 @@ bool isLoaded = false;
 void libMatchMexInitalize()
 {
 	if (!isLoaded) {
-		onLoad();
-		registerLoggingSinkFunction(logging_function);
-		mexAtExit(atExit);
+		libMatchOnLoad();
+		libMatchRegisterLoggingSinkFunction(logging_function);
+		mexAtExit(libMatchAtExit);
 		isLoaded = true;
 	}
 }

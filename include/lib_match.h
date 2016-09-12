@@ -9,9 +9,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-enum Method { MSE, CC };
+enum LibMatchMeasureMethod { LIB_MATCH_MSE, LIB_MATCH_CC };
 
-enum ErrorCode
+enum LibMatchErrorCode
 {
 	LibMatchErrorMemoryAllocation,
 	LibMatchErrorPageLockedMemoryAllocation,
@@ -23,7 +23,7 @@ enum ErrorCode
 
 // SearchRegion size 0 for full search
 LIB_MATCH_EXPORT
-bool initialize(void **_instance,
+bool blockMatchInitialize(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -34,15 +34,15 @@ bool initialize(void **_instance,
 	int retain);
 
 LIB_MATCH_EXPORT
-enum ErrorCode arrayMatchInitialize(void **instance,
+enum LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray);
 
 LIB_MATCH_EXPORT
-enum ErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum Method method,
+enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum LibMatchMeasureMethod method,
 	float **result);
 
 LIB_MATCH_EXPORT
-enum ErrorCode arrayMatchFinalize(void *instance);
+enum LibMatchErrorCode arrayMatchFinalize(void *instance);
 
 #define LIB_MATCH_MAX_MESSAGE_LENGTH 128
 
@@ -59,20 +59,20 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int lengthOfArray);
 
 LIB_MATCH_EXPORT
-bool execute(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
+bool blockMatchExecute(void *_instance, float *matA, float *matB, enum LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
 
 LIB_MATCH_EXPORT
-void finalize(void *instance);
+void blockMatchFinalize(void *instance);
 
 LIB_MATCH_EXPORT
-bool reset();
+bool libMatchReset();
 
 LIB_MATCH_EXPORT
-void onLoad();
+void libMatchOnLoad();
 
 LIB_MATCH_EXPORT
-void atExit();
+void libMatchAtExit();
 
-typedef void SinkFunction(const char *);
+typedef void LibMatchSinkFunction(const char *);
 LIB_MATCH_EXPORT
-void registerLoggingSinkFunction(SinkFunction sinkFunction);
+void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction);

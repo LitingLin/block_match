@@ -21,13 +21,13 @@ size_t getPageLockedMemoryAllocationSize(int numberOfArray)
 }
 
 extern "C"
-enum ErrorCode arrayMatchInitialize(void **instance,
+enum LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray)
 {
 	if (!globalContext.hasGPU)
 		return LibMatchErrorCuda;
 
-	ErrorCode errorCode;
+	LibMatchErrorCode errorCode;
 
 	ArrayMatchContext *context = (ArrayMatchContext *)malloc(sizeof(ArrayMatchContext));
 	if (context == nullptr) {

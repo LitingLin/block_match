@@ -3,9 +3,9 @@
 #include "lib_match.h"
 
 extern "C"
-enum ErrorCode arrayMatchFinalize(void *instance)
+enum LibMatchErrorCode arrayMatchFinalize(void *instance)
 {
-	ErrorCode errorCode = LibMatchErrorOk;
+	LibMatchErrorCode errorCode = LibMatchErrorOk;
 	ArrayMatchContext *context = (ArrayMatchContext *)instance;
 	cudaError_t cudaError = cudaFree(context->deviceBufferA);
 	if (cudaError != cudaSuccess) {
