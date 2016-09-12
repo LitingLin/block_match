@@ -25,7 +25,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "array_match_mex", "array_ma
 		{C23019BB-0E7E-4E86-A487-CF339804D6D2} = {C23019BB-0E7E-4E86-A487-CF339804D6D2}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "padding_2d_mex", "padding_2d_mex\padding_2d_mex.vcxproj", "{9ED14885-1B3F-48B2-941A-C0B957A54C18}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pad_2d_mex", "pad_2d_mex\pad_2d_mex.vcxproj", "{9ED14885-1B3F-48B2-941A-C0B957A54C18}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C23019BB-0E7E-4E86-A487-CF339804D6D2} = {C23019BB-0E7E-4E86-A487-CF339804D6D2}
 	EndProjectSection
