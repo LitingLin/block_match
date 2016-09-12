@@ -17,9 +17,9 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 				return false;
 
 			double *mat_ptr = mxGetPr(mat);
-			intToDoublePlusOne(c_index_x, mat_ptr, size);
-			intToDoublePlusOne(c_index_y, mat_ptr + size, size);
-			floatToDouble(c_value, mat_ptr + 2 * size, size);
+			convertArrayFromIntToDoublePlusOne(c_index_x, mat_ptr, size);
+			convertArrayFromIntToDoublePlusOne(c_index_y, mat_ptr + size, size);
+			convertArrayFromFloatToDouble(c_value, mat_ptr + 2 * size, size);
 			mxSetCell(pa, i*sequenceAWidth + j, mat);
 
 			c_index_x += size;

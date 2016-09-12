@@ -1,4 +1,4 @@
-#include "block_match.h"
+#include "lib_match.h"
 
 #include "block_match_execute.hpp"
 
@@ -13,21 +13,21 @@
 //		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
 //		float *bufferB, int matB_M, int matB_N,
 //		int block_M, int block_N,
-//		int neighbour_M, int neighbour_N,
+//		int searchRegion_M, int searchRegion_N,
 //		int strideA_M, int strideA_N,
 //		int strideB_M, int strideB_N,
 //		float *device_bufferA, float *device_bufferB, float *device_bufferC,
 //		cudaStream_t stream, int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
 //{
 //	int blockSize = block_M * block_N;
-//	int neighbourSize = (neighbour_M + strideB_M - 1) / strideB_M * (neighbour_N + strideB_N - 1) / strideB_N;
+//	int neighbourSize = (searchRegion_M + strideB_M - 1) / strideB_M * (searchRegion_N + strideB_N - 1) / strideB_N;
 //
 //	float *c_bufferA = bufferA;
 //	float *c_bufferB = bufferB;
 //	float *c_result = result;
 //
-//	int neighbour_M_middle = neighbour_M / 2;
-//	int neighbour_N_middle = neighbour_N / 2;
+//	int neighbour_M_middle = searchRegion_M / 2;
+//	int neighbour_N_middle = searchRegion_N / 2;
 //
 //	int blocksPerProcessor = 0;
 //	int filledProcessor = 0;
@@ -44,11 +44,11 @@
 //			int sequenceBCount = 0;
 //#endif
 //
-//			for (int ind_neighbour_M = 0; ind_neighbour_M < neighbour_M; ind_neighbour_M += strideB_M)
+//			for (int ind_neighbour_M = 0; ind_neighbour_M < searchRegion_M; ind_neighbour_M += strideB_M)
 //			{
 //				int index_x = ind_A_M - neighbour_M_middle + ind_neighbour_M;
 //
-//				for (int ind_neighbour_N = 0; ind_neighbour_N < neighbour_N; ind_neighbour_N += strideB_N)
+//				for (int ind_neighbour_N = 0; ind_neighbour_N < searchRegion_N; ind_neighbour_N += strideB_N)
 //				{
 //					int index_y = ind_A_N - neighbour_N_middle + ind_neighbour_N;
 //
@@ -147,7 +147,7 @@
 extern "C"
 bool process_local(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {/*
-	struct Context *instance = (struct Context *)_instance;
+	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
 	ThreadPool &pool = globalContext.pool;
 
 	unsigned numberOfThreads = globalContext.numberOfThreads;
@@ -328,7 +328,7 @@ return false;
 extern "C"
 bool execute(void *_instance, float *matA, float *matB, enum Method method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {
-	struct Context *instance = (struct Context *)_instance;
+	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
 	ThreadPool &pool = globalContext.pool;
 
 	unsigned numberOfThreads = globalContext.numberOfThreads;

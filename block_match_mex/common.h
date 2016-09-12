@@ -1,30 +1,6 @@
 #pragma once
-#include <stdbool.h>
-#include <stdint.h>
-#include <mex.h>
 
-#include <block_match.h>
-
-enum LibBlockMatchMexError
-{
-	blockMatchMexOk = 0,
-	blockMatchMexErrorNumberOfArguments,
-	blockMatchMexErrorTypeOfArgument,
-	blockMatchMexErrorNumberOfMatrixDimension,
-	blockMatchMexErrorNumberOfMatrixDimensionMismatch,
-	blockMatchMexErrorSizeOfMatrix,
-	blockMatchMexErrorInvalidValue,
-	blockMatchMexErrorNotImplemented
-};
-
-#define LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH 128
-#define LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH 128
-
-struct LibBlockMatchMexErrorWithMessage
-{
-	enum LibBlockMatchMexError error;
-	char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH];
-};
+#include <lib_match_mex_common.h>
 
 struct LibBlockMatchMexContext
 {
@@ -56,14 +32,10 @@ struct LibBlockMatchMexContext
 	int retain;
 };
 
-struct LibBlockMatchMexErrorWithMessage generateErrorMessage(enum LibBlockMatchMexError error, char message[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH]);
-
-struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
+struct LibMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[]);
 
-struct LibBlockMatchMexErrorWithMessage validateParameter(struct LibBlockMatchMexContext *context);
+struct LibMatchMexErrorWithMessage validateParameter(struct LibBlockMatchMexContext *context);
 
 bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y, const float *value, const int size);
-
-void logging_function(const char* msg);

@@ -1,32 +1,20 @@
 #include "common.h"
 
-#include <memory.h>
-#include <string.h>
-
-#include "mxUtils.h"
-#include "utils.h"
-
-bool isLoaded = false;
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
-	if (!isLoaded) {
-		mexAtExit(atExit);
-		
-		isLoaded = true;
-	}
+	libMatchMexInitalize();
 	struct LibBlockMatchMexContext context;
-	struct LibBlockMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
+	struct LibMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
 
-	if (errorMessage.error != blockMatchMexOk)
+	if (errorMessage.error != libMatchMexOk)
 	{
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
 	errorMessage = validateParameter(&context);
 
-	if (errorMessage.error != blockMatchMexOk)
+	if (errorMessage.error != libMatchMexOk)
 	{
 		mexErrMsgTxt(errorMessage.message);
 		return;
@@ -50,8 +38,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	doubleToFloat(context.sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
-	doubleToFloat(context.sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
+	convertArrayFromDoubleToFloat(context.sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
+	convertArrayFromDoubleToFloat(context.sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
 
 	void *instance;
 	if (!initialize(&instance, context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],

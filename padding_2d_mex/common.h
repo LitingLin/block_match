@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdbool.h>
-#include <mex.h>
+#include <lib_match_mex_common.h>
 
 enum PadMethod
 {

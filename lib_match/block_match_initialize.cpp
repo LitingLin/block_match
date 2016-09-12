@@ -1,4 +1,4 @@
-#include "block_match_internal.h"
+#include "lib_match_internal.h"
 
 #include <cuda_runtime.h>
 
@@ -17,7 +17,7 @@ bool initialize_local(void **_instance,
 		isGlobalContextInitialized = true;
 	}
 
-	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
+	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
 	if (!instance)
 		return false;
 
@@ -29,8 +29,8 @@ bool initialize_local(void **_instance,
 	instance->block_M = block_M;
 	instance->block_N = block_N;
 
-	instance->neighbour_M = neighbour_M;
-	instance->neighbour_N = neighbour_N;
+	instance->searchRegion_M = neighbour_M;
+	instance->searchRegion_N = neighbour_N;
 
 	instance->strideA_M = strideA_M;
 	instance->strideA_N = strideA_N;
@@ -181,7 +181,7 @@ bool initialize_full(void **_instance,
 	int retain)
 {
 
-	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
+	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
 	if (!instance)
 		return false;
 
@@ -340,7 +340,7 @@ bool initialize_(void **_instance,
 	int paddingB_M, int paddingB_N,
 	int retain)
 {
-	struct Context * instance = (struct Context *)malloc(sizeof(struct Context));
+	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
 	if (!instance)
 		return false;
 
@@ -352,8 +352,8 @@ bool initialize_(void **_instance,
 	instance->block_M = block_M;
 	instance->block_N = block_N;
 
-	instance->neighbour_M = neighbour_M;
-	instance->neighbour_N = neighbour_N;
+	instance->searchRegion_M = neighbour_M;
+	instance->searchRegion_N = neighbour_N;
 
 	instance->strideA_M = strideA_M;
 	instance->strideA_N = strideA_N;

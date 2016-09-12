@@ -1,19 +1,7 @@
 #include "common.h"
 #include <string.h>
 
-
-enum LibBlockMatchMexError getString(const mxArray *pa, char *buffer, int bufferLength)
-{
-	mxClassID classId = mxGetClassID(pa);
-	if (classId != mxCHAR_CLASS)
-		return blockMatchMexErrorTypeOfArgument;
-
-	mxGetNChars(pa, buffer, bufferLength);
-
-	return blockMatchMexOk;
-}
-
-enum LibBlockMatchMexError parseRetain(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseRetain(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int retain;
@@ -23,54 +11,54 @@ enum LibBlockMatchMexError parseRetain(struct LibBlockMatchMexContext *context,
 	else if (classId == mxDOUBLE_CLASS)
 		goto ValueClass;
 	else
-		return blockMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 
 StringClass:
 
 	char buffer[4];
-	getString(pa, buffer, 4);
+	getStringFromMxArray(pa, buffer, 4);
 	if (strncmp(buffer, "all", 4) != 0)
-		return blockMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
 	context->retain = 0;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 ValueClass:
 	
 	size_t numberOfDimensions = mxGetNumberOfDimensions(pa);
 	if (numberOfDimensions != 1 && numberOfDimensions != 2)
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 
 	retain = mxGetScalar(pa);
 
 	if (retain <= 0)
-		return blockMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
 	context->retain = retain;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSort(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSort(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	bool sort;
 
 	if (mxGetClassID(pa) != mxLOGICAL_CLASS)
-		return blockMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 
 	mxLogical* logicals = mxGetLogicals(pa);
 	sort = logicals[0];
 
 	if (sort == false)
-		return blockMatchMexErrorNotImplemented;
+		return libMatchMexErrorNotImplemented;
 
 	context->sort = sort;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceAPaddingSize(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSequenceAPaddingSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int sequenceAPaddingWidth, sequenceAPaddingHeight;
@@ -87,16 +75,16 @@ enum LibBlockMatchMexError parseSequenceAPaddingSize(struct LibBlockMatchMexCont
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	context->sequenceAPaddingWidth = sequenceAPaddingWidth;
 	context->sequenceAPaddingHeight = sequenceAPaddingHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceBPaddingSize(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSequenceBPaddingSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int sequenceBPaddingWidth, sequenceBPaddingHeight;
@@ -113,16 +101,16 @@ enum LibBlockMatchMexError parseSequenceBPaddingSize(struct LibBlockMatchMexCont
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	context->sequenceBPaddingWidth = sequenceBPaddingWidth;
 	context->sequenceBPaddingHeight = sequenceBPaddingHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceAStrideSize(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSequenceAStrideSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int sequenceAStrideWidth, sequenceAStrideHeight;
@@ -139,19 +127,19 @@ enum LibBlockMatchMexError parseSequenceAStrideSize(struct LibBlockMatchMexConte
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	if (sequenceAStrideHeight == 0 || sequenceAStrideWidth == 0)
-		return blockMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
 	context->sequenceAStrideWidth = sequenceAStrideWidth;
 	context->sequenceAStrideHeight = sequenceAStrideHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int sequenceBStrideWidth, sequenceBStrideHeight;
@@ -168,30 +156,30 @@ enum LibBlockMatchMexError parseSequenceBStrideSize(struct LibBlockMatchMexConte
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	if (sequenceBStrideHeight == 0 || sequenceBStrideWidth == 0)
-		return blockMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
 	context->sequenceBStrideWidth = sequenceBStrideWidth;
 	context->sequenceBStrideHeight = sequenceBStrideHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
 // SearchRegion size 0 for full search
-enum LibBlockMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int searchRegionWidth, searchRegionHeight;
 
 	char buffer[6];
 
-	if (getString(pa, buffer, 6) == blockMatchMexOk)
+	if (getStringFromMxArray(pa, buffer, 6) == libMatchMexOk)
 	{
 		if (strncmp(buffer, "full", 6) != 0)
-			return blockMatchMexErrorInvalidValue;
+			return libMatchMexErrorInvalidValue;
 
 		searchRegionWidth = searchRegionHeight = 0;
 	}
@@ -209,22 +197,22 @@ enum LibBlockMatchMexError parseSearchRegion(struct LibBlockMatchMexContext *con
 		}
 		else
 		{
-			return blockMatchMexErrorNumberOfMatrixDimension;
+			return libMatchMexErrorNumberOfMatrixDimension;
 		}
 
 		if (context->sequenceAMatrixDimensions[0] - context->blockWidth < searchRegionWidth || context->sequenceAMatrixDimensions[1] - context->blockHeight < searchRegionHeight)
 		{
-			return blockMatchMexErrorSizeOfMatrix;
+			return libMatchMexErrorSizeOfMatrix;
 		}
 	}
 
 	context->searchRegionWidth = searchRegionWidth;
 	context->searchRegionHeight = searchRegionHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseBlockSize(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseBlockSize(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int blockWidth, blockHeight;
@@ -240,33 +228,33 @@ enum LibBlockMatchMexError parseBlockSize(struct LibBlockMatchMexContext *contex
 	}
 	else
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	if (context->sequenceAMatrixDimensions[0] < blockWidth || context->sequenceAMatrixDimensions[1] < blockHeight)
 	{
-		return blockMatchMexErrorSizeOfMatrix;
+		return libMatchMexErrorSizeOfMatrix;
 	}
 	
 	context->blockWidth = blockWidth;
 	context->blockHeight = blockHeight;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceB(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseSequenceB(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
 	{
-		return blockMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 	}
 
 	int sequenceBMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
 
 	if (sequenceBMatrixNumberOfDimensions != context->sequenceMatrixNumberOfDimensions)
 	{
-		return blockMatchMexErrorNumberOfMatrixDimensionMismatch;
+		return libMatchMexErrorNumberOfMatrixDimensionMismatch;
 	}
 
 	const size_t *sequenceBMatrixDimensions = mxGetDimensions(pa);
@@ -275,26 +263,26 @@ enum LibBlockMatchMexError parseSequenceB(struct LibBlockMatchMexContext *contex
 
 	if (sequenceBMatrixDimensions[0] < context->sequenceAMatrixDimensions[0] || sequenceBMatrixDimensions[1] < context->sequenceAMatrixDimensions[1])
 	{
-		return blockMatchMexErrorSizeOfMatrix;
+		return libMatchMexErrorSizeOfMatrix;
 	}
 
 	context->sequenceBMatrixPointer = mxGetData(pa);
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseSequenceA(struct LibBlockMatchMexContext *context, 
+enum LibMatchMexError parseSequenceA(struct LibBlockMatchMexContext *context, 
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
 	{
-		return blockMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 	}
 
 	int sequenceAMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
 	if (sequenceAMatrixNumberOfDimensions != 2)
 	{
-		return blockMatchMexErrorNumberOfMatrixDimension;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	context->sequenceMatrixNumberOfDimensions = sequenceAMatrixNumberOfDimensions;
@@ -305,16 +293,16 @@ enum LibBlockMatchMexError parseSequenceA(struct LibBlockMatchMexContext *contex
 
 	context->sequenceAMatrixPointer = mxGetData(pa);
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseMethod(struct LibBlockMatchMexContext *context,
+enum LibMatchMexError parseMethod(struct LibBlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	enum LibBlockMatchMexError error;
+	enum LibMatchMexError error;
 	char buffer[4];
-	error = getString(pa, buffer, 4);
-	if (error != blockMatchMexOk)
+	error = getStringFromMxArray(pa, buffer, 4);
+	if (error != libMatchMexOk)
 		return error;
 
 	if (strncmp(buffer, "mse", 4) == 0)
@@ -322,40 +310,40 @@ enum LibBlockMatchMexError parseMethod(struct LibBlockMatchMexContext *context,
 	else if (strncmp(buffer, "cc", 4) == 0)
 		context->method = CC;
 	else
-		return blockMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum LibBlockMatchMexError parseOutputArgument(struct LibBlockMatchMexContext *context, 
+enum LibMatchMexError parseOutputArgument(struct LibBlockMatchMexContext *context, 
 	int nlhs, mxArray *plhs[])
 {
 	if (nlhs >= 2)
-		return blockMatchMexErrorNumberOfArguments;
+		return libMatchMexErrorNumberOfArguments;
 
-	return blockMatchMexOk;
+	return libMatchMexOk;
 }
 
 
-struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
+struct LibMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[])
 {
-	enum LibBlockMatchMexError error = parseOutputArgument(context, nlhs, plhs);
-	if (error == blockMatchMexErrorNumberOfArguments)
+	enum LibMatchMexError error = parseOutputArgument(context, nlhs, plhs);
+	if (error == libMatchMexErrorNumberOfArguments)
 		return generateErrorMessage(error, "Too many output arguments\n");
 
 	if (nrhs < 3)
-		return generateErrorMessage(blockMatchMexErrorNumberOfArguments, "Too few input arguments\n");
+		return generateErrorMessage(libMatchMexErrorNumberOfArguments, "Too few input arguments\n");
 
 	int index = 0;
 
 	error = parseSequenceA(context, prhs[index]);
-	if (error == blockMatchMexErrorTypeOfArgument)
+	if (error == libMatchMexErrorTypeOfArgument)
 	{
 		return generateErrorMessage(error, "Type of Matrix A must be double\n");
 	}
-	else if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	else if (error == libMatchMexErrorNumberOfMatrixDimension)
 	{
 		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2\n");
 	}
@@ -363,15 +351,15 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 	++index;
 
 	error = parseSequenceB(context, prhs[index]);
-	if (error == blockMatchMexErrorTypeOfArgument)
+	if (error == libMatchMexErrorTypeOfArgument)
 	{
 		return generateErrorMessage(error, "Type of Matrix B must be double\n");
 	}
-	else if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	else if (error == libMatchMexErrorNumberOfMatrixDimension)
 	{
 		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2\n");
 	}
-	else if (error == blockMatchMexErrorNumberOfMatrixDimensionMismatch)
+	else if (error == libMatchMexErrorNumberOfMatrixDimensionMismatch)
 	{
 		return generateErrorMessage(error, "Number of dimension of Matrix B must be the same as Matrix A\n");
 	}
@@ -379,11 +367,11 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 	++index;
 
 	error = parseBlockSize(context, prhs[index]);
-	if (error == blockMatchMexErrorNumberOfMatrixDimension)
+	if (error == libMatchMexErrorNumberOfMatrixDimension)
 	{
 		return generateErrorMessage(error, "Number of dimension of BlockSize must be 1 or 2\n");
 	}
-	else if (error == blockMatchMexErrorSizeOfMatrix)
+	else if (error == libMatchMexErrorSizeOfMatrix)
 	{
 		return generateErrorMessage(error, "BlockSize cannot be smaller then Matrix A\n");
 	}
@@ -392,130 +380,130 @@ struct LibBlockMatchMexErrorWithMessage parseParameter(struct LibBlockMatchMexCo
 
 	if ((nrhs - index) % 2)
 	{
-		return generateErrorMessage(blockMatchMexErrorNumberOfArguments, "Wrong number of input arguments\n");
+		return generateErrorMessage(libMatchMexErrorNumberOfArguments, "Wrong number of input arguments\n");
 	}
 
 	while (index < nrhs)
 	{
-		char buffer[LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH];
-		char messageBuffer[LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH];
-		error = getString(prhs[index], buffer, LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH);
-		if (error == blockMatchMexErrorTypeOfArgument)
+		char buffer[LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH];
+		char messageBuffer[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
+		error = getStringFromMxArray(prhs[index], buffer, LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH);
+		if (error == libMatchMexErrorTypeOfArgument)
 		{
-			sprintf_s(messageBuffer, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH,
+			sprintf_s(messageBuffer, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH,
 				"Argument %d should be the name of parameter(string)\n", index);
 			return generateErrorMessage(error, messageBuffer);
 		}
 
 		++index;
 
-		if (strncmp(buffer, "SearchRegion", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		if (strncmp(buffer, "SearchRegion", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSearchRegion(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			if (error == libMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SearchRegionSize must be 2\n");
 			}
-			else if (error == blockMatchMexErrorSizeOfMatrix)
+			else if (error == libMatchMexErrorSizeOfMatrix)
 			{
 				return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
 			}
-			else if (error == blockMatchMexErrorNotImplemented)
+			else if (error == libMatchMexErrorNotImplemented)
 				goto NotImplemented;
 		}
 
-		else if (strncmp(buffer, "SequenceAStride", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceAStride", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAStrideSize(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			if (error == libMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceAStrideSize must be 2\n");
 			}
-			else if (error == blockMatchMexErrorInvalidValue)
+			else if (error == libMatchMexErrorInvalidValue)
 			{
 				return generateErrorMessage(error, "SequenceAStride can not be zero\n");
 			}
 		}
-		else if (strncmp(buffer, "SequenceBStride", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceBStride", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceBStrideSize(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			if (error == libMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceBStrideSize must be 2\n");
 			}
-			else if (error == blockMatchMexErrorInvalidValue)
+			else if (error == libMatchMexErrorInvalidValue)
 			{
 				return generateErrorMessage(error, "SequenceBStride can not be zero\n");
 			}
 		}
-		else if (strncmp(buffer, "SequenceAPadding", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceAPadding", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAPaddingSize(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			if (error == libMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceAPadding must be 2\n");
 			}
 		}
-		else if (strncmp(buffer, "SequenceBPadding", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceBPadding", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceBPaddingSize(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension)
+			if (error == libMatchMexErrorNumberOfMatrixDimension)
 			{
 				return generateErrorMessage(error, "Number of dimension of SequenceBPadding must be 2\n");
 			}
 		}
-		else if (strncmp(buffer, "MeasureMethod", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "MeasureMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseMethod(context, prhs[index]);
-			if (error == blockMatchMexErrorTypeOfArgument)
+			if (error == libMatchMexErrorTypeOfArgument)
 			{
 				return generateErrorMessage(error, "Argument MeasureMethod must be string\n");
 			}
-			else if (error == blockMatchMexErrorInvalidValue)
+			else if (error == libMatchMexErrorInvalidValue)
 			{
 				return generateErrorMessage(error, "Invalid value of argument MeasureMethod\n");
 			}
 		}
-		else if (strncmp(buffer, "SequenceAPaddingMethod", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0); // TODO
-		else if (strncmp(buffer, "SequenceBPaddingMethod", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "Threshold", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "Sort", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "SequenceAPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0); // TODO
+		else if (strncmp(buffer, "SequenceBPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "Threshold", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "Sort", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSort(context, prhs[index]);
-			if (error == blockMatchMexErrorNotImplemented)
+			if (error == libMatchMexErrorNotImplemented)
 			{
 				return generateErrorMessage(error, "Argument Sort must be true(false Not implemented yet)\n");
 			}
-			else if (error == blockMatchMexErrorTypeOfArgument)
+			else if (error == libMatchMexErrorTypeOfArgument)
 			{
 				return generateErrorMessage(error, "Argument Sort must be logical(boolean)\n");
 			}
 		}
-		else if (strncmp(buffer, "Retain", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "Retain", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseRetain(context, prhs[index]);
-			if (error == blockMatchMexErrorNumberOfMatrixDimension || error == blockMatchMexErrorSizeOfMatrix)
+			if (error == libMatchMexErrorNumberOfMatrixDimension || error == libMatchMexErrorSizeOfMatrix)
 				return generateErrorMessage(error, "Argument Retain must be scalar\n");
-			else if (error == blockMatchMexErrorTypeOfArgument)
+			else if (error == libMatchMexErrorTypeOfArgument)
 				return generateErrorMessage(error, "Argument Retain must be integer or string\n");
-			else if (error == blockMatchMexErrorInvalidValue)
+			else if (error == libMatchMexErrorInvalidValue)
 				return generateErrorMessage(error, "Value of argument Retain must be 'all' or positive integer\n");
 		}
-		else if (strncmp(buffer, "ResultDataType", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "IntermediateDataType", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "Sparse", LIB_BLOCK_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "ResultDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "IntermediateDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "Sparse", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
 
 		else
 		{
 			NotImplemented:
-			sprintf_s(messageBuffer, LIB_BLOCK_MATCH_MEX_MAX_MESSAGE_LENGTH,
+			sprintf_s(messageBuffer, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH,
 				"Argument %s has not implemented yet, or has wrong name\n", buffer);
-			return generateErrorMessage(blockMatchMexErrorNotImplemented, messageBuffer);
+			return generateErrorMessage(libMatchMexErrorNotImplemented, messageBuffer);
 		}
 		++index;
 	}
 
-	struct LibBlockMatchMexErrorWithMessage error_message = { 0 };
+	struct LibMatchMexErrorWithMessage error_message = { 0 };
 	
 	return error_message;
 }

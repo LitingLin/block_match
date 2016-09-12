@@ -2,24 +2,13 @@
 
 #include <string.h>
 
-enum LibBlockMatchMexError getStringFromMxArray(const mxArray *pa, char *buffer, int bufferLength)
-{
-	mxClassID classId = mxGetClassID(pa);
-	if (classId != mxCHAR_CLASS)
-		return arrayMatchMexErrorTypeOfArgument;
-
-	mxGetNChars(pa, buffer, bufferLength);
-
-	return arrayMatchMexOk;
-}
-
-enum ArrayMatchMexError parseMeasureMethod(struct ArrayMatchMexContext *context,
+enum libMatchMexError parseMeasureMethod(struct ArrayMatchMexContext *context,
 	const mxArray *pa)
 {
 	enum LibBlockMatchMexError error;
 	char buffer[4];
 	error = getStringFromMxArray(pa, buffer, 4);
-	if (error != arrayMatchMexOk)
+	if (error != libMatchMexOk)
 		return error;
 
 	if (strncmp(buffer, "mse", 4) == 0)
@@ -27,127 +16,127 @@ enum ArrayMatchMexError parseMeasureMethod(struct ArrayMatchMexContext *context,
 	else if (strncmp(buffer, "cc", 4) == 0)
 		context->method = CC;
 	else
-		return arrayMatchMexErrorInvalidValue;
+		return libMatchMexErrorInvalidValue;
 
-	return arrayMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum ArrayMatchMexError parseB(struct ArrayMatchMexContext *context,
+enum libMatchMexError parseB(struct ArrayMatchMexContext *context,
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
 	{
-		return arrayMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 	}
 
 	size_t sequenceAMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
 	if (sequenceAMatrixNumberOfDimensions != 2)
 	{
-		return arrayMatchMexErrorNumberOfMatrixDimensions;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	const size_t *sequenceAMatrixDimensions = mxGetDimensions(pa);
 	if (context->numberOfArray != sequenceAMatrixDimensions[1])
 	{
-		return arrayMatchMexErrorSizeOfMatrixMismatch;
+		return libMatchMexErrorSizeOfMatrixMismatch;
 	}
 	if (context->lengthOfArray != sequenceAMatrixDimensions[0])
 	{
-		return arrayMatchMexErrorSizeOfMatrixMismatch;
+		return libMatchMexErrorSizeOfMatrixMismatch;
 	}
 
 	context->B = mxGetData(pa);
 
-	return arrayMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum ArrayMatchMexError parseA(struct ArrayMatchMexContext *context,
+enum libMatchMexError parseA(struct ArrayMatchMexContext *context,
 	const mxArray *pa)
 {
 	if (mxGetClassID(pa) != mxDOUBLE_CLASS)
 	{
-		return arrayMatchMexErrorTypeOfArgument;
+		return libMatchMexErrorTypeOfArgument;
 	}
 	
 	size_t sequenceAMatrixNumberOfDimensions = mxGetNumberOfDimensions(pa);
 	if (sequenceAMatrixNumberOfDimensions != 2)
 	{
-		return arrayMatchMexErrorNumberOfMatrixDimensions;
+		return libMatchMexErrorNumberOfMatrixDimension;
 	}
 
 	const size_t *sequenceAMatrixDimensions = mxGetDimensions(pa);
 	if (sequenceAMatrixDimensions[1] > INT_MAX)
-		return arrayMatchMexErrorOverFlow;
+		return libMatchMexErrorOverFlow;
 	context->numberOfArray = sequenceAMatrixDimensions[1];
 	if (sequenceAMatrixDimensions[0] > INT_MAX)
-		return arrayMatchMexErrorOverFlow;
+		return libMatchMexErrorOverFlow;
 	context->lengthOfArray = sequenceAMatrixDimensions[0];
 
 	if (sequenceAMatrixDimensions[0] * sequenceAMatrixDimensions[1] > INT_MAX)
-		return arrayMatchMexErrorOverFlow;
+		return libMatchMexErrorOverFlow;
 
 	context->A = mxGetData(pa);
 
-	return arrayMatchMexOk;
+	return libMatchMexOk;
 }
 
-enum ArrayMatchMexError parseOutputArgument(struct ArrayMatchMexContext *context,
+enum libMatchMexError parseOutputArgument(struct ArrayMatchMexContext *context,
 	int nlhs, mxArray *plhs[])
 {
 	if (nlhs >= 2)
-		return arrayMatchMexErrorNumberOfArguments;
+		return libMatchMexErrorNumberOfArguments;
 
-	return arrayMatchMexOk;
+	return libMatchMexOk;
 }
 
-struct ArrayMatchMexErrorWithMessage internalError()
+struct LibMatchMexErrorWithMessage internalError()
 {
-	return generateErrorMessage(arrayMatchMexErrorInternal, "Unknown internal error.");
+	return generateErrorMessage(libMatchMexErrorInternal, "Unknown internal error.");
 }
 
-struct ArrayMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *context,
+struct LibMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[])
 {
-	enum ArrayMatchMexError error = parseOutputArgument(context, nlhs, plhs);
-	if (error == arrayMatchMexErrorNumberOfArguments)
+	enum LibMatchMexError error = parseOutputArgument(context, nlhs, plhs);
+	if (error == libMatchMexErrorNumberOfArguments)
 		return generateErrorMessage(error, "Too many output arguments.");
 
 	if (nrhs != 3)
-		return generateErrorMessage(arrayMatchMexErrorNumberOfArguments, "Too few input arguments.");
+		return generateErrorMessage(libMatchMexErrorNumberOfArguments, "Too few input arguments.");
 
 	int index = 0;
 	error = parseA(context, prhs[index]);
-	if (error == arrayMatchMexErrorTypeOfArgument)
+	if (error == libMatchMexErrorTypeOfArgument)
 		return generateErrorMessage(error, "Data type of A must be double");
-	else if (error == arrayMatchMexErrorNumberOfMatrixDimensions)
+	else if (error == libMatchMexErrorNumberOfMatrixDimension)
 		return generateErrorMessage(error, "Number of dimensions of A must be 2");
-	else if (error == arrayMatchMexErrorOverFlow)
+	else if (error == libMatchMexErrorOverFlow)
 		return generateErrorMessage(error, "Total size of A must smaller than INT_MAX(%d)", INT_MAX);
-	else if (error != arrayMatchMexOk)
+	else if (error != libMatchMexOk)
 		return internalError();
 
 	++index;
 
 	error = parseB(context, prhs[index]);
 
-	if (error == arrayMatchMexErrorTypeOfArgument)
+	if (error == libMatchMexErrorTypeOfArgument)
 		return generateErrorMessage(error, "Data type of A must be double.");
-	else if (error == arrayMatchMexErrorNumberOfMatrixDimensions)
+	else if (error == libMatchMexErrorNumberOfMatrixDimension)
 		return generateErrorMessage(error, "Number of dimensions of A must be 2.");
-	else if (error == arrayMatchMexErrorSizeOfMatrixMismatch)
+	else if (error == libMatchMexErrorSizeOfMatrixMismatch)
 		return generateErrorMessage(error, "Dimensions of A and B mismatch.");
-	else if (error != arrayMatchMexOk)
+	else if (error != libMatchMexOk)
 		return internalError();
 
 	++index;
 	error = parseMeasureMethod(context, prhs[index]);
-	if (error == arrayMatchMexErrorTypeOfArgument)
+	if (error == libMatchMexErrorTypeOfArgument)
 		return generateErrorMessage(error, "Data type of MeasureMethod must be Char Array.");
-	else if (error == arrayMatchMexErrorInvalidValue)
+	else if (error == libMatchMexErrorInvalidValue)
 		return generateErrorMessage(error, "MeasureMethod must be 'mse'(Mean Square Error) or 'cc'(Correlation Coefficient).");
-	else if (error != arrayMatchMexOk)
+	else if (error != libMatchMexOk)
 		return internalError();
 
-	return generateErrorMessage(arrayMatchMexOk, "");
+	return generateErrorMessage(libMatchMexOk, "");
 }

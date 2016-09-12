@@ -28,7 +28,11 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
-struct Context
+/* M means the first dimension, N means the second dimension
+** So, two dimensions is assumed
+*/
+
+struct BlockMatchContext
 {
 	int matA_M;
 	int matA_N;
@@ -37,8 +41,8 @@ struct Context
 	int block_M;
 	int block_N;
 	
-	int neighbour_M;
-	int neighbour_N;
+	int searchRegion_M;
+	int searchRegion_N;
 	
 	int strideA_M;
 	int strideA_N;
@@ -105,7 +109,7 @@ struct ArrayMatchContext
 	int numberOfThreads;
 };
 
-namespace block_match_internal {
+namespace lib_match_internal {
 	template<typename R, template<typename...> class Params, typename... Args, std::size_t... I>
 	unsigned FORCE_INLINE thread_pool_base_function_helper(R(*func)(Args...), Params<Args...> const&params, std::index_sequence<I...>)
 	{
@@ -124,7 +128,7 @@ namespace block_match_internal {
 	}
 }
 
-#define thread_pool_launcher(threadPool, function, parameters) block_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
+#define thread_pool_launcher(threadPool, function, parameters) lib_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
 
 int getLength(int matSize, int paddingSize, int blockSize, int strideSize);
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize);

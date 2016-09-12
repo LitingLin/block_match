@@ -1,6 +1,6 @@
 #pragma once
 
-#include "block_match_internal.h"
+#include "lib_match_internal.h"
 
 typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);

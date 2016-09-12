@@ -14,6 +14,7 @@
     <ProjectGuid>{9ED14885-1B3F-48B2-941A-C0B957A54C18}</ProjectGuid>
     <RootNamespace>padding_mex</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <ProjectName>padding_2d_mex</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -39,12 +40,14 @@
     <Import Project="..\libmatch.props" />
     <Import Project="..\mex.props" />
     <Import Project="..\cuda.props" />
+    <Import Project="..\libmatchmex.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\libmatch.props" />
     <Import Project="..\mex.props" />
     <Import Project="..\cuda.props" />
+    <Import Project="..\libmatchmex.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -77,7 +80,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="mexFunction.c" />
-    <ClCompile Include="parse_parameter.cpp" />
+    <ClCompile Include="parse_parameter.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

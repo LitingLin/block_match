@@ -18,13 +18,7 @@
     <ClCompile Include="mexFunction.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mxUtils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="utils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dllmain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="generate_result.c">
@@ -36,14 +30,8 @@
     <ClCompile Include="parse_parameter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="logging.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mxUtils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
