@@ -2,19 +2,18 @@
 
 #include "lib_match.h"
 
-extern "C"
-enum LibMatchErrorCode arrayMatchFinalize(void *instance)
+LibMatchErrorCode arrayMatchFinalize(void *instance)
 {
-	LibMatchErrorCode errorCode = LibMatchErrorOk;
+	LibMatchErrorCode errorCode = LibMatchErrorCode::success;
 	ArrayMatchContext *context = (ArrayMatchContext *)instance;
 	cudaError_t cudaError = cudaFree(context->deviceBufferA);
 	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorInternal;
+		errorCode = LibMatchErrorCode::errorInternal;
 		setCudaLastErrorString(cudaError, "Internal Error: in calling cudaFree");
 	}
 	cudaError = cudaFreeHost(context->result);
 	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorInternal;
+		errorCode = LibMatchErrorCode::errorInternal;
 		setCudaLastErrorString(cudaError, "Internal Error: in calling cudaFreeHost");
 	}
 	free(context);

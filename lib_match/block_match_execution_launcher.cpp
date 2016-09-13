@@ -145,7 +145,7 @@
 
 
 extern "C"
-bool process_local(void *_instance, float *matA, float *matB, enum LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
+bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {/*
 	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
 	ThreadPool &pool = globalContext.pool;
@@ -325,10 +325,9 @@ return false;
 }
 
 
-extern "C"
-bool blockMatchExecute(void *_instance, float *matA, float *matB, enum LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
+bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {
-	struct BlockMatchContext *instance = (struct BlockMatchContext *)_instance;
+	struct BlockMatchContext *instance = static_cast<struct BlockMatchContext *>(_instance);
 	ThreadPool &pool = globalContext.pool;
 
 	unsigned numberOfThreads = globalContext.numberOfThreads;

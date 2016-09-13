@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="logging.c">
+    <ClCompile Include="parsing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="utils.c">
+    <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="initialize.c">
+    <ClCompile Include="initialize.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parsing.c">
+    <ClCompile Include="logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

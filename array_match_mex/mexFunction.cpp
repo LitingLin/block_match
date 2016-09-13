@@ -1,5 +1,6 @@
 #include "common.h"
 
+extern "C"
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
@@ -11,7 +12,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		nlhs, plhs,
 		nrhs, prhs);
 
-	if (errorWithMessage.error != libMatchMexOk) {
+	if (errorWithMessage.error != LibMatchMexError::success) {
 		mexErrMsgTxt(errorWithMessage.message);
 		return;
 	}
@@ -21,8 +22,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	int totalSize = lengthOfArray * numberOfArray;
 	float *A;
 	float *B;
-	A = malloc(totalSize * 2 * sizeof(float));
-	if (A == NULL)
+	A = static_cast<float *>(malloc(totalSize * 2 * sizeof(float)));
+	if (A == nullptr)
 	{
 		snprintf(errorWithMessage.message, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, 
 			"Malloc failed, need %d bytes for normal memory allocation, %d bytes for page locked memory allocation.\n",
@@ -38,16 +39,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH + LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
 
 	void *arrayMatchInstance;
-	enum LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance, numberOfArray, lengthOfArray);
-	if (errorCode != LibMatchErrorOk)
+	LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance, numberOfArray, lengthOfArray);
+	if (errorCode != LibMatchErrorCode::success)
 	{		
 		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		if (errorCode == LibMatchErrorMemoryAllocation || errorCode == LibMatchErrorPageLockedMemoryAllocation)
+		if (errorCode == LibMatchErrorCode::errorMemoryAllocation || errorCode == LibMatchErrorCode::errorPageLockedMemoryAllocation)
 			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
 				"Memory allocation failed, need %d bytes for normal memory allocation, %d bytes for page locked memory allocation.\n",
 				buffer, getMaximumMemoryAllocationSize(lengthOfArray, numberOfArray) + arrayMatchGetMaximumMemoryAllocationSize(numberOfArray, lengthOfArray),
 				arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArray, lengthOfArray));
-		else if (errorCode == LibMatchErrorGpuMemoryAllocation)
+		else if (errorCode == LibMatchErrorCode::errorGpuMemoryAllocation)
 			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
 				"Gpu Memory allocation failed, need %d bytes.\n",
 				buffer, arrayMatchGetMaximumGpuMemoryAllocationSize(numberOfArray, lengthOfArray));
@@ -60,7 +61,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	
 	float *result;
 	errorCode = arrayMatchExecute(arrayMatchInstance, A, B, context.method, &result);
-	if (errorCode != LibMatchErrorOk)
+	if (errorCode != LibMatchErrorCode::success)
 	{
 		arrayMatchFinalize(arrayMatchInstance);
 		free(A);
@@ -77,7 +78,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	convertArrayFromFloatToDouble(result, mxResult, numberOfArray);
 
 	errorCode = arrayMatchFinalize(arrayMatchInstance);
-	if (errorCode != LibMatchErrorOk)
+	if (errorCode != LibMatchErrorCode::success)
 	{
 		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
 		mexErrMsgTxt(buffer);

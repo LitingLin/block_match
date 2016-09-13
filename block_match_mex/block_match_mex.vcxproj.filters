@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mexFunction.c">
+    <ClCompile Include="generate_result.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="utils.c">
+    <ClCompile Include="mexFunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="generate_result.c">
+    <ClCompile Include="parse_parameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="validate_parameter.c">
+    <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parse_parameter.c">
+    <ClCompile Include="validate_parameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mexFunction.c">
+    <ClCompile Include="mexFunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parse_parameter.c">
+    <ClCompile Include="parse_parameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

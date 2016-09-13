@@ -1,9 +1,9 @@
 #include "lib_match_mex_common.h"
 #include <stdarg.h>
 
-struct LibMatchMexErrorWithMessage generateErrorMessage(enum ArrayMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...)
+LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...)
 {
-	struct LibMatchMexErrorWithMessage errorWithMessage = { error, "" };
+	LibMatchMexErrorWithMessage errorWithMessage = { error, "" };
 	va_list args;
 	va_start(args, message);
 	snprintf(errorWithMessage.message, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, message, args);
@@ -25,4 +25,9 @@ void convertArrayFromFloatToDouble(const float *source, double *destination, siz
 	{
 		destination[i] = source[i];
 	}
+}
+
+LibMatchMexErrorWithMessage internalErrorMessage()
+{
+	return generateErrorMessage(LibMatchMexError::errorInternal, "Unknown internal error.");
 }

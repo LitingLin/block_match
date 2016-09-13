@@ -84,9 +84,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mexFunction.c" />
-    <ClCompile Include="parse_parameter.c" />
-    <ClCompile Include="utils.c" />
+    <ClCompile Include="mexFunction.cpp" />
+    <ClCompile Include="parse_parameter.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

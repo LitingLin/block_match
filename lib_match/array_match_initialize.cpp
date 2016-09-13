@@ -20,18 +20,17 @@ size_t getPageLockedMemoryAllocationSize(int numberOfArray)
 	return numberOfArray * sizeof(float);
 }
 
-extern "C"
-enum LibMatchErrorCode arrayMatchInitialize(void **instance,
+LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray)
 {
 	if (!globalContext.hasGPU)
-		return LibMatchErrorCuda;
+		return LibMatchErrorCode::errorCuda;
 
 	LibMatchErrorCode errorCode;
 
-	ArrayMatchContext *context = (ArrayMatchContext *)malloc(sizeof(ArrayMatchContext));
+	ArrayMatchContext *context = static_cast<ArrayMatchContext *>(malloc(sizeof(ArrayMatchContext)));
 	if (context == nullptr) {
-		errorCode = LibMatchErrorMemoryAllocation;
+		errorCode = LibMatchErrorCode::errorMemoryAllocation;
 
 		setLastErrorString("Error in memory allocation.");
 
@@ -42,7 +41,7 @@ enum LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	cudaError_t cudaError = cudaMallocHost(&result, getPageLockedMemoryAllocationSize(numberOfArray));
 	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorPageLockedMemoryAllocation;
+		errorCode = LibMatchErrorCode::errorPageLockedMemoryAllocation;
 
 		setCudaLastErrorString(cudaError, "Error in page locked memory allocation.\n");
 
@@ -66,7 +65,7 @@ enum LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	cudaError = cudaMalloc(&deviceBufferA, (deviceBufferASize + deviceBufferBSize + deviceBufferCSize) * sizeof(float));
 	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorGpuMemoryAllocation;
+		errorCode = LibMatchErrorCode::errorGpuMemoryAllocation;
 
 		setCudaLastErrorString(cudaError, "Error in gpu memory allocation.\n");
 
@@ -85,7 +84,7 @@ enum LibMatchErrorCode arrayMatchInitialize(void **instance,
 	context->numberOfThreads = numberOfThreads;
 
 	*instance = context;
-	errorCode = LibMatchErrorOk;
+	errorCode = LibMatchErrorCode::success;
 
 	return errorCode;
 
@@ -99,19 +98,16 @@ ContextAllocationFailed:
 	return errorCode;
 }
 
-extern "C"
 size_t arrayMatchGetMaximumMemoryAllocationSize(int numberOfArray, int lengthOfArray)
 {
 	return sizeof(ArrayMatchContext);
 }
 
-extern "C"
 size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int numberOfArray, int lengthOfArray)
 {
 	return getGpuMemoryAllocationSize(lengthOfArray);
 }
 
-extern "C"
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int lengthOfArray)
 {
 	return getPageLockedMemoryAllocationSize(numberOfArray);

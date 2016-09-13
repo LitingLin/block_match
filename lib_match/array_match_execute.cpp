@@ -72,11 +72,10 @@ unsigned arrayMatchWorker(float *A, float *B, float *C,
 	return 0;
 }
 
-extern "C"
-enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enum LibMatchMeasureMethod method,
+LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatchMeasureMethod method,
 	float **_result)
 {
-	LibMatchErrorCode errorCode = LibMatchErrorOk;
+	LibMatchErrorCode errorCode = LibMatchErrorCode::success;
 	ArrayMatchContext *context = (ArrayMatchContext *)instance;
 
 	int numberOfArray = context->numberOfArray;
@@ -102,13 +101,13 @@ enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enu
 
 	if (parameterBuffer.bad_alloc()) {
 		setLastErrorString("Error: in allocate memory for parameterBuffer");
-		return LibMatchErrorMemoryAllocation;
+		return LibMatchErrorCode::errorMemoryAllocation;
 	}
 
 	StackVector<void *, 2>taskHandle(numberOfThreads);
 	if (taskHandle.bad_alloc()) {
 		setLastErrorString("Error: in allocate memory for taskHandle");
-		return LibMatchErrorMemoryAllocation;
+		return LibMatchErrorCode::errorMemoryAllocation;
 	}
 
 	int perThreadNumberOfArray = numberOfArray / numberOfThreads;
@@ -137,16 +136,16 @@ enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enu
 		c_numberOfArray, lengthOfArray,
 		numberOfGPUDeviceMultiProcessor,numberOfGPUProcessorThread };
 
-		if (method == LIB_MATCH_MSE)
+		if (method == LibMatchMeasureMethod::mse)
 			taskHandle[indexOfThread] =
 			thread_pool_launcher(pool, (arrayMatchWorker<arrayMatchMse>), parameterBuffer[indexOfThread]);
-		else if (method == LIB_MATCH_CC)
+		else if (method == LibMatchMeasureMethod::cc)
 			taskHandle[indexOfThread] =
 			thread_pool_launcher(pool, (arrayMatchWorker<arrayMatchCc>), parameterBuffer[indexOfThread]);
 		else
 		{
 			setLastErrorString("Measure Method hasn't implement yet");
-			return LibMatchErrorInternal;
+			return LibMatchErrorCode::errorInternal;
 		}
 	}
 
@@ -159,12 +158,12 @@ enum LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, enu
 	{
 		if (pool.get_rc(taskHandle[i]) != 0) {
 			setLastErrorString("Internal CUDA error");
-			errorCode = LibMatchErrorCuda;
+			errorCode = LibMatchErrorCode::errorCuda;
 		}
 		pool.release(taskHandle[i]);
 	}
 
-	if (errorCode == LibMatchErrorOk)
+	if (errorCode == LibMatchErrorCode::success)
 	{
 		*_result = result;
 	}

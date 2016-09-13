@@ -493,7 +493,6 @@ release_instance:
 	return false;
 }
 
-extern "C"
 bool blockMatchInitialize(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int searchRegion_M, int searchRegion_N,

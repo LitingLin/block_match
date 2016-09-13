@@ -126,10 +126,10 @@
     <ClInclude Include="lib_match_mex_internal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="initialize.c" />
-    <ClCompile Include="logging.c" />
-    <ClCompile Include="parsing.c" />
-    <ClCompile Include="utils.c" />
+    <ClCompile Include="initialize.cpp" />
+    <ClCompile Include="logging.cpp" />
+    <ClCompile Include="parsing.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,7 +4,6 @@
 
 LibMatchSinkFunction *sinkFunction = nullptr;
 
-extern "C"
 void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction)
 {
 	::sinkFunction = sinkFunction;

@@ -1,23 +1,22 @@
 #pragma once
 
-#include <stdbool.h>
 #include <mex.h>
 
 #include <lib_match.h>
 
-enum LibMatchMexError
+enum class LibMatchMexError
 {
-	libMatchMexOk = 0,
-	libMatchMexErrorNumberOfArguments,
-	libMatchMexErrorTypeOfArgument,
-	libMatchMexErrorNumberOfMatrixDimension,
-	libMatchMexErrorNumberOfMatrixDimensionMismatch,
-	libMatchMexErrorSizeOfMatrixMismatch,
-	libMatchMexErrorSizeOfMatrix,
-	libMatchMexErrorInvalidValue,
-	libMatchMexErrorNotImplemented,
-	libMatchMexErrorOverFlow,
-	libMatchMexErrorInternal
+	success = 0,
+	errorNumberOfArguments,
+	errorTypeOfArgument,
+	errorNumberOfMatrixDimension,
+	errorNumberOfMatrixDimensionMismatch,
+	errorSizeOfMatrixMismatch,
+	errorSizeOfArray,
+	errorInvalidValue,
+	errorNotImplemented,
+	errorOverFlow,
+	errorInternal
 };
 
 #define LIB_MATCH_MEX_MAX_MESSAGE_LENGTH 128
@@ -25,7 +24,7 @@ enum LibMatchMexError
 
 struct LibMatchMexErrorWithMessage
 {
-	enum LibMatchMexError error;
+	LibMatchMexError error;
 	char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
 };
 
@@ -33,9 +32,33 @@ void libMatchMexInitalize();
 
 // Utilities
 
-struct LibMatchMexErrorWithMessage generateErrorMessage(enum ArrayMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...);
+struct LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...);
+struct LibMatchMexErrorWithMessage internalErrorMessage();
 
 void convertArrayFromDoubleToFloat(const double *source, float *destination, size_t size);
 void convertArrayFromFloatToDouble(const float *source, double *destination, size_t size);
 
-enum LibMatchMexError getStringFromMxArray(const mxArray *pa, char *buffer, int bufferLength);
+/* Return:
+ * errorTypeOfArgument
+ * errorSizeOfArray
+ * success
+ */
+LibMatchMexError getStringFromMxArray(const mxArray *pa, char *buffer, int bufferLength);
+
+/* Return:
+ * errorSizeOfArray
+ * errorOverFlow
+ * success
+ */
+LibMatchMexError parse2ElementIntegerParameter(const mxArray *pa,
+	int *parameterA, int *parameterB);
+
+/* Return:
+* errorTypeOfArgument
+* errorNumberOfMatrixDimension
+* errorOverFlow
+* success
+*/
+LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
+	double **pointer,
+	int *size_M, int *size_N);

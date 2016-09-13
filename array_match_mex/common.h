@@ -4,7 +4,7 @@
 
 struct ArrayMatchMexContext
 {
-	enum LibMatchMeasureMethod method;
+	LibMatchMeasureMethod method;
 	int numberOfArray;
 	int lengthOfArray;
 

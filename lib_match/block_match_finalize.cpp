@@ -1,10 +1,9 @@
 #include "lib_match_internal.h"
 
-extern "C"
 void blockMatchFinalize(void *_instance)
 {
 	cudaError_t cuda_error;
-	BlockMatchContext *instance = (BlockMatchContext *)_instance;
+	BlockMatchContext *instance = static_cast<BlockMatchContext *>(_instance);
 
 	const unsigned numberOfThreads = globalContext.numberOfThreads;
 

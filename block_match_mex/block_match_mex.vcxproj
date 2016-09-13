@@ -90,11 +90,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="generate_result.c" />
-    <ClCompile Include="mexFunction.c" />
-    <ClCompile Include="parse_parameter.c" />
-    <ClCompile Include="utils.c" />
-    <ClCompile Include="validate_parameter.c" />
+    <ClCompile Include="generate_result.cpp" />
+    <ClCompile Include="mexFunction.cpp" />
+    <ClCompile Include="parse_parameter.cpp" />
+    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="validate_parameter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

@@ -2,12 +2,12 @@
 
 #include <lib_match_mex_common.h>
 
-enum PadMethod
+enum class PadMethod
 {
-	Zero,
-	Circular,
-	Replicate,
-	Symmetric
+	zero,
+	circular,
+	replicate,
+	symmetric
 };
 
 struct PaddingMexContext
@@ -16,12 +16,15 @@ struct PaddingMexContext
 	int image_M;
 	int image_N;
 
-	int pad_M_left;
-	int pad_M_right;
+	int pad_M_pre;
+	int pad_M_post;
 
-	int pad_N_left;
-	int pad_N_right;
+	int pad_N_pre;
+	int pad_N_post;
 
-	enum PadMethod method;
+	PadMethod method;
 };
 
+struct LibMatchMexErrorWithMessage parseParameter(struct PaddingMexContext *context,
+	int nlhs, mxArray *plhs[],
+	int nrhs, const mxArray *prhs[]);

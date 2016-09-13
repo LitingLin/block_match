@@ -1,20 +1,21 @@
 #include "common.h"
 
+extern "C"
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
 	libMatchMexInitalize();
-	struct LibBlockMatchMexContext context;
+	struct BlockMatchMexContext context;
 	struct LibMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
 
-	if (errorMessage.error != libMatchMexOk)
+	if (errorMessage.error != LibMatchMexError::success)
 	{
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
 	errorMessage = validateParameter(&context);
 
-	if (errorMessage.error != libMatchMexOk)
+	if (errorMessage.error != LibMatchMexError::success)
 	{
 		mexErrMsgTxt(errorMessage.message);
 		return;
@@ -24,13 +25,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	int sequenceBSize = context.sequenceBMatrixDimensions[0] * context.sequenceBMatrixDimensions[1];
 
 	float *sequenceAPointer_converted, *sequenceBPointer_converted;
-	sequenceAPointer_converted = malloc(sequenceASize * sizeof(float));
+	sequenceAPointer_converted = static_cast<float*>(malloc(sequenceASize * sizeof(float)));
 	if (!sequenceAPointer_converted) {
 		mexErrMsgTxt("malloc failed\n");
 		return;
 	}
 
-	sequenceBPointer_converted = malloc(sequenceBSize * sizeof(float));
+	sequenceBPointer_converted = static_cast<float*>(malloc(sequenceBSize * sizeof(float)));
 	if (!sequenceBPointer_converted)
 	{
 		free(sequenceAPointer_converted);
