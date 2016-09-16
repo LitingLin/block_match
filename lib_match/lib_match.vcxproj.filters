@@ -19,9 +19,6 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="block_match.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,14 +28,8 @@
     <ClCompile Include="thread_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_internal.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stack_vector.hpp">
       <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="block_padding.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="block_match_finalize.cpp">
       <Filter>Source Files</Filter>
@@ -70,7 +61,19 @@
     <ClCompile Include="array_match_finalize.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="padding.cpp">
+    <ClCompile Include="lib_match.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib_match_internal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pad.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_copying.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_padding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

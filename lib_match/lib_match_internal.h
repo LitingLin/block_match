@@ -28,10 +28,16 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
+typedef void PadMethod(const float *old_ptr, float *new_ptr, 
+	size_t old_width, size_t old_height, 
+	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+
+
 /* M means the first dimension, N means the second dimension
 ** So, two dimensions is assumed
 */
 
+// TODO support int64
 struct BlockMatchContext
 {
 	int matA_M;
@@ -48,12 +54,25 @@ struct BlockMatchContext
 	int strideA_N;
 	int strideB_M;
 	int strideB_N;
-
+	// TODO remove
 	int sequenceAPadding_M;
 	int sequenceAPadding_N;
 	int sequenceBPadding_M;
 	int sequenceBPadding_N;
+
+	int sequenceAPadding_M_pre;
+	int sequenceAPadding_M_post;
+	int sequenceAPadding_N_pre;
+	int sequenceAPadding_N_post;
+	int sequenceBPadding_M_pre;
+	int sequenceBPadding_M_post;
+	int sequenceBPadding_N_pre;
+	int sequenceBPadding_N_post;
 	
+	PadMethod* padMethodPointer;
+	float *padded_A;
+	float *padded_B;
+
 	float *buffer_A;
 	float *buffer_B;
 	float *result_buffer;
@@ -185,5 +204,3 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
-void zeroPadding(float *old_ptr, float *new_ptr, 
-	size_t channels, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);

@@ -324,6 +324,30 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 return false;
 }
 
+bool blockMatchExcecute(void *_instance, float *A, float *B, 
+	float **_C, int **_index_x = nullptr, int **_index_y = nullptr,
+	float **_padded_A, float **_padded_B)
+{
+	BlockMatchContext *instance = static_cast<BlockMatchContext*>(_instance);
+
+	float *padded_A = instance->padded_A;
+	float *padded_B = instance->padded_B;
+	int A_M = instance->matA_M,
+		A_N = instance->matA_N,
+		B_M = instance->matB_M,
+		B_N = instance->matB_N,
+		A_M_padPre = instance->sequenceAPadding_M_pre,
+		A_M_padPost = instance->sequenceAPadding_M_post,
+		A_N_padPre = instance->sequenceAPadding_N_pre,
+		A_N_padPost = instance->sequenceAPadding_N_post,
+		B_M_padPre = instance->sequenceBPadding_M_pre,
+		B_M_padPost = instance->sequenceBPadding_M_post,
+		B_N_padPre = instance->sequenceBPadding_N_pre,
+		B_N_padPost = instance->sequenceBPadding_N_post;
+
+	instance->padMethodPointer(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
+	instance->padMethodPointer(B, padded_B, B_M,B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+}
 
 bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
 {

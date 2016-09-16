@@ -72,10 +72,18 @@ LIB_MATCH_EXPORT
 void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction);
 
 template <typename T>
-void zeroPadding(T *old_ptr, T *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void zeroPadding(const T *old_ptr, T *new_ptr, 
+	size_t old_width, size_t old_height, 
+	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 template <typename T>
-void circularPadding(T *old_ptr, T *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void circularPadding(const T *old_ptr, T *new_ptr,
+	size_t old_width, size_t old_height,
+	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 template <typename T>
-void replicatePadding(T *old_ptr, T *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void replicatePadding(const T *old_ptr, T *new_ptr,
+	size_t old_width, size_t old_height,
+	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 template <typename T>
-void symmetricPadding(T *old_ptr, T *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void symmetricPadding(const T *old_ptr, T *new_ptr,
+	size_t old_width, size_t old_height,
+	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);

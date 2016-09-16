@@ -91,7 +91,14 @@ void sortWithIndex(int *&index_x, int *&index_y, float *&result,
 		result_buffer += numberOfBlockBPerBlockA;
 	}
 }
+inline
+void dummySort(int *&index_x, int *&index_y, float *&result,
+	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	const int *index_buffer, int *index_buffer_sort)
+{
 
+}
 inline
 void recordIndex(int *&index_x_buffer, int *&index_y_buffer, int index_x, int index_y)
 {
