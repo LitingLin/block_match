@@ -40,10 +40,10 @@ typedef void PadMethod(const float *old_ptr, float *new_ptr,
 // TODO support int64
 struct BlockMatchContext
 {
-	int matA_M;
-	int matA_N;
-	int matB_M;
-	int matB_N;
+	int matrixA_M;
+	int matrixA_N;
+	int matrixB_M;
+	int matrixB_N;
 	int block_M;
 	int block_N;
 	
@@ -70,34 +70,34 @@ struct BlockMatchContext
 	int sequenceBPadding_N_post;
 	
 	PadMethod* padMethodPointer;
-	float *padded_A;
-	float *padded_B;
+	float *padded_matrixA;
+	float *padded_matrixB;
 
-	float *buffer_A;
-	float *buffer_B;
-	float *result_buffer;
-	float *result;
-	float *device_buffer_A;
-	float *device_buffer_B;
-	float *device_result_buffer;
+	float *matrixA_buffer;
+	float *matrixB_buffer;
+	float *matrixC_buffer;
+	float *C;
+	float *matrixA_deviceBuffer;
+	float *matrixB_deviceBuffer;
+	float *matrixC_deviceBuffer;
 
 	int *index_x_buffer;
 	int *index_y_buffer;
 	int *index_x;
 	int *index_y;
 
-	int *index_buffer;
-	int *index_buffer_sort;
+	int *common_buffer;
+	int *indexSorting_buffer;
 
 	int perThreadBufferSize;
 	int numberOfBlockBPerBlockA;
 
 	int result_dims[4];
 
-	int retain;
+	int numberOfIndexRetain;
 	cudaStream_t *stream;
 
-	void *threadHandle;
+	void *threadPoolTaskHandle;
 	std::tuple<float *, float *, float *,
 		float *, int, int, int, int, int, int,
 		float *, int, int,

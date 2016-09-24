@@ -9,9 +9,9 @@
 //
 //template <ProcessFunction processFunction, ProcessFunction_BorderCheck processFunction_borderCheck,
 //	CopyBlockMethod copyBlockAMethod, CopyBlockMethod copyBlockBMethod>
-//	bool processWorker(float *matA, float *matB, float *result,
-//		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
-//		float *bufferB, int matB_M, int matB_N,
+//	bool processWorker(float *matA, float *matB, float *C,
+//		float *bufferA, int matrixA_M, int matrixA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
+//		float *bufferB, int matrixB_M, int matrixB_N,
 //		int block_M, int block_N,
 //		int searchRegion_M, int searchRegion_N,
 //		int strideA_M, int strideA_N,
@@ -24,7 +24,7 @@
 //
 //	float *c_bufferA = bufferA;
 //	float *c_bufferB = bufferB;
-//	float *c_result = result;
+//	float *c_result = C;
 //
 //	int neighbour_M_middle = searchRegion_M / 2;
 //	int neighbour_N_middle = searchRegion_N / 2;
@@ -38,7 +38,7 @@
 //	{
 //		for (int ind_A_N = index_A_N_begin; ind_A_N < index_A_N_end; ind_A_N += strideA_N)
 //		{
-//			copyBlockAMethod(c_bufferA, matA, matA_M, matA_N, ind_A_M, ind_A_N, block_M, block_N);
+//			copyBlockAMethod(c_bufferA, matA, matrixA_M, matrixA_N, ind_A_M, ind_A_N, block_M, block_N);
 //
 //#ifndef NDEBUG
 //			int sequenceBCount = 0;
@@ -52,7 +52,7 @@
 //				{
 //					int index_y = ind_A_N - neighbour_N_middle + ind_neighbour_N;
 //
-//					copyBlockBMethod(c_bufferB, matB, matB_M, matB_N, index_x, index_y, block_M, block_N);
+//					copyBlockBMethod(c_bufferB, matB, matrixB_M, matrixB_N, index_x, index_y, block_M, block_N);
 //
 //					c_bufferB += blockSize;
 //
@@ -155,18 +155,18 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 	StackVector<void *, 4>task_handle(numberOfThreads);
 	if (task_handle.bad_alloc()) return false;
 
-	float *result = instance->result,
-		*bufferA = instance->buffer_A,
-		*bufferB = instance->buffer_B,
-		*result_buffer = instance->result_buffer,
-		*device_bufferA = instance->device_buffer_A,
-		*device_bufferB = instance->device_buffer_B,
-		*device_bufferC = instance->device_result_buffer;
+	float *C = instance->C,
+		*bufferA = instance->matrixA_buffer,
+		*bufferB = instance->matrixB_buffer,
+		*matrixC_buffer = instance->matrixC_buffer,
+		*device_bufferA = instance->matrixA_deviceBuffer,
+		*device_bufferB = instance->matrixB_deviceBuffer,
+		*device_bufferC = instance->matrixC_deviceBuffer;
 
-	int matA_M = instance->matA_M,
-		matA_N = instance->matA_N,
-		matB_M = instance->matB_M,
-		matB_N = instance->matB_N,
+	int matrixA_M = instance->matrixA_M,
+		matrixA_N = instance->matrixA_N,
+		matrixB_M = instance->matrixB_M,
+		matrixB_N = instance->matrixB_N,
 		block_M = instance->block_M,
 		block_N = instance->block_N,
 		strideA_M = instance->strideA_M,
@@ -182,12 +182,12 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 		result_dim1 = instance->result_dims[1],
 		result_dim2 = instance->result_dims[2],
 		result_dim3 = instance->result_dims[3],
-		retain = instance->retain,
+		numberOfIndexRetain = instance->numberOfIndexRetain,
 		perThreadBufferSize = instance->perThreadBufferSize,
 		*index_x = instance->index_x, *index_y = instance->index_y,
 		*index_x_buffer = instance->index_x_buffer, *index_y_buffer = instance->index_y_buffer,
-		*index_buffer = instance->index_buffer,
-		*index_buffer_sort = instance->index_buffer_sort;
+		*common_buffer = instance->common_buffer,
+		*indexSorting_buffer = instance->indexSorting_buffer;
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -215,7 +215,7 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 		return false;
 
 	int ind_A_N_begin = -sequenceAPadding_N;
-	int ind_A_N_end = determineEndOfIndex(matA_N, sequenceAPadding_N, block_N);
+	int ind_A_N_end = determineEndOfIndex(matrixA_N, sequenceAPadding_N, block_N);
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
@@ -237,13 +237,13 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 
 		float *c_buffer_A = bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_buffer_B = bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_result = result + buffer_index * result_dim1 * result_dim2;
-		float *c_result_buffer = result_buffer + i * perThreadBufferSize;
+		float *c_result = C + buffer_index * result_dim1 * result_dim2;
+		float *c_result_buffer = matrixC_buffer + i * perThreadBufferSize;
 		int *c_index_x = index_x + buffer_index * result_dim1 * result_dim2;
 		int *c_index_y = index_y + buffer_index * result_dim1 * result_dim2;
 		int *c_index_x_buffer = index_x_buffer + i*perThreadBufferSize;
 		int *c_index_y_buffer = index_y_buffer + i*perThreadBufferSize;
-		int *c_index_buffer_sort = index_buffer_sort + i*numberOfBlockBPerBlockA;
+		int *c_index_buffer_sort = indexSorting_buffer + i*numberOfBlockBPerBlockA;
 
 		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
@@ -255,8 +255,8 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 
 		para_tuple[i] =
 			std::make_tuple(matA, matB, c_result,
-				c_buffer_A, matA_M, matA_N, c_index_A_M_begin, c_index_A_M_end, ind_A_N_begin, ind_A_N_end,
-				c_buffer_B, matB_M, matB_N,
+				c_buffer_A, matrixA_M, matrixA_N, c_index_A_M_begin, c_index_A_M_end, ind_A_N_begin, ind_A_N_end,
+				c_buffer_B, matrixB_M, matrixB_N,
 				c_result_buffer,
 				block_M, block_N,
 				sequenceBPadding_M, sequenceBPadding_N,
@@ -265,13 +265,13 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 				numberOfBlockBPerBlockA,
 				c_device_buffer_A, c_device_buffer_B, c_device_buffer_C,
 				c_index_x, c_index_y, c_index_x_buffer, c_index_y_buffer,
-				index_buffer, c_index_buffer_sort,
-				retain,
+				common_buffer, c_index_buffer_sort,
+				numberOfIndexRetain,
 				streamA, streamB,
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 
 		if (method == LIB_MATCH_MSE)
-			if (retain)
+			if (numberOfIndexRetain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker<block_match_mse_check_border, block_match_mse_check_border,
@@ -286,7 +286,7 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 					sortWithIndex>),
 					para_tuple[i]);
 		else if (method == LIB_MATCH_CC)
-			if (retain)
+			if (numberOfIndexRetain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker<block_match_cc_check_border, block_match_cc_check_border,
@@ -316,26 +316,25 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 	{
 		*_index_x = index_x;
 		*_index_y = index_y;
-		*_result = result;
+		*_result = C;
 		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
 	}
 
 	return !isFailed;*/
-return false;
+	return false;
 }
 
-bool blockMatchExcecute(void *_instance, float *A, float *B, 
-	float **_C, int **_index_x = nullptr, int **_index_y = nullptr,
-	float **_padded_A, float **_padded_B)
+bool blockMatchExecute_(void *_instance, float *A, float *B,
+	float *C,
+	float *padded_A, float *padded_B,
+	int *index_x = nullptr, int *index_y = nullptr)
 {
 	BlockMatchContext *instance = static_cast<BlockMatchContext*>(_instance);
 
-	float *padded_A = instance->padded_A;
-	float *padded_B = instance->padded_B;
-	int A_M = instance->matA_M,
-		A_N = instance->matA_N,
-		B_M = instance->matB_M,
-		B_N = instance->matB_N,
+	int A_M = instance->matrixA_M,
+		A_N = instance->matrixA_N,
+		B_M = instance->matrixB_M,
+		B_N = instance->matrixB_N,
 		A_M_padPre = instance->sequenceAPadding_M_pre,
 		A_M_padPost = instance->sequenceAPadding_M_post,
 		A_N_padPre = instance->sequenceAPadding_N_pre,
@@ -346,7 +345,34 @@ bool blockMatchExcecute(void *_instance, float *A, float *B,
 		B_N_padPost = instance->sequenceBPadding_N_post;
 
 	instance->padMethodPointer(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
-	instance->padMethodPointer(B, padded_B, B_M,B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+	instance->padMethodPointer(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+
+	unsigned numberOfThreads = globalContext.numberOfThreads;
+	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+	
+
+	for (unsigned i=0;i<numberOfThreads;++i)
+	{
+		float *c_buffer_A = bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
+		float *c_buffer_B = bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
+		float *c_result = result + buffer_index * result_dim1 * result_dim2;
+		float *c_result_buffer = result_buffer + i * perThreadBufferSize;
+		int *c_index_x = index_x + buffer_index * result_dim1 * result_dim2;
+		int *c_index_y = index_y + buffer_index * result_dim1 * result_dim2;
+		int *c_index_x_buffer = index_x_buffer + i*perThreadBufferSize;
+		int *c_index_y_buffer = index_y_buffer + i*perThreadBufferSize;
+		int *c_index_buffer_sort = index_buffer_sort + i*numberOfBlockBPerBlockA;
+
+		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
+		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
+		float *c_device_buffer_C = device_bufferC + i * perThreadBufferSize;
+
+
+	}
+
+	return true;
 }
 
 bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasureMethod method, int **_index_x, int **_index_y, float **_result, int *dimensionOfResult)
@@ -359,18 +385,18 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 	StackVector<void *, 4>task_handle(numberOfThreads);
 	if (task_handle.bad_alloc()) return false;
 
-	float *result = instance->result,
-		*bufferA = instance->buffer_A,
-		*bufferB = instance->buffer_B,
-		*result_buffer = instance->result_buffer,
-		*device_bufferA = instance->device_buffer_A,
-		*device_bufferB = instance->device_buffer_B,
-		*device_bufferC = instance->device_result_buffer;
+	float *result = instance->C,
+		*bufferA = instance->matrixA_buffer,
+		*bufferB = instance->matrixB_buffer,
+		*result_buffer = instance->matrixC_buffer,
+		*device_bufferA = instance->matrixA_deviceBuffer,
+		*device_bufferB = instance->matrixB_deviceBuffer,
+		*device_bufferC = instance->matrixC_deviceBuffer;
 
-	int matA_M = instance->matA_M,
-		matA_N = instance->matA_N,
-		matB_M = instance->matB_M,
-		matB_N = instance->matB_N,
+	int matA_M = instance->matrixA_M,
+		matA_N = instance->matrixA_N,
+		matB_M = instance->matrixB_M,
+		matB_N = instance->matrixB_N,
 		block_M = instance->block_M,
 		block_N = instance->block_N,
 		strideA_M = instance->strideA_M,
@@ -386,18 +412,18 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 		result_dim1 = instance->result_dims[1],
 		result_dim2 = instance->result_dims[2],
 		result_dim3 = instance->result_dims[3],
-		retain = instance->retain,
+		retain = instance->numberOfIndexRetain,
 		perThreadBufferSize = instance->perThreadBufferSize,
 		*index_x = instance->index_x, *index_y = instance->index_y,
 		*index_x_buffer = instance->index_x_buffer, *index_y_buffer = instance->index_y_buffer,
-		*index_buffer = instance->index_buffer,
-		*index_buffer_sort = instance->index_buffer_sort;
+		*index_buffer = instance->common_buffer,
+		*index_buffer_sort = instance->indexSorting_buffer;
 
 	auto *parameterBuffer = instance->parameterBuffer;
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-	
+
 	int ind_A_N_begin = -sequenceAPadding_N;
 	int ind_A_N_end = determineEndOfIndex(matA_N, sequenceAPadding_N, block_N);
 
@@ -455,7 +481,7 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 		/*
 		if (method == LIB_MATCH_MSE)
-			if (retain)
+			if (numberOfIndexRetain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_mse_check_border, block_match_mse_check_border,
@@ -470,7 +496,7 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 					sortWithIndex>),
 					parameterBuffer[i]);
 		else if (method == LIB_MATCH_CC)
-			if (retain)
+			if (numberOfIndexRetain)
 				task_handle[i] =
 				thread_pool_launcher(pool,
 				(processWorker_full<block_match_cc_check_border, block_match_cc_check_border,

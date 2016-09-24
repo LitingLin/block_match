@@ -13,10 +13,10 @@ void blockMatchFinalize(void *_instance)
 			logger.warn("cudaStreamDestroy failed with {}, message {}", cuda_error, cudaGetErrorString(cuda_error));
 	}
 
-	cuda_error = cudaFreeHost(instance->buffer_A);
+	cuda_error = cudaFreeHost(instance->matrixA_buffer);
 	if (cuda_error != cudaSuccess)
 		logger.warn("cudaFreeHost failed with {}, message {}", cuda_error, cudaGetErrorString(cuda_error));
-	cuda_error = cudaFree(instance->device_buffer_A);
+	cuda_error = cudaFree(instance->matrixA_deviceBuffer);
 	if (cuda_error != cudaSuccess)
 		logger.warn("cudaFree failed with {}, message {}", cuda_error, cudaGetErrorString(cuda_error));
 

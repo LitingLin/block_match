@@ -99,11 +99,20 @@ void dummySort(int *&index_x, int *&index_y, float *&result,
 {
 
 }
+
+typedef void RecordIndex(int*&, int*&, int, int);
+
 inline
 void recordIndex(int *&index_x_buffer, int *&index_y_buffer, int index_x, int index_y)
 {
 	*index_x_buffer++ = index_x;
 	*index_y_buffer++ = index_y;
+}
+
+inline
+void dummyRecordIndex(int *&index_x_buffer, int *&index_y_buffer, int index_x, int index_y)
+{
+	
 }
 
 typedef void DetermineBlockBIndex(int &, int &, int, int, int, int, int);
@@ -124,14 +133,15 @@ void determineBlockB_index_full(int &indexB_begin, int &indexB_end, int matB,int
 
 // TODO: Fix busy waiting gpu tasks
 template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex determineBlockB_N_index,
+	RecordIndex recordIndexMethod,
 	ProcessFunction processFunctionA, ProcessFunction processFunctionB,
 	CopyBlockMethod copyBlockAMethod, CopyBlockMethod copyBlockBMethod,
 	SortMethod sortMethod>
-	bool processWorker(float *matA, float *matB, float *result,
-		float *bufferA, int matA_M, int matA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
-		float *bufferB, int matB_M, int matB_N,
-		float *resultBuffer,
-		float *device_bufferA, float *device_bufferB, float *device_bufferC,
+	bool processWorker(float *matrixA, float *matrixB, float *matrixC,
+		float *matrixA_buffer, int matrixA_M, int matrixA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
+		float *matrixB_buffer, int matrixB_M, int matrixB_N,
+		float *matrixC_buffer,
+		float *matrixA_deviceBuffer, float *matrixB_deviceBuffer, float *matrixC_deviceBuffer,
 		int *index_x, int *index_y, int *index_x_buffer, int *index_y_buffer,
 		int *rawIndexTemplate, int *rawIndexBuffer,
 		int block_M, int block_N,
@@ -140,23 +150,23 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 		int strideB_M, int strideB_N,
 		int neighbour_M, int neighbour_N,
 		int numberOfBlockBPerBlockA,
-		int retain,
+		int numberOfIndexRetain,
 		/* Gpu Stuff */
 		cudaStream_t streamA, cudaStream_t streamB, // TODO: Double buffering
 		int maxNumberOfThreadsPerProcessor,
 		int numberOfSubmitThreadsPerProcessor, int numberOfSubmitProcessors, int numberOfIteration)
 {
 	int blockSize = block_M * block_N;
-	float *c_bufferA = bufferA;
-	float *c_bufferB = bufferB;
-	float *c_result = result;
+	float *c_bufferA = matrixA_buffer;
+	float *c_bufferB = matrixB_buffer;
+	float *c_result = matrixC;
 	int *c_index_x = index_x, *c_index_y = index_y,
 		*c_index_x_buffer = index_x_buffer, *c_index_y_buffer = index_y_buffer;
 
 	int numberOfBlockA = 0;
 	
-	if (!retain)
-		retain = numberOfBlockBPerBlockA;
+	if (!numberOfIndexRetain)
+		numberOfIndexRetain = numberOfBlockBPerBlockA;
 
 	int indexOfIteration = 0;
 
@@ -164,21 +174,21 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 	{
 		for (int indexA_N = index_A_N_begin; indexA_N < index_A_N_end; indexA_N += strideA_N)
 		{
-			copyBlockAMethod(c_bufferA, matA, matA_M, matA_N, indexA_M, indexA_N, block_M, block_N);
+			copyBlockAMethod(c_bufferA, matrixA, matrixA_M, matrixA_N, indexA_M, indexA_N, block_M, block_N);
 
 #ifndef NDEBUG
 			int sequenceBCount = 0;
 #endif
 			int indexB_M_begin, indexB_M_end; 
-			determineBlockB_M_index(indexB_M_begin, indexB_M_end,matB_M, padB_M, block_M, neighbour_M, indexA_M);
+			determineBlockB_M_index(indexB_M_begin, indexB_M_end,matrixB_M, padB_M, block_M, neighbour_M, indexA_M);
 			for (int indexB_M = indexB_M_begin; indexB_M < indexB_M_end; indexB_M += strideB_M)
 			{
 				int indexB_N_begin, indexB_N_end;
-				determineBlockB_N_index(indexB_N_begin, indexB_N_end, matB_N, padB_N, block_N, neighbour_N, indexA_N);
+				determineBlockB_N_index(indexB_N_begin, indexB_N_end, matrixB_N, padB_N, block_N, neighbour_N, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					copyBlockBMethod(c_bufferB, matB, matB_M, matB_N, indexB_M, indexB_N, block_M, block_N);
-					recordIndex(c_index_x_buffer, c_index_y_buffer, indexB_M, indexB_N);
+					copyBlockBMethod(c_bufferB, matrixB, matrixB_M, matrixB_N, indexB_M, indexB_N, block_M, block_N);
+					recordIndexMethod(c_index_x_buffer, c_index_y_buffer, indexB_M, indexB_N);
 					c_bufferB += blockSize;
 
 #ifndef NDEBUG
@@ -200,7 +210,7 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 
 			if (indexOfIteration == numberOfIteration)
 			{
-				if (!submitGpuTask<processFunctionA>(bufferA, bufferB, resultBuffer, device_bufferA, device_bufferB, device_bufferC,
+				if (!submitGpuTask<processFunctionA>(matrixA_buffer, matrixB_buffer, matrixC_buffer, matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, streamA))
 					return false;
@@ -214,12 +224,12 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 				c_index_x_buffer = index_x_buffer;
 				c_index_y_buffer = index_y_buffer;
 
-				sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, resultBuffer,
-					numberOfBlockA, numberOfBlockBPerBlockA, retain, rawIndexTemplate, rawIndexBuffer);
+				sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
+					numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain, rawIndexTemplate, rawIndexBuffer);
 
 				//c_result += numTasks;
-				c_bufferA = bufferA;
-				c_bufferB = bufferB;
+				c_bufferA = matrixA_buffer;
+				c_bufferB = matrixB_buffer;
 
 				numberOfBlockA = 0;
 			}
@@ -230,7 +240,7 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 	{
 		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 		
-		if (!submitGpuTask<processFunctionB>(bufferA, bufferB, resultBuffer, device_bufferA, device_bufferB, device_bufferC,
+		if (!submitGpuTask<processFunctionB>(matrixA_buffer, matrixB_buffer, matrixC_buffer, matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 			blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 			(remainBlocks + maxNumberOfThreadsPerProcessor - 1) / maxNumberOfThreadsPerProcessor, maxNumberOfThreadsPerProcessor, streamA))
 			return false;
@@ -239,8 +249,8 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 		if (cuda_error != cudaSuccess)
 			return false;
 
-		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, resultBuffer,
-			numberOfBlockA, numberOfBlockBPerBlockA, retain, rawIndexTemplate, rawIndexBuffer);
+		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
+			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain, rawIndexTemplate, rawIndexBuffer);
 	}
 
 	return true;
