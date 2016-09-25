@@ -28,10 +28,28 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
-typedef void PadMethod(const float *old_ptr, float *new_ptr, 
-	size_t old_width, size_t old_height, 
+typedef void PadMethod(const float *old_ptr, float *new_ptr,
+	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
+typedef void ExecutionMethod(float *matrixA, float *matrixB, float *matrixC,
+	float *matrixA_buffer, int matrixA_M, int matrixA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
+	float *matrixB_buffer, int matrixB_M, int matrixB_N,
+	float *matrixC_buffer,
+	float *matrixA_deviceBuffer, float *matrixB_deviceBuffer, float *matrixC_deviceBuffer,
+	int *index_x, int *index_y, int *index_x_buffer, int *index_y_buffer,
+	int *rawIndexTemplate, int *rawIndexBuffer,
+	int block_M, int block_N,
+	int padB_M, int padB_N,
+	int strideA_M, int strideA_N,
+	int strideB_M, int strideB_N,
+	int neighbour_M, int neighbour_N,
+	int numberOfBlockBPerBlockA,
+	int numberOfIndexRetain,
+	/* Gpu Stuff */
+	cudaStream_t streamA, cudaStream_t streamB, // TODO: Double buffering
+	int maxNumberOfThreadsPerProcessor,
+	int numberOfSubmitThreadsPerProcessor, int numberOfSubmitProcessors, int numberOfIteration);
 
 /* M means the first dimension, N means the second dimension
 ** So, two dimensions is assumed
@@ -46,10 +64,10 @@ struct BlockMatchContext
 	int matrixB_N;
 	int block_M;
 	int block_N;
-	
+
 	int searchRegion_M;
 	int searchRegion_N;
-	
+
 	int strideA_M;
 	int strideA_N;
 	int strideB_M;
@@ -60,39 +78,62 @@ struct BlockMatchContext
 	int sequenceBPadding_M;
 	int sequenceBPadding_N;
 
-	int sequenceAPadding_M_pre;
-	int sequenceAPadding_M_post;
-	int sequenceAPadding_N_pre;
-	int sequenceAPadding_N_post;
-	int sequenceBPadding_M_pre;
-	int sequenceBPadding_M_post;
-	int sequenceBPadding_N_pre;
-	int sequenceBPadding_N_post;
-	
-	PadMethod* padMethodPointer;
+	int matrixAPadding_M_pre;
+	int matrixAPadding_M_post;
+	int matrixAPadding_N_pre;
+	int matrixAPadding_N_post;
+	int matrixBPadding_M_pre;
+	int matrixBPadding_M_post;
+	int matrixBPadding_N_pre;
+	int matrixBPadding_N_post;
+
+	PadMethod* padMethod;
+	ExecutionMethod *executionMethod;
 	float *padded_matrixA;
 	float *padded_matrixB;
 
 	float *matrixA_buffer;
 	float *matrixB_buffer;
 	float *matrixC_buffer;
-	float *C;
 	float *matrixA_deviceBuffer;
 	float *matrixB_deviceBuffer;
 	float *matrixC_deviceBuffer;
 
-	int *index_x_buffer;
-	int *index_y_buffer;
+	int *index_x_sorting_buffer;
+	int *index_y_sorting_buffer;
 	int *index_x;
 	int *index_y;
 
 	int *common_buffer;
-	int *indexSorting_buffer;
+	int *index_raw_sorting_buffer;
+
+	// TODO remove
+	float *C;
+	struct
+	{
+		float **matrixA_padded;
+		float **matrixB_padded;
+		float **matrixA_buffer;
+		float **matrixB_buffer;
+		float **matrixC_buffer;
+		float **matrixA_deviceBuffer;
+		float **matrixB_deviceBuffer;
+		float **matrixC_deviceBuffer;
+
+		int **index_x_sorting_buffer;
+		int **index_y_sorting_buffer;
+		int **index_x;
+		int **index_y;
+
+		int **index_raw_sorting_buffer;
+
+	} perThreadBufferPointer;
+
 
 	int perThreadBufferSize;
 	int numberOfBlockBPerBlockA;
 
-	int result_dims[4];
+	int C_dimensions[4];
 
 	int numberOfIndexRetain;
 	cudaStream_t *stream;
@@ -102,17 +143,22 @@ struct BlockMatchContext
 		float *, int, int, int, int, int, int,
 		float *, int, int,
 		float *,
-		int, int,
-		int, int,
-		int, int,
-		int, int,
-		int,
 		float *, float *, float *,
 		int *, int *, int *, int *,
 		int *, int *,
+		int, int,
+		int, int,
+		int, int,
+		int, int,
+		int, int,
 		int,
-		cudaStream_t, cudaStream_t,
-		int, int > *parameterBuffer;
+		int,
+		/* Gpu Stuff */
+		cudaStream_t, cudaStream_t, // TODO: Double buffering
+		int,
+		int, int, int > *parameterBuffer;
+
+
 };
 
 struct ArrayMatchContext
@@ -150,6 +196,7 @@ namespace lib_match_internal {
 #define thread_pool_launcher(threadPool, function, parameters) lib_match_internal::thread_pool_launcher_helper<decltype(function), function>(threadPool, parameters)
 
 int getLength(int matSize, int paddingSize, int blockSize, int strideSize);
+int getLength(int matSize, int prePaddingSize, int postPaddingSize, int blockSize, int strideSize);
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize);
 void generateIndexSequence(int *index, int size);
 
@@ -192,8 +239,8 @@ cudaError_t arrayMatchCc(float *A, float *B, float *C,
 
 
 size_t arrayMatchPerThreadDeviceBufferASize(const int numberOfGpuDeviceMultiProcessor,
-const int numberOfGpuProcessorThread,
-const int lengthOfArray);
+	const int numberOfGpuProcessorThread,
+	const int lengthOfArray);
 
 size_t arrayMatchPerThreadDeviceBufferBSize(const int numberOfGpuDeviceMultiProcessor,
 	const int numberOfGpuProcessorThread,

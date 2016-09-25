@@ -10,6 +10,11 @@ int getLength(int matSize, int paddingSize, int blockSize, int strideSize)
 	return (matSize + 2 * paddingSize - blockSize) / strideSize + 1;
 }
 
+int getLength(int matSize, int prePaddingSize, int postPaddingSize, int blockSize, int strideSize)
+{
+	return (matSize + prePaddingSize + postPaddingSize - blockSize) / strideSize + 1;
+}
+
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize)
 {
 	return matSize + paddingSize - blockSize + 1;

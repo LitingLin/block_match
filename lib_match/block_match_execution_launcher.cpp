@@ -178,16 +178,16 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 		sequenceBPadding_M = instance->sequenceBPadding_M,
 		sequenceBPadding_N = instance->sequenceBPadding_N,
 		numberOfBlockBPerBlockA = instance->numberOfBlockBPerBlockA,
-		result_dim0 = instance->result_dims[0],
-		result_dim1 = instance->result_dims[1],
-		result_dim2 = instance->result_dims[2],
-		result_dim3 = instance->result_dims[3],
+		result_dim0 = instance->C_dimensions[0],
+		result_dim1 = instance->C_dimensions[1],
+		result_dim2 = instance->C_dimensions[2],
+		result_dim3 = instance->C_dimensions[3],
 		numberOfIndexRetain = instance->numberOfIndexRetain,
 		perThreadBufferSize = instance->perThreadBufferSize,
 		*index_x = instance->index_x, *index_y = instance->index_y,
-		*index_x_buffer = instance->index_x_buffer, *index_y_buffer = instance->index_y_buffer,
+		*index_x_sorting_buffer = instance->index_x_sorting_buffer, *index_y_sorting_buffer = instance->index_y_sorting_buffer,
 		*common_buffer = instance->common_buffer,
-		*indexSorting_buffer = instance->indexSorting_buffer;
+		*index_raw_sorting_buffer = instance->index_raw_sorting_buffer;
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -241,9 +241,9 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 		float *c_result_buffer = matrixC_buffer + i * perThreadBufferSize;
 		int *c_index_x = index_x + buffer_index * result_dim1 * result_dim2;
 		int *c_index_y = index_y + buffer_index * result_dim1 * result_dim2;
-		int *c_index_x_buffer = index_x_buffer + i*perThreadBufferSize;
-		int *c_index_y_buffer = index_y_buffer + i*perThreadBufferSize;
-		int *c_index_buffer_sort = indexSorting_buffer + i*numberOfBlockBPerBlockA;
+		int *c_index_x_buffer = index_x_sorting_buffer + i*perThreadBufferSize;
+		int *c_index_y_buffer = index_y_sorting_buffer + i*perThreadBufferSize;
+		int *c_index_buffer_sort = index_raw_sorting_buffer + i*numberOfBlockBPerBlockA;
 
 		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
@@ -317,7 +317,7 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 		*_index_x = index_x;
 		*_index_y = index_y;
 		*_result = C;
-		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
+		memcpy(dimensionOfResult, instance->C_dimensions, sizeof(*dimensionOfResult) * 4);
 	}
 
 	return !isFailed;*/
@@ -335,41 +335,42 @@ bool blockMatchExecute_(void *_instance, float *A, float *B,
 		A_N = instance->matrixA_N,
 		B_M = instance->matrixB_M,
 		B_N = instance->matrixB_N,
-		A_M_padPre = instance->sequenceAPadding_M_pre,
-		A_M_padPost = instance->sequenceAPadding_M_post,
-		A_N_padPre = instance->sequenceAPadding_N_pre,
-		A_N_padPost = instance->sequenceAPadding_N_post,
-		B_M_padPre = instance->sequenceBPadding_M_pre,
-		B_M_padPost = instance->sequenceBPadding_M_post,
-		B_N_padPre = instance->sequenceBPadding_N_pre,
-		B_N_padPost = instance->sequenceBPadding_N_post;
+		A_M_padPre = instance->matrixAPadding_M_pre,
+		A_M_padPost = instance->matrixAPadding_M_post,
+		A_N_padPre = instance->matrixAPadding_N_pre,
+		A_N_padPost = instance->matrixAPadding_N_post,
+		B_M_padPre = instance->matrixBPadding_M_pre,
+		B_M_padPost = instance->matrixBPadding_M_post,
+		B_N_padPre = instance->matrixBPadding_N_pre,
+		B_N_padPost = instance->matrixBPadding_N_post;
 
-	instance->padMethodPointer(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
-	instance->padMethodPointer(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+	instance->padMethod(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
+	instance->padMethod(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
 	unsigned numberOfThreads = globalContext.numberOfThreads;
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
 	
 
 	for (unsigned i=0;i<numberOfThreads;++i)
 	{
-		float *c_buffer_A = bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_buffer_B = bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_result = result + buffer_index * result_dim1 * result_dim2;
-		float *c_result_buffer = result_buffer + i * perThreadBufferSize;
-		int *c_index_x = index_x + buffer_index * result_dim1 * result_dim2;
-		int *c_index_y = index_y + buffer_index * result_dim1 * result_dim2;
-		int *c_index_x_buffer = index_x_buffer + i*perThreadBufferSize;
-		int *c_index_y_buffer = index_y_buffer + i*perThreadBufferSize;
-		int *c_index_buffer_sort = index_buffer_sort + i*numberOfBlockBPerBlockA;
+		float *c_matrixA_padded = instance->perThreadBufferPointer.matrixA_padded[i];
+		float *c_matrixB_padded = instance->perThreadBufferPointer.matrixB_padded[i];
+		float *c_matrixA_buffer = instance->perThreadBufferPointer.matrixA_buffer[i];
+		float *c_matrixB_buffer = instance->perThreadBufferPointer.matrixB_buffer[i];
+		float *c_matrixC_buffer = instance->perThreadBufferPointer.matrixC_buffer[i];
+		float *c_matrixA_deviceBuffer = instance->perThreadBufferPointer.matrixA_deviceBuffer[i];
+		float *c_matrixB_deviceBuffer = instance->perThreadBufferPointer.matrixB_deviceBuffer[i];
+		float *c_matrixC_deviceBuffer = instance->perThreadBufferPointer.matrixC_deviceBuffer[i];
 
-		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_device_buffer_C = device_bufferC + i * perThreadBufferSize;
+		int *c_index_x_sorting_buffer = instance->perThreadBufferPointer.index_x_sorting_buffer[i];
+		int *c_index_y_sorting_buffer = instance->perThreadBufferPointer.index_y_sorting_buffer[i];
+		int *c_index_x = instance->perThreadBufferPointer.index_x[i];
+		int *c_index_y = instance->perThreadBufferPointer.index_y[i];
 
-
+		int *c_index_raw_sorting_buffer = instance->perThreadBufferPointer.index_raw_sorting_buffer[i];
+		instance->parameterBuffer[i] = {};
+		thread_pool_launcher(globalContext.pool, instance->executionMethod, instance->parameterBuffer[i]);
 	}
 
 	return true;
@@ -408,16 +409,16 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 		sequenceBPadding_M = instance->sequenceBPadding_M,
 		sequenceBPadding_N = instance->sequenceBPadding_N,
 		numberOfBlockBPerBlockA = instance->numberOfBlockBPerBlockA,
-		result_dim0 = instance->result_dims[0],
-		result_dim1 = instance->result_dims[1],
-		result_dim2 = instance->result_dims[2],
-		result_dim3 = instance->result_dims[3],
+		result_dim0 = instance->C_dimensions[0],
+		result_dim1 = instance->C_dimensions[1],
+		result_dim2 = instance->C_dimensions[2],
+		result_dim3 = instance->C_dimensions[3],
 		retain = instance->numberOfIndexRetain,
 		perThreadBufferSize = instance->perThreadBufferSize,
 		*index_x = instance->index_x, *index_y = instance->index_y,
-		*index_x_buffer = instance->index_x_buffer, *index_y_buffer = instance->index_y_buffer,
+		*index_x_buffer = instance->index_x_sorting_buffer, *index_y_buffer = instance->index_y_sorting_buffer,
 		*index_buffer = instance->common_buffer,
-		*index_buffer_sort = instance->indexSorting_buffer;
+		*index_buffer_sort = instance->index_raw_sorting_buffer;
 
 	auto *parameterBuffer = instance->parameterBuffer;
 
@@ -527,7 +528,7 @@ bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasur
 		*_index_x = index_x;
 		*_index_y = index_y;
 		*_result = result;
-		memcpy(dimensionOfResult, instance->result_dims, sizeof(*dimensionOfResult) * 4);
+		memcpy(dimensionOfResult, instance->C_dimensions, sizeof(*dimensionOfResult) * 4);
 	}
 
 	return !isFailed;

@@ -42,10 +42,10 @@ bool initialize_local(void **_instance,
 	int result_dim2 = (neighbour_M + strideB_M - 1) / strideB_M;
 	int result_dim3 = (neighbour_N + strideB_N - 1) / strideB_N;
 
-	instance->result_dims[0] = result_dim0;
-	instance->result_dims[1] = result_dim1;
-	instance->result_dims[2] = result_dim2;
-	instance->result_dims[3] = result_dim3;
+	instance->C_dimensions[0] = result_dim0;
+	instance->C_dimensions[1] = result_dim1;
+	instance->C_dimensions[2] = result_dim2;
+	instance->C_dimensions[3] = result_dim3;
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -239,9 +239,9 @@ bool initialize_full(void **_instance,
 	instance->perThreadBufferSize = bufferSize;
 	bufferSize *= numberOfThreads;
 
-	instance->result_dims[0] = result_dim0;
-	instance->result_dims[1] = result_dim1;
-	instance->result_dims[2] = result_dim2;
+	instance->C_dimensions[0] = result_dim0;
+	instance->C_dimensions[1] = result_dim1;
+	instance->C_dimensions[2] = result_dim2;
 
 
 	cudaError_t cuda_error;
@@ -286,13 +286,13 @@ bool initialize_full(void **_instance,
 		goto release_page_locked_memory;
 
 	instance->index_y = instance->index_x + resultSize;
-	instance->index_x_buffer = instance->index_y + resultSize;
-	instance->index_y_buffer = instance->index_x_buffer + bufferSize;
+	instance->index_x_sorting_buffer = instance->index_y + resultSize;
+	instance->index_y_sorting_buffer = instance->index_x_sorting_buffer + bufferSize;
 
-	instance->C = (float*)instance->index_y_buffer + bufferSize;
+	instance->C = (float*)instance->index_y_sorting_buffer + bufferSize;
 
 	instance->common_buffer = (int*)(instance->C + resultSize);
-	instance->indexSorting_buffer = instance->common_buffer + numberOfBlockBPerBlockA;
+	instance->index_raw_sorting_buffer = instance->common_buffer + numberOfBlockBPerBlockA;
 
 	generateIndexSequence(instance->common_buffer, numberOfBlockBPerBlockA);
 
@@ -330,17 +330,24 @@ release_instance:
 	return false;
 }
 
-bool initialize_(void **_instance,
+bool blockMatchAndSortingInitialize(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
-	int neighbour_M, int neighbour_N,
+	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
-	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N,
-	int retain)
+	int matrixAPadding_M_pre, int matrixAPadding_M_post,
+	int matrixAPadding_N_pre, int matrixAPadding_N_post,
+	int matrixBPadding_M_pre, int matrixBPadding_M_post,
+	int matrixBPadding_N_pre, int matrixBPadding_N_post,
+	int numberOfIndexRetain,
+	int *matrixC_M, int *matrixC_N, int *matrixC_O,
+	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
+	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr)
 {
-	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
+	int numberOfThreads = globalContext.numberOfThreads;
+
+	struct BlockMatchContext * instance = static_cast<struct BlockMatchContext *>(malloc(sizeof(struct BlockMatchContext)));
 	if (!instance)
 		return false;
 
@@ -352,61 +359,65 @@ bool initialize_(void **_instance,
 	instance->block_M = block_M;
 	instance->block_N = block_N;
 
-	instance->searchRegion_M = neighbour_M;
-	instance->searchRegion_N = neighbour_N;
+	instance->searchRegion_M = searchRegion_M;
+	instance->searchRegion_N = searchRegion_N;
 
 	instance->strideA_M = strideA_M;
 	instance->strideA_N = strideA_N;
 	instance->strideB_M = strideB_M;
 	instance->strideB_N = strideB_N;
-	instance->sequenceAPadding_M = paddingA_M;
-	instance->sequenceAPadding_N = paddingA_N;
-	instance->sequenceBPadding_M = paddingB_M;
-	instance->sequenceBPadding_N = paddingB_N;
 
-	instance->numberOfIndexRetain = retain;
+	instance->matrixAPadding_M_pre = matrixAPadding_M_pre;
+	instance->matrixAPadding_M_post = matrixAPadding_M_post;
+	instance->matrixAPadding_N_pre = matrixAPadding_N_pre;
+	instance->matrixAPadding_N_post = matrixAPadding_N_post;
 
-	int result_dim0 = getLength(matA_M, paddingA_M, block_M, strideA_M);
-	int result_dim1 = getLength(matA_N, paddingA_N, block_N, strideA_N);
+	instance->matrixBPadding_M_pre = matrixBPadding_M_pre;
+	instance->matrixBPadding_M_post = matrixBPadding_M_post;
+	instance->matrixBPadding_N_pre = matrixBPadding_N_pre;
+	instance->matrixBPadding_N_post = matrixBPadding_N_post;
 
-	int result_dim2, result_dim3;
+	instance->numberOfIndexRetain = numberOfIndexRetain;
 
-	int numberOfThreads = globalContext.numberOfThreads;
+	int C_dimension0 = getLength(matA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
+	int C_dimension1 = getLength(matA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
+
+	int C_dimension2;
+
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
-	if (retain)
-		result_dim2 = retain;
-	else
-		result_dim2 = getLength(matB_M, paddingB_M, block_M, strideB_M)* getLength(matA_N, paddingB_N, block_N, strideB_N);
-	//int result_dim2 = (matrixB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M;
-	//int result_dim3 = (matrixA_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
 
-	int group_M = getLength(matB_M, paddingB_M, block_M, strideB_M);
-	int group_N = getLength(matB_N, paddingB_N, block_N, strideB_N);
+	int group_M = getLength(matB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
+	int group_N = getLength(matA_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+
+	if (numberOfIndexRetain)
+		C_dimension2 = numberOfIndexRetain;
+	else
+		C_dimension2 = group_M * group_N;
+
 	int numberOfBlockBPerBlockA = group_M * group_N;
 	if (numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
 		numberOfGPUProcessorThread = numberOfBlockBPerBlockA;
 
 	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
 
-	if (retain > numberOfBlockBPerBlockA)
+	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 		return false;
-	if (result_dim0 < globalContext.numberOfThreads)
+	if (C_dimension0 < globalContext.numberOfThreads)
 		return false;
 
 	int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-	int resultSize = result_dim0 * result_dim1 * result_dim2;
+	int resultSize = C_dimension0 * C_dimension1 * C_dimension2;
 
 	int	bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
 	instance->perThreadBufferSize = bufferSize;
 	bufferSize *= numberOfThreads;
 
-	instance->result_dims[0] = result_dim0;
-	instance->result_dims[1] = result_dim1;
-	instance->result_dims[2] = result_dim2;
-
-
+	instance->C_dimensions[0] = C_dimension0;
+	instance->C_dimensions[1] = C_dimension1;
+	instance->C_dimensions[2] = C_dimension2;
+	
 	cudaError_t cuda_error;
 
 	instance->stream = new cudaStream_t[numberOfThreads * 2];
@@ -449,13 +460,13 @@ bool initialize_(void **_instance,
 		goto release_page_locked_memory;
 
 	instance->index_y = instance->index_x + resultSize;
-	instance->index_x_buffer = instance->index_y + resultSize;
-	instance->index_y_buffer = instance->index_x_buffer + bufferSize;
+	instance->index_x_sorting_buffer = instance->index_y + resultSize;
+	instance->index_y_sorting_buffer = instance->index_x_sorting_buffer + bufferSize;
 
-	instance->C = (float*)instance->index_y_buffer + bufferSize;
+	instance->C = (float*)instance->index_y_sorting_buffer + bufferSize;
 
 	instance->common_buffer = (int*)(instance->C + resultSize);
-	instance->indexSorting_buffer = instance->common_buffer + numberOfBlockBPerBlockA;
+	instance->index_raw_sorting_buffer = instance->common_buffer + numberOfBlockBPerBlockA;
 
 	generateIndexSequence(instance->common_buffer, numberOfBlockBPerBlockA);
 
@@ -468,6 +479,8 @@ bool initialize_(void **_instance,
 	instance->matrixC_deviceBuffer = instance->matrixB_deviceBuffer + matBufferSize;
 
 	*_instance = instance;
+
+
 
 	return true;
 
