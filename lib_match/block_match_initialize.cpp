@@ -330,8 +330,8 @@ release_instance:
 	return false;
 }
 
-bool blockMatchAndSortingInitialize(void **_instance,
-	int matA_M, int matA_N, int matB_M, int matB_N,
+void fillBasicInstanceInformation(BlockMatchContext *instance,
+	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -340,21 +340,13 @@ bool blockMatchAndSortingInitialize(void **_instance,
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfIndexRetain,
-	int *matrixC_M, int *matrixC_N, int *matrixC_O,
-	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
-	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr)
+	int numberOfIndexRetain
+)
 {
-	int numberOfThreads = globalContext.numberOfThreads;
-
-	struct BlockMatchContext * instance = static_cast<struct BlockMatchContext *>(malloc(sizeof(struct BlockMatchContext)));
-	if (!instance)
-		return false;
-
-	instance->matrixA_M = matA_M;
-	instance->matrixA_N = matA_N;
-	instance->matrixB_M = matB_M;
-	instance->matrixB_N = matB_N;
+	instance->matrixA_M = matrixA_M;
+	instance->matrixA_N = matrixA_N;
+	instance->matrixB_M = matrixB_M;
+	instance->matrixB_N = matrixB_N;
 
 	instance->block_M = block_M;
 	instance->block_N = block_N;
@@ -378,46 +370,38 @@ bool blockMatchAndSortingInitialize(void **_instance,
 	instance->matrixBPadding_N_post = matrixBPadding_N_post;
 
 	instance->numberOfIndexRetain = numberOfIndexRetain;
+}
 
-	int C_dimension0 = getLength(matA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
-	int C_dimension1 = getLength(matA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
-
-	int C_dimension2;
-
-	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-
-	int group_M = getLength(matB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
-	int group_N = getLength(matA_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
-
-	if (numberOfIndexRetain)
-		C_dimension2 = numberOfIndexRetain;
+int determineNumberOfThreads(const int A_M, const int A_N,
+	const int maxNumberOfThreads)
+{
+	if (A_M * A_N < maxNumberOfThreads)
+		return A_M * A_N;
 	else
-		C_dimension2 = group_M * group_N;
+		return maxNumberOfThreads;
+}
 
-	int numberOfBlockBPerBlockA = group_M * group_N;
-	if (numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
-		numberOfGPUProcessorThread = numberOfBlockBPerBlockA;
+int determineSizeOfMatrixC_O(int numberOfIndexRetain, int group_M, int group_N)
+{
+	if (numberOfIndexRetain)
+		return numberOfIndexRetain;
+	else
+		return group_M * group_N;
+}
 
-	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
+bool initializeMemoryResources(BlockMatchContext *instance,
+	const int matrixC_M, const int matrixC_N, const int matrixC_O,
+	const int block_M, const int block_N,
+	const int numberOfBlockBPerBlockA,
+	const int numberOfThreads, const int numberOfGPUDeviceMultiProcessor, const int numberOfGPUProcessorThread)
+{
+	const int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
+	const int resultSize = matrixC_M * matrixC_N * matrixC_O;
 
-	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
-		return false;
-	if (C_dimension0 < globalContext.numberOfThreads)
-		return false;
-
-	int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-	int resultSize = C_dimension0 * C_dimension1 * C_dimension2;
-
-	int	bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
-	instance->perThreadBufferSize = bufferSize;
+	int bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
 	bufferSize *= numberOfThreads;
 
-	instance->C_dimensions[0] = C_dimension0;
-	instance->C_dimensions[1] = C_dimension1;
-	instance->C_dimensions[2] = C_dimension2;
-	
+
 	cudaError_t cuda_error;
 
 	instance->stream = new cudaStream_t[numberOfThreads * 2];
@@ -478,10 +462,6 @@ bool blockMatchAndSortingInitialize(void **_instance,
 	instance->matrixB_deviceBuffer = instance->matrixA_deviceBuffer + matBufferSize;
 	instance->matrixC_deviceBuffer = instance->matrixB_deviceBuffer + matBufferSize;
 
-	*_instance = instance;
-
-
-
 	return true;
 
 release_device_memory:
@@ -504,6 +484,77 @@ release_instance:
 
 	free(instance);
 	return false;
+}
+
+bool blockMatchAndSortingInitialize(void **_instance,
+	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int searchRegion_M, int searchRegion_N,
+	int block_M, int block_N,
+	int strideA_M, int strideA_N,
+	int strideB_M, int strideB_N,
+	int matrixAPadding_M_pre, int matrixAPadding_M_post,
+	int matrixAPadding_N_pre, int matrixAPadding_N_post,
+	int matrixBPadding_M_pre, int matrixBPadding_M_post,
+	int matrixBPadding_N_pre, int matrixBPadding_N_post,
+	int numberOfIndexRetain,
+	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
+	int *LIB_MATCH_OUT(matrixA_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixA_padded_N) = nullptr,
+	int *LIB_MATCH_OUT(matrixB_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixB_padded_N) = nullptr)
+{
+	BlockMatchContext * instance = static_cast<BlockMatchContext *>(malloc(sizeof(BlockMatchContext)));
+	if (!instance) {
+		setLastErrorString("Error: memory allocation failed");
+		return false;
+	}
+
+	fillBasicInstanceInformation(instance,
+		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
+		searchRegion_M, searchRegion_N,
+		block_M, block_N,
+		strideA_M, strideA_N,
+		strideB_M, strideB_N,
+		matrixAPadding_M_pre, matrixAPadding_M_post,
+		matrixAPadding_N_pre, matrixAPadding_N_post,
+		matrixBPadding_M_pre, matrixBPadding_M_post,
+		matrixBPadding_N_pre, matrixBPadding_N_post,
+		numberOfIndexRetain
+	);
+
+	const int group_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
+	const int group_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+
+	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
+	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
+	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, group_M, group_N);
+
+	instance->C_dimensions[0] = matrixC_M;
+	instance->C_dimensions[1] = matrixC_N;
+	instance->C_dimensions[2] = matrixC_O;
+
+	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
+
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+	const int numberOfBlockBPerBlockA = group_M * group_N;
+
+	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, numberOfIterations;
+
+	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
+		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &numberOfIterations);
+
+	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
+
+	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
+	{
+		setLastErrorString("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
+		return false;
+	}
+
+	return initializeMemoryResources(instance, matrixC_M, matrixC_N, matrixC_O,
+		block_M, block_N, numberOfBlockBPerBlockA,
+		numberOfThreads,
+		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
 }
 
 bool blockMatchInitialize(void **_instance,

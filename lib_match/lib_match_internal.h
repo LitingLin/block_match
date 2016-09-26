@@ -14,6 +14,8 @@ extern spdlog::logger logger;
 
 #include "thread_pool.h"
 
+#define LIB_MATCH_OUT(PARAMETER) out_##PARAMETER
+
 struct GlobalContext
 {
 	GlobalContext();
