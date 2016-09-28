@@ -486,7 +486,48 @@ release_instance:
 	return false;
 }
 
-bool blockMatchAndSortingInitialize(void **_instance,
+bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThreads)
+{
+	void **beginPointer = reinterpret_cast<void**>(context) + sizeof(BlockMatchContext);
+
+	for (ptrdiff_t offset = 0; offset < sizeof(BlockMatchContext::perThreadBufferPointer); offset += sizeof(void*))
+	{
+		void** pointer = (void**)&context->perThreadBufferPointer + offset;
+		*pointer = beginPointer + numberOfThreads * offset;
+	}
+
+	BlockMatchContext::PerThreadBufferPointer &perThreadBufferPointer = context->perThreadBufferPointer;
+
+	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
+	{
+		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
+		perThreadBufferPointer.matrixB_buffer[indexOfThread] = context->matrixB_buffer + indexOfThread;
+		perThreadBufferPointer.matrixC_buffer[indexOfThread] = context->matrixC_buffer + indexOfThread;
+		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
+		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
+		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
+	}
+
+	return true;
+}
+
+bool fillInstanceThreadOptionalInformation(BlockMatchContext *context, int numberOfThreads)
+{
+
+}
+
+bool fillInstanceOptionalInformation(BlockMatchContext *context)
+{
+
+}
+
+BlockMatchContext * allocateContext(const int numberOfThreads)
+{
+	return static_cast<BlockMatchContext*>(malloc(sizeof(BlockMatchContext) +
+		(sizeof(BlockMatchContext::PerThreadBufferPointer) + sizeof(BlockMatchContext::OptionalPerThreadBufferPointer)) * numberOfThreads));
+}
+
+bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -501,7 +542,17 @@ bool blockMatchAndSortingInitialize(void **_instance,
 	int *LIB_MATCH_OUT(matrixA_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixA_padded_N) = nullptr,
 	int *LIB_MATCH_OUT(matrixB_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixB_padded_N) = nullptr)
 {
-	BlockMatchContext * instance = static_cast<BlockMatchContext *>(malloc(sizeof(BlockMatchContext)));
+	const int group_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
+	const int group_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+
+	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
+	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
+	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, group_M, group_N);
+
+
+	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
+
+	BlockMatchContext * instance = allocateContext(numberOfThreads);
 	if (!instance) {
 		setLastErrorString("Error: memory allocation failed");
 		return false;
@@ -520,18 +571,9 @@ bool blockMatchAndSortingInitialize(void **_instance,
 		numberOfIndexRetain
 	);
 
-	const int group_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
-	const int group_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
-
-	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
-	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
-	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, group_M, group_N);
-
 	instance->C_dimensions[0] = matrixC_M;
 	instance->C_dimensions[1] = matrixC_N;
 	instance->C_dimensions[2] = matrixC_O;
-
-	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
 	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -543,6 +585,10 @@ bool blockMatchAndSortingInitialize(void **_instance,
 	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
 		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &numberOfIterations);
 
+	instance->numberOfSubmitThreadsPerProcessor = numberOfSubmitThreadsPerProcessor;
+	instance->numberOfSubmitProcessors = numberOfSubmitProcessors;
+	instance->numberOfIterations = numberOfIterations;
+
 	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
@@ -551,10 +597,25 @@ bool blockMatchAndSortingInitialize(void **_instance,
 		return false;
 	}
 
-	return initializeMemoryResources(instance, matrixC_M, matrixC_N, matrixC_O,
+	if (!initializeMemoryResources(instance, matrixC_M, matrixC_N, matrixC_O,
 		block_M, block_N, numberOfBlockBPerBlockA,
 		numberOfThreads,
-		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
+		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread))
+		return false;
+
+	*LIB_MATCH_OUT(instance) = instance;
+
+	if (LIB_MATCH_OUT(matrixC_M) != nullptr)
+	{
+		*LIB_MATCH_OUT(matrixC_M) = matrixC_M;
+		*LIB_MATCH_OUT(matrixC_N) = matrixC_N;
+		*LIB_MATCH_OUT(matrixC_O) = matrixC_O;
+	}
+	if (LIB_MATCH_OUT(matrixA_padded_M) != nullptr)
+	{
+
+	}
+	return true;
 }
 
 bool blockMatchInitialize(void **_instance,

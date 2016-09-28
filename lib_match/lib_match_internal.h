@@ -111,10 +111,27 @@ struct BlockMatchContext
 
 	// TODO remove
 	float *C;
-	struct
+
+	struct OptionalPerThreadBufferPointer
 	{
-		float **matrixA_padded;
-		float **matrixB_padded;
+		float **matrixA_padded_internal;
+		float **matrixB_padded_internal;
+		float **matrixC_internal;
+		int **index_x_internal;
+		int **index_y_internal;		
+	} optionalPerThreadBufferPointer;
+
+	struct OptionalBuffer
+	{
+		float *matrixA_padded_internal;
+		float *matrixB_padded_internal;
+		float *matrixC_internal;
+		int *index_x_internal;
+		int *index_y_internal;
+	} optionalBuffer;
+
+	struct PerThreadBufferPointer
+	{		
 		float **matrixA_buffer;
 		float **matrixB_buffer;
 		float **matrixC_buffer;
@@ -124,13 +141,10 @@ struct BlockMatchContext
 
 		int **index_x_sorting_buffer;
 		int **index_y_sorting_buffer;
-		int **index_x;
-		int **index_y;
 
 		int **index_raw_sorting_buffer;
 
 	} perThreadBufferPointer;
-
 
 	int perThreadBufferSize;
 	int numberOfBlockBPerBlockA;
@@ -139,6 +153,8 @@ struct BlockMatchContext
 
 	int numberOfIndexRetain;
 	cudaStream_t *stream;
+
+	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, numberOfIterations;
 
 	void *threadPoolTaskHandle;
 	std::tuple<float *, float *, float *,
