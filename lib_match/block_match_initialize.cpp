@@ -1,7 +1,7 @@
 #include "lib_match_internal.h"
 
 #include <cuda_runtime.h>
-
+/*
 bool initialize_local(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int block_M, int block_N, int neighbour_M, int neighbour_N,
@@ -138,7 +138,7 @@ release_instance:
 
 	free(instance);
 	return false;
-}
+}*/
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
@@ -170,7 +170,7 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 		}
 	}
 }
-
+/*
 bool initialize_full(void **_instance,
 	int matA_M, int matA_N, int matB_M, int matB_N,
 	int block_M, int block_N,
@@ -328,7 +328,7 @@ release_instance:
 
 	free(instance);
 	return false;
-}
+}*/
 
 void fillBasicInstanceInformation(BlockMatchContext *instance,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
@@ -503,9 +503,9 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
 		perThreadBufferPointer.matrixB_buffer[indexOfThread] = context->matrixB_buffer + indexOfThread;
 		perThreadBufferPointer.matrixC_buffer[indexOfThread] = context->matrixC_buffer + indexOfThread;
-		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
-		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
-		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer + indexOfThread;
+		perThreadBufferPointer.matrixA_deviceBuffer[indexOfThread] = context->matrixA_deviceBuffer + indexOfThread;
+		perThreadBufferPointer.matrixB_deviceBuffer[indexOfThread] = context->matrixB_deviceBuffer + indexOfThread;
+		perThreadBufferPointer.matrixC_deviceBuffer[indexOfThread] = context->matrixC_deviceBuffer + indexOfThread;
 	}
 
 	return true;
@@ -513,7 +513,7 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 
 bool fillInstanceThreadOptionalInformation(BlockMatchContext *context, int numberOfThreads)
 {
-
+	
 }
 
 bool fillInstanceOptionalInformation(BlockMatchContext *context)
@@ -627,7 +627,7 @@ bool blockMatchInitialize(void **_instance,
 	int paddingA_M, int paddingA_N,
 	int paddingB_M, int paddingB_N,
 	int retain)
-{
+{/*
 	static bool isGlobalContextInitialized = false;
 	if (!isGlobalContextInitialized)
 	{
@@ -643,5 +643,5 @@ bool blockMatchInitialize(void **_instance,
 		strideB_M, strideB_N,
 		paddingA_M, paddingA_N,
 		paddingB_M, paddingB_N,
-		retain);
+		retain);*/
 }
