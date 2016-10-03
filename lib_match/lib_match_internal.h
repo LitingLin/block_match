@@ -155,6 +155,7 @@ struct BlockMatchContext
 	cudaStream_t *stream;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, numberOfIterations;
+	int numberOfThreads;
 
 	void *threadPoolTaskHandle;
 	std::tuple<float *, float *, float *,
