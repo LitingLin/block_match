@@ -521,10 +521,9 @@ void fairDivide(const void *buffer, const size_t size, const size_t numberOfThre
 	}
 }
 
-bool fillInstanceOptionalInformation(BlockMatchContext *context)
+void fillInstanceOptionalInformation(BlockMatchContext *context)
 {
 	memset(&context->optionalBuffer, 0, sizeof(context->optionalBuffer));
-	return true;
 }
 
 bool allocateInternalBuffer(void **buffer, size_t size, const size_t numberOfThreads, void **perThreadBuffer)
@@ -538,8 +537,8 @@ bool allocateInternalBuffer(void **buffer, size_t size, const size_t numberOfThr
 	fairDivide(buffer_, size, numberOfThreads, perThreadBuffer);
 
 	return true;
-
 }
+
 bool allocateMatrixAPaddedInternalBuffer(BlockMatchContext *context)
 {
 	size_t size = context->matrixA_M * context->matrixA_N * sizeof(float);
@@ -640,6 +639,15 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread))
 		return false;
 
+	const int matrixA_padded_M = matrixA_M + matrixAPadding_M_pre + matrixAPadding_M_post;
+	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
+	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
+	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
+	instance->matrixA_padded_M = matrixA_padded_M;
+	instance->matrixA_padded_N = matrixA_padded_N;
+	instance->matrixB_padded_M = matrixB_padded_M;
+	instance->matrixB_padded_N = matrixB_padded_N;
+
 	*LIB_MATCH_OUT(instance) = instance;
 
 	if (LIB_MATCH_OUT(matrixC_M) != nullptr)
@@ -650,8 +658,15 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	}
 	if (LIB_MATCH_OUT(matrixA_padded_M) != nullptr)
 	{
-
+		*LIB_MATCH_OUT(matrixA_padded_M) = matrixA_padded_M;
+		*LIB_MATCH_OUT(matrixA_padded_N) = matrixA_padded_N;
 	}
+	if (LIB_MATCH_OUT(matrixB_padded_M) != nullptr)
+	{
+		*LIB_MATCH_OUT(matrixB_padded_M) = matrixB_padded_M;
+		*LIB_MATCH_OUT(matrixB_padded_N) = matrixB_padded_N;
+	}
+
 	return true;
 }
 

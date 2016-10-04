@@ -16,6 +16,8 @@ extern spdlog::logger logger;
 
 #define LIB_MATCH_OUT(PARAMETER) out_##PARAMETER
 
+#define WORKER
+
 struct GlobalContext
 {
 	GlobalContext();
@@ -64,6 +66,12 @@ struct BlockMatchContext
 	int matrixA_N;
 	int matrixB_M;
 	int matrixB_N;
+
+	int matrixA_padded_M;
+	int matrixA_padded_N;
+	int matrixB_padded_M;
+	int matrixB_padded_N;
+
 	int block_M;
 	int block_N;
 
@@ -74,11 +82,6 @@ struct BlockMatchContext
 	int strideA_N;
 	int strideB_M;
 	int strideB_N;
-	// TODO remove
-	int sequenceAPadding_M;
-	int sequenceAPadding_N;
-	int sequenceBPadding_M;
-	int sequenceBPadding_N;
 
 	int matrixAPadding_M_pre;
 	int matrixAPadding_M_post;
