@@ -16,8 +16,6 @@ extern spdlog::logger logger;
 
 #define LIB_MATCH_OUT(PARAMETER) out_##PARAMETER
 
-#define WORKER
-
 struct GlobalContext
 {
 	GlobalContext();
@@ -92,49 +90,68 @@ struct BlockMatchContext
 	int matrixBPadding_N_pre;
 	int matrixBPadding_N_post;
 
+	int numberOfIndexRetain;
+
+	int numberOfThreads;
+
 	PadMethod* padMethod;
 	ExecutionMethod *executionMethod;
-	float *padded_matrixA;
-	float *padded_matrixB;
 
-	float *matrixA_buffer;
-	float *matrixB_buffer;
-	float *matrixC_buffer;
-	float *matrixA_deviceBuffer;
-	float *matrixB_deviceBuffer;
-	float *matrixC_deviceBuffer;
+	int numberOfBlockBPerBlockA;
 
-	int *index_x_sorting_buffer;
-	int *index_y_sorting_buffer;
-	int *index_x;
-	int *index_y;
+	int C_dimensions[4];
 
-	int *common_buffer;
-	int *index_raw_sorting_buffer;
+	cudaStream_t *stream;
 
-	// TODO remove
-	float *C;
+	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
+
+	void *threadPoolTaskHandle;
+
+	struct Buffer {
+		float *padded_matrixA;
+		float *padded_matrixB;
+
+		float *matrixA_buffer;
+		float *matrixB_buffer;
+		float *matrixC_buffer;
+		float *matrixA_deviceBuffer;
+		float *matrixB_deviceBuffer;
+		float *matrixC_deviceBuffer;
+
+		int *index_x_sorting_buffer;
+		int *index_y_sorting_buffer;
+		int *index_x;
+		int *index_y;
+
+		int *common_buffer; // index template
+		int *index_raw_sorting_buffer;
+	} buffer;
+
+	struct WorkerContext
+	{
+		int *numberOfIteration;
+		int *beginMatrixAIndex;
+		int *endMatrixAIndex;
+	} workerContext;
 
 	struct OptionalPerThreadBufferPointer
 	{
 		float **matrixA_padded_internal;
 		float **matrixB_padded_internal;
-		float **matrixC_internal;
 		int **index_x_internal;
-		int **index_y_internal;		
+		int **index_y_internal;
 	} optionalPerThreadBufferPointer;
 
 	struct OptionalBuffer
 	{
 		float *matrixA_padded_internal;
 		float *matrixB_padded_internal;
-		float *matrixC_internal;
 		int *index_x_internal;
 		int *index_y_internal;
 	} optionalBuffer;
 
 	struct PerThreadBufferPointer
-	{		
+	{
 		float **matrixA_buffer;
 		float **matrixB_buffer;
 		float **matrixC_buffer;
@@ -146,40 +163,7 @@ struct BlockMatchContext
 		int **index_y_sorting_buffer;
 
 		int **index_raw_sorting_buffer;
-
 	} perThreadBufferPointer;
-
-	int perThreadBufferSize;
-	int numberOfBlockBPerBlockA;
-
-	int C_dimensions[4];
-
-	int numberOfIndexRetain;
-	cudaStream_t *stream;
-
-	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, numberOfIterations;
-	int numberOfThreads;
-
-	void *threadPoolTaskHandle;
-	std::tuple<float *, float *, float *,
-		float *, int, int, int, int, int, int,
-		float *, int, int,
-		float *,
-		float *, float *, float *,
-		int *, int *, int *, int *,
-		int *, int *,
-		int, int,
-		int, int,
-		int, int,
-		int, int,
-		int, int,
-		int,
-		int,
-		/* Gpu Stuff */
-		cudaStream_t, cudaStream_t, // TODO: Double buffering
-		int,
-		int, int, int > *parameterBuffer;
-
 
 };
 
@@ -219,6 +203,7 @@ namespace lib_match_internal {
 
 int getLength(int matSize, int paddingSize, int blockSize, int strideSize);
 int getLength(int matSize, int prePaddingSize, int postPaddingSize, int blockSize, int strideSize);
+int determineEndOfIndex(int matSize, int blockSize);
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize);
 void generateIndexSequence(int *index, int size);
 
@@ -273,3 +258,18 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
+
+bool allocateMatrixAPaddedInternalBuffer(BlockMatchContext *context);
+bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext *context);
+
+BlockMatchContext * allocateContext(const int numberOfThreads);
+enum class InternalBufferType
+{
+	MatrixA_Padded_Buffer,
+	MatrixB_Padded_Buffer,
+	Index_X_Internal,
+	Index_Y_Internal
+};
+
+bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType);
+void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType);

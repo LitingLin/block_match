@@ -326,7 +326,7 @@ bool process_local(void *_instance, float *matA, float *matB, LibMatchMeasureMet
 
 bool blockMatchExecute_(void *_instance, float *A, float *B,
 	float *C,
-	float *padded_A, float *padded_B,
+	float *padded_A = nullptr, float *padded_B = nullptr,
 	int *index_x = nullptr, int *index_y = nullptr)
 {
 	BlockMatchContext *instance = static_cast<BlockMatchContext*>(_instance);
@@ -344,6 +344,31 @@ bool blockMatchExecute_(void *_instance, float *A, float *B,
 		B_N_padPre = instance->matrixBPadding_N_pre,
 		B_N_padPost = instance->matrixBPadding_N_post;
 
+	if (padded_A == nullptr)
+	{
+		if (instance->optionalBuffer.matrixA_padded_internal == nullptr)
+			if (!allocateMatrixAPaddedInternalBuffer(instance))
+			{
+				setLastErrorString("Error: allocation failed");
+
+				return false;
+			}
+
+		padded_A = instance->optionalBuffer.matrixA_padded_internal;
+	}
+	if (padded_B == nullptr)
+	{
+		if (instance->optionalBuffer.matrixB_padded_internal == nullptr)
+			if (!allocateMatrixBPaddedInternalBuffer(instance))
+			{
+				setLastErrorString("Error: allocation failed");
+
+				return false;
+			}
+
+		padded_B = instance->optionalBuffer.matrixB_padded_internal;
+	}
+
 	instance->padMethod(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
 	instance->padMethod(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
@@ -354,7 +379,7 @@ bool blockMatchExecute_(void *_instance, float *A, float *B,
 
 	for (unsigned i=0;i<numberOfThreads;++i)
 	{
-		float *c_matrixA_padded = instance->perThreadBufferPointer.matrixA_padded[i];
+		float *c_matrixA_padded = instance->perThreadBufferPointer.matrixA_buffer[i];
 		float *c_matrixB_padded = instance->perThreadBufferPointer.matrixB_padded[i];
 		float *c_matrixA_buffer = instance->perThreadBufferPointer.matrixA_buffer[i];
 		float *c_matrixB_buffer = instance->perThreadBufferPointer.matrixB_buffer[i];
