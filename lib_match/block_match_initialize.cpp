@@ -409,10 +409,8 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 	const int numberOfGPUDeviceMultiProcessor = instance->numberOfSubmitProcessors;
 	const int numberOfGPUProcessorThread = instance->numberOfSubmitThreadsPerProcessor;
 	const int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-	const int resultSize = instance->C_dimensions[0] * instance->C_dimensions[1] * instance->C_dimensions[2];
 
-	int bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
-	bufferSize *= numberOfThreads;
+	const int bufferSize = numberOfGPUProcessorThread * numberOfGPUDeviceMultiProcessor * numberOfThreads;
 
 	BlockMatchContext::Buffer &buffer = instance->buffer;
 
@@ -437,8 +435,7 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 		}
 	}
 
-	// Remember to * sizeof(type size)
-
+	// Remember to * sizeof(type)
 	cuda_error = cudaMallocHost(&buffer.matrixA_buffer,
 		(matBufferSize * 2 + bufferSize) * sizeof(float)
 	);
@@ -449,16 +446,13 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 	buffer.matrixB_buffer = buffer.matrixA_buffer + matBufferSize;
 	buffer.matrixC_buffer = buffer.matrixB_buffer + matBufferSize;
 
-	buffer.index_x = (int *)malloc(
-		(resultSize + bufferSize) * 2 * sizeof(int) +
-		resultSize * sizeof(float) +
+	buffer.index_x_sorting_buffer = (int *)malloc(
+		bufferSize * 2 * sizeof(int) +
 		numberOfBlockBPerBlockA*(numberOfThreads + 1) * sizeof(int));
 
-	if (buffer.index_x == nullptr)
+	if (buffer.index_x_sorting_buffer == nullptr)
 		goto release_page_locked_memory;
 
-	buffer.index_y = buffer.index_x + resultSize;
-	buffer.index_x_sorting_buffer = buffer.index_y + resultSize;
 	buffer.index_y_sorting_buffer = buffer.index_x_sorting_buffer + bufferSize;
 	
 	buffer.common_buffer = buffer.index_y_sorting_buffer + bufferSize;
@@ -480,7 +474,8 @@ release_device_memory:
 	cudaFree(buffer.matrixA_deviceBuffer);
 
 release_memory:
-	delete[] buffer.index_x;
+
+	free(buffer.index_x_sorting_buffer);
 release_page_locked_memory:
 
 	cudaFreeHost(buffer.matrixA_buffer);
@@ -500,11 +495,11 @@ release_instance:
 
 bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThreads)
 {
-	void **beginPointer = reinterpret_cast<void**>(context) + sizeof(BlockMatchContext);
+	char *beginPointer = reinterpret_cast<char*>(context) + sizeof(BlockMatchContext);
 
 	for (ptrdiff_t offset = 0; offset < sizeof(BlockMatchContext::PerThreadBufferPointer); offset += sizeof(void*))
 	{
-		void** pointer = reinterpret_cast<void**>(&context->perThreadBufferPointer) + offset;
+		void** pointer = reinterpret_cast<void**>(reinterpret_cast<char*>(&context->perThreadBufferPointer) + offset);
 		*pointer = beginPointer + numberOfThreads * offset;
 	}
 
@@ -515,32 +510,29 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 	const int block_M = context->block_M;
 	const int block_N = context->block_N;
 
+	const size_t sizeOfTaskQueue = numberOfSubmitProcessors * numberOfSubmitThreadsPerProcessor;
+	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
+
+	BlockMatchContext::Buffer &buffer = context->buffer;
+	BlockMatchContext::WorkerContext &workerContext = context->workerContext;
+
 	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
 	{
-		float *c_buffer_A = bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_buffer_B = bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_result = result + buffer_index * result_dim1 * result_dim2;
-		float *c_result_buffer = result_buffer + i * perThreadBufferSize;
-		int *c_index_x = index_x + buffer_index * result_dim1 * result_dim2;
-		int *c_index_y = index_y + buffer_index * result_dim1 * result_dim2;
-		int *c_index_x_buffer = index_x_buffer + i*perThreadBufferSize;
-		int *c_index_y_buffer = index_y_buffer + i*perThreadBufferSize;
-		int *c_index_buffer_sort = index_buffer_sort + i*numberOfBlockBPerBlockA;
+		perThreadBufferPointer.matrixA_buffer[indexOfThread] = buffer.matrixA_buffer +
+			indexOfThread * sizeOfTaskSourceData;
 
-		float *c_device_buffer_A = device_bufferA + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_device_buffer_B = device_bufferB + i * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-		float *c_device_buffer_C = device_bufferC + i * perThreadBufferSize;
+		perThreadBufferPointer.matrixB_buffer[indexOfThread] = buffer.matrixB_buffer +
+			indexOfThread * sizeOfTaskSourceData;
 
-		perThreadBufferPointer.matrixA_buffer[indexOfThread] = context->matrixA_buffer +
-			indexOfThread * numberOfSubmitProcessors * numberOfSubmitThreadsPerProcessor * block_M * block_N;
+		perThreadBufferPointer.matrixC_buffer[indexOfThread] = buffer.matrixC_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer.matrixA_deviceBuffer[indexOfThread] = buffer.matrixA_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
+		perThreadBufferPointer.matrixB_deviceBuffer[indexOfThread] = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
+		perThreadBufferPointer.matrixC_deviceBuffer[indexOfThread] = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer.matrixB_buffer[indexOfThread] = context->matrixB_buffer +
-			indexOfThread * numberOfSubmitProcessors * numberOfSubmitThreadsPerProcessor * block_M * block_N;
+		perThreadBufferPointer.index_x_sorting_buffer[indexOfThread] = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer.index_y_sorting_buffer[indexOfThread] = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer.matrixC_buffer[indexOfThread] = context->matrixC_buffer + indexOfThread;
-		perThreadBufferPointer.matrixA_deviceBuffer[indexOfThread] = context->matrixA_deviceBuffer + indexOfThread;
-		perThreadBufferPointer.matrixB_deviceBuffer[indexOfThread] = context->matrixB_deviceBuffer + indexOfThread;
-		perThreadBufferPointer.matrixC_deviceBuffer[indexOfThread] = context->matrixC_deviceBuffer + indexOfThread;
+		perThreadBufferPointer.index_raw_sorting_buffer[indexOfThread] = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
 	}
 
 	return true;
@@ -722,6 +714,9 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
 
 	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
+
+	// TODO: worker context
+
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 	{

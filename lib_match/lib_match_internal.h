@@ -108,9 +108,6 @@ struct BlockMatchContext
 	void *threadPoolTaskHandle;
 
 	struct Buffer {
-		float *padded_matrixA;
-		float *padded_matrixB;
-
 		float *matrixA_buffer;
 		float *matrixB_buffer;
 		float *matrixC_buffer;
@@ -120,8 +117,6 @@ struct BlockMatchContext
 
 		int *index_x_sorting_buffer;
 		int *index_y_sorting_buffer;
-		int *index_x;
-		int *index_y;
 
 		int *common_buffer; // index template
 		int *index_raw_sorting_buffer;
@@ -130,8 +125,9 @@ struct BlockMatchContext
 	struct WorkerContext
 	{
 		int *numberOfIteration;
-		int *beginMatrixAIndex;
-		int *endMatrixAIndex;
+		int *rawMatrixCIndex;
+		int *beginMatrixAIndex_M;
+		int *beginMatrixAIndex_N;
 	} workerContext;
 
 	struct OptionalPerThreadBufferPointer
@@ -164,7 +160,6 @@ struct BlockMatchContext
 
 		int **index_raw_sorting_buffer;
 	} perThreadBufferPointer;
-
 };
 
 struct ArrayMatchContext
