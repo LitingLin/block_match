@@ -514,7 +514,6 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
 
 	BlockMatchContext::Buffer &buffer = context->buffer;
-	BlockMatchContext::WorkerContext &workerContext = context->workerContext;
 
 	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
 	{
@@ -538,6 +537,7 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 	return true;
 }
 
+// TODO replace this function
 void fairDivide(const void *buffer, const size_t size, const size_t numberOfThreads, void **perThreadBuffer)
 {
 	const size_t perThreadBufferSize = size / numberOfThreads;
@@ -593,8 +593,6 @@ bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext *context)
 		size, context->numberOfThreads,
 		reinterpret_cast<void**>(context->optionalPerThreadBufferPointer.matrixB_padded_internal));
 }
-
-
 
 bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType)
 {
