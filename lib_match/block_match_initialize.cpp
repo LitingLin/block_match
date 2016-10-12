@@ -553,15 +553,13 @@ void fillInstanceOptionalInformation(BlockMatchContext *context)
 	memset(&context->optionalBuffer, 0, sizeof(context->optionalBuffer));
 }
 
-bool allocateInternalBuffer(void **buffer, size_t size, const size_t numberOfThreads, void **perThreadBuffer)
+bool allocateInternalBuffer(void **buffer, size_t size)
 {
 	float *buffer_ = static_cast<float*>(malloc(size));
 	if (buffer_ == nullptr)
 		return false;
 
 	*buffer = buffer_;
-
-	fairDivide(buffer_, size, numberOfThreads, perThreadBuffer);
 
 	return true;
 }
@@ -580,18 +578,14 @@ bool allocateMatrixAPaddedInternalBuffer(BlockMatchContext *context)
 {
 	size_t size = getMatrixAPaddedSizeInBytes(context);
 
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixA_padded_internal),
-		size, context->numberOfThreads,
-		reinterpret_cast<void**>(context->optionalPerThreadBufferPointer.matrixA_padded_internal));
+	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixA_padded_internal), size);
 }
 
 bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext *context)
 {
 	size_t size = getMatrixBPaddedSizeInBytes(context);
 
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixB_padded_internal),
-		size, context->numberOfThreads,
-		reinterpret_cast<void**>(context->optionalPerThreadBufferPointer.matrixB_padded_internal));
+	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixB_padded_internal), size);
 }
 
 bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType)
