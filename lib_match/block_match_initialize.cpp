@@ -330,7 +330,7 @@ release_instance:
 	return false;
 }*/
 
-void fillBasicInstanceInformation(BlockMatchContext *instance,
+void initializeBasicInstanceInformation(BlockMatchContext *instance,
 	const int matrixA_M, const int matrixA_N, const int matrixB_M, const int matrixB_N,
 	const int searchRegion_M, const int searchRegion_N,
 	const int block_M, const int block_N,
@@ -341,7 +341,6 @@ void fillBasicInstanceInformation(BlockMatchContext *instance,
 	const int matrixBPadding_M_pre, const int matrixBPadding_M_post,
 	const int matrixBPadding_N_pre, const int matrixBPadding_N_post,
 	const int numberOfIndexRetain,
-	const int numberOfThreads,
 	const int matrixA_padded_M, const int matrixA_padded_N,
 	const int matrixB_padded_M, const int matrixB_padded_N
 )
@@ -373,8 +372,6 @@ void fillBasicInstanceInformation(BlockMatchContext *instance,
 	instance->matrixBPadding_N_post = matrixBPadding_N_post;
 
 	instance->numberOfIndexRetain = numberOfIndexRetain;
-
-	instance->numberOfThreads = numberOfThreads;
 
 	instance->matrixA_padded_M = matrixA_padded_M;
 	instance->matrixA_padded_N = matrixA_padded_N;
@@ -412,13 +409,22 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 
 	const int bufferSize = numberOfGPUProcessorThread * numberOfGPUDeviceMultiProcessor * numberOfThreads;
 
+	BlockMatchContext::WorkerContext &workerContext = instance->workerContext;
+	workerContext.numberOfIteration = (int*)malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext::WorkerContext) / sizeof(int*));
+	if (workerContext.numberOfIteration == nullptr)
+		goto release_instance;
+
+	workerContext.rawMatrixCIndex_begin = workerContext.numberOfIteration + numberOfThreads;
+	workerContext.beginMatrixAIndex_M = workerContext.rawMatrixCIndex_begin + numberOfThreads;
+	workerContext.beginMatrixAIndex_N = workerContext.beginMatrixAIndex_M + numberOfThreads;
+
 	BlockMatchContext::Buffer &buffer = instance->buffer;
 
 	cudaError_t cuda_error;
 
 	instance->stream = new cudaStream_t[numberOfThreads * 2];
 	if (!instance->stream) {
-		goto release_instance;
+		goto release_worker_context;
 	}
 
 	for (int i = 0; i < numberOfThreads * 2; ++i)
@@ -431,7 +437,7 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 				cudaStreamDestroy(instance->stream[j]);
 			}
 			delete[] instance->stream;
-			goto release_instance;
+			goto release_worker_context;
 		}
 	}
 
@@ -454,7 +460,7 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 		goto release_page_locked_memory;
 
 	buffer.index_y_sorting_buffer = buffer.index_x_sorting_buffer + bufferSize;
-	
+
 	buffer.common_buffer = buffer.index_y_sorting_buffer + bufferSize;
 	buffer.index_raw_sorting_buffer = buffer.common_buffer + numberOfBlockBPerBlockA;
 
@@ -487,14 +493,45 @@ release_cuda_stream:
 	}
 	delete[] instance->stream;
 
+release_worker_context:
+	free(instance->workerContext.numberOfIteration);
+
 release_instance:
 
 	free(instance);
 	return false;
 }
 
-bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThreads)
+void determineBeginMatrixAIndex(int *beginMatrixAIndex_M, int *beginMatrixAIndex_N, SearchType searchType,
+	int indexOfWorker, int numberOfWorker,
+	int matrixA_M, int matrixA_N,
+	int matrixAPadding_M_pre, int matrixAPadding_M_post, int matrixAPadding_N_pre, int matrixAPadding_N_post,
+	int searchRegion_M, int searchRegion_N)
 {
+	switch (searchType)
+	{
+	case SearchType::Local:
+	{
+		const int searchRegion_M_pre = searchRegion_M / 2,
+			searchRegion_M_post = searchRegion_M - searchRegion_M_pre,
+			searchRegion_N_pre = searchRegion_N / 2,
+			searchRegion_N_post = searchRegion_N - searchRegion_N_pre;
+
+		const int matrixAIndex_M_begin = 
+
+
+	}
+	break;
+	case SearchType::Global:
+
+		break;
+	default: break;
+	}
+}
+
+void initializeInstanceWorkerContext(BlockMatchContext *context)
+{
+	const int numberOfThreads = context->numberOfThreads;
 	char *beginPointer = reinterpret_cast<char*>(context) + sizeof(BlockMatchContext);
 
 	for (ptrdiff_t offset = 0; offset < sizeof(BlockMatchContext::PerThreadBufferPointer); offset += sizeof(void*))
@@ -504,6 +541,7 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 	}
 
 	BlockMatchContext::PerThreadBufferPointer &perThreadBufferPointer = context->perThreadBufferPointer;
+	BlockMatchContext::WorkerContext &workerContext = context->workerContext;
 
 	const int numberOfSubmitProcessors = context->numberOfSubmitProcessors;
 	const int numberOfSubmitThreadsPerProcessor = context->numberOfSubmitThreadsPerProcessor;
@@ -514,6 +552,12 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
 
 	BlockMatchContext::Buffer &buffer = context->buffer;
+
+	const int numberOfBlockBPerBlockA_M = context->numberOfBlockBPerBlockA_M;
+	const int numberOfBlockBPerBlockA_N = context->numberOfBlockBPerBlockA_N;
+	const int matrixC_M = context->C_dimensions[0], matrixC_N = context->C_dimensions[1], matrixC_O = context->C_dimensions[2];
+	const int numberOfTasks = matrixC_M * matrixC_N;
+	const int numberOfTasksPerWorker_minimum = numberOfTasks / numberOfThreads;
 
 	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
 	{
@@ -532,23 +576,16 @@ bool fillInstanceThreadInformation(BlockMatchContext *context, int numberOfThrea
 		perThreadBufferPointer.index_y_sorting_buffer[indexOfThread] = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
 
 		perThreadBufferPointer.index_raw_sorting_buffer[indexOfThread] = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
-	}
 
-	return true;
-}
-
-// TODO replace this function
-void fairDivide(const void *buffer, const size_t size, const size_t numberOfThreads, void **perThreadBuffer)
-{
-	const size_t perThreadBufferSize = size / numberOfThreads;
-	size_t i = 0;
-	for (; i < numberOfThreads; ++i)
-	{
-		perThreadBuffer[i] = reinterpret_cast<void *>(reinterpret_cast<ptrdiff_t>(buffer) + perThreadBufferSize * i);
+		// TODO
+		workerContext.numberOfIteration[indexOfThread] = numberOfTasksPerWorker_minimum;
+		workerContext.rawMatrixCIndex_begin[indexOfThread] = indexOfThread * numberOfTasksPerWorker_minimum;
+		//workerContext.beginMatrixAIndex_M[indexOfThread] = ;
+		//workerContext.beginMatrixAIndex_N[indexOfThread];
 	}
 }
 
-void fillInstanceOptionalInformation(BlockMatchContext *context)
+void zeroInstanceOptionalInformation(BlockMatchContext *context)
 {
 	memset(&context->optionalBuffer, 0, sizeof(context->optionalBuffer));
 }
@@ -588,6 +625,26 @@ bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext *context)
 	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixB_padded_internal), size);
 }
 
+// TODO support 4D C
+size_t getIndexSizeInBytes(BlockMatchContext *context)
+{
+	return context->C_dimensions[0] * context->C_dimensions[1] * context->C_dimensions[2];
+}
+
+bool allocateIndexXInternal(BlockMatchContext *context)
+{
+	size_t size = getIndexSizeInBytes(context);
+
+	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_x_internal), size);
+}
+
+bool allocateIndexYInternal(BlockMatchContext *context)
+{
+	size_t size = getIndexSizeInBytes(context);
+
+	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_y_internal), size);
+}
+
 bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType)
 {
 	switch (bufferType)
@@ -597,31 +654,36 @@ bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBuffe
 	case InternalBufferType::MatrixB_Padded_Buffer:
 		return allocateMatrixBPaddedInternalBuffer(context);
 	case InternalBufferType::Index_X_Internal:
-		// TODO
+		return allocateIndexXInternal(context);
 	case InternalBufferType::Index_Y_Internal:
-
+		return allocateIndexYInternal(context);
 	default:
 		return false;
 	}
 }
 
+
+
 void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType)
 {
-	size_t sizeInBytes;
+	size_t size = context->C_dimensions[2];
+
 	switch (bufferType)
 	{
-	case InternalBufferType::MatrixA_Padded_Buffer:
-		sizeInBytes = getMatrixAPaddedSizeInBytes(context);
-		fairDivide(buffer, sizeInBytes, context->numberOfThreads,
-			reinterpret_cast<void**>(context->optionalPerThreadBufferPointer.matrixA_padded_internal));
+	case InternalBufferType::Index_X_Internal:
+		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
+		{
+			context->optionalPerThreadBufferPointer.index_x_internal[indexOfThreads] = static_cast<int*>(buffer) +
+				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
+		}
 		break;
-	case InternalBufferType::MatrixB_Padded_Buffer:
-		sizeInBytes = getMatrixBPaddedSizeInBytes(context);
-		fairDivide(buffer, sizeInBytes, context->numberOfThreads,
-			reinterpret_cast<void**>(context->optionalPerThreadBufferPointer.matrixB_padded_internal));
+	case InternalBufferType::Index_Y_Internal:
+		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
+		{
+			context->optionalPerThreadBufferPointer.index_y_internal[indexOfThreads] = static_cast<int*>(buffer) +
+				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
+		}
 		break;
-	case InternalBufferType::Index_X_Internal: break;
-	case InternalBufferType::Index_Y_Internal: break;
 	default: break;
 	}
 }
@@ -649,12 +711,13 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixA_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixA_padded_N) = nullptr,
 	int *LIB_MATCH_OUT(matrixB_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixB_padded_N) = nullptr)
 {
-	const int group_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
-	const int group_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+	// TODO glocal and local
+	const int numberOfBlockBPerBlockA_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
+	const int numberOfBlockBPerBlockA_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
 
 	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
 	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
-	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, group_M, group_N);
+	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
 
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
@@ -670,7 +733,7 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
 	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
 
-	fillBasicInstanceInformation(instance,
+	initializeBasicInstanceInformation(instance,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		searchRegion_M, searchRegion_N,
 		block_M, block_N,
@@ -681,34 +744,32 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 		matrixBPadding_M_pre, matrixBPadding_M_post,
 		matrixBPadding_N_pre, matrixBPadding_N_post,
 		numberOfIndexRetain,
-		numberOfThreads,
 		matrixA_padded_M, matrixA_padded_N,
 		matrixB_padded_M, matrixB_padded_N
 	);
 
-	instance->C_dimensions[0] = matrixC_M;
-	instance->C_dimensions[1] = matrixC_N;
-	instance->C_dimensions[2] = matrixC_O;
-
 	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
-	const int numberOfBlockBPerBlockA = group_M * group_N;
-
+	const int numberOfBlockBPerBlockA = numberOfBlockBPerBlockA_M * numberOfBlockBPerBlockA_N;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
 	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
 		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
 
+	instance->C_dimensions[0] = matrixC_M;
+	instance->C_dimensions[1] = matrixC_N;
+	instance->C_dimensions[2] = matrixC_O;
+
 	instance->numberOfSubmitThreadsPerProcessor = numberOfSubmitThreadsPerProcessor;
 	instance->numberOfSubmitProcessors = numberOfSubmitProcessors;
 	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
 
+	instance->numberOfBlockBPerBlockA_M = numberOfBlockBPerBlockA_M;
+	instance->numberOfBlockBPerBlockA_N = numberOfBlockBPerBlockA_N;
 	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
-
-	// TODO: worker context
-
+	instance->numberOfThreads = numberOfThreads;
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 	{
@@ -716,12 +777,14 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 		return false;
 	}
 
-	if (!initializeMemoryResources(instance, matrixC_M, matrixC_N, matrixC_O,
-		block_M, block_N, numberOfBlockBPerBlockA,
-		numberOfThreads,
-		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread))
+	if (!initializeMemoryResources(instance)) {
+		setLastErrorString("Error: memory allocation failed");
 		return false;
+	}
 
+	zeroInstanceOptionalInformation(instance);
+
+	initializeInstanceWorkerContext(instance);
 
 	*LIB_MATCH_OUT(instance) = instance;
 

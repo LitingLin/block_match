@@ -57,9 +57,17 @@ typedef void ExecutionMethod(float *matrixA, float *matrixB, float *matrixC,
 ** So, two dimensions is assumed
 */
 
+enum class SearchType
+{
+	Local,
+	Global
+};
+
 // TODO support int64
 struct BlockMatchContext
 {
+	SearchType searchType;
+
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -97,6 +105,8 @@ struct BlockMatchContext
 	PadMethod* padMethod;
 	ExecutionMethod *executionMethod;
 
+	int numberOfBlockBPerBlockA_M;
+	int numberOfBlockBPerBlockA_N;
 	int numberOfBlockBPerBlockA;
 
 	int C_dimensions[4];
@@ -125,15 +135,13 @@ struct BlockMatchContext
 	struct WorkerContext
 	{
 		int *numberOfIteration;
-		int *rawMatrixCIndex;
+		int *rawMatrixCIndex_begin;
 		int *beginMatrixAIndex_M;
 		int *beginMatrixAIndex_N;
 	} workerContext;
 
 	struct OptionalPerThreadBufferPointer
 	{
-		float **matrixA_padded_internal;
-		float **matrixB_padded_internal;
 		int **index_x_internal;
 		int **index_y_internal;
 	} optionalPerThreadBufferPointer;
