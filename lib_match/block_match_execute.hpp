@@ -132,17 +132,19 @@ void determineBlockB_index_full(int &indexB_begin, int &indexB_end, int matB, in
 	indexB_end = determineEndOfIndex(matB, padB, block);
 }
 */
-typedef void DetermineBlockBIndex(int *, int *, int, int, int, int);
+typedef void DetermineBlockBIndex(int *, int *, int, int, int, int, int);
 
 inline
-void determineBlockB_index_local(int *indexB_begin, int *indexB_end, int matB, int block, int neighbour, int index_A)
+void determineBlockB_index_local(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A, int matrixBPadding_pre)
 {
-	*indexB_begin = index_A - neighbour / 2;
-	*indexB_end = index_A - neighbour / 2 + neighbour;
+	*indexB_begin = index_A - neighbour / 2 + matrixBPadding_pre;
+	*indexB_end = index_A - neighbour / 2 + neighbour + matrixBPadding_pre;
 }
 
 inline
-void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block, int neighbour, int index_A)
+void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A, int matrixBPadding_pre)
 {
 	*indexB_begin = 0;
 	*indexB_end = determineEndOfIndex(matB, block);
@@ -277,37 +279,47 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 	return true;
 }*/
 
-struct ExecutionContext
+inline
+bool indexA_M_outOfIndexError()
 {
-	float *matrixA, *matrixB, *matrixC,
-		*matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
-		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
-	int matrixA_M, matrixA_N,
-		matrixB_M, matrixB_N;
-	int *index_x, *index_y, *index_x_buffer, *index_y_buffer,
-		*rawIndexTemplate, *rawIndexBuffer,
-		block_M, block_N,
-		strideA_M, strideA_N,
-		strideB_M, strideB_N,
-		neighbour_M, neighbour_N,
-		numberOfBlockBPerBlockA,
-		numberOfIndexRetain,
-		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration,
-		index_A_N_begin, index_A_N_end;
-
-	/* Gpu Stuff */
-	cudaStream_t streamA, streamB; // TODO: Double buffering
-	int maxNumberOfThreadsPerProcessor,
-		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
-};
+	logger.critical("Internal logical error: indexA_M out of index");
+	return false;
+}
 
 // TODO: Fix busy waiting gpu tasks
-template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex determineBlockB_N_index,
+template <DetermineBlockBIndex determineBlockB_index,
 	RecordIndex recordIndexMethod,
 	ProcessFunction processFunction,
 	SortMethod sortMethod>
-	bool processWorker(ExecutionContext *executionContext)
+	unsigned processWorker(ExecutionContext *executionContext)
 {
+	float *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
+		*matrixC = executionContext->matrixC,
+		*matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
+		*matrixC_buffer = executionContext->matrixC_buffer,
+		*matrixA_deviceBuffer = executionContext->matrixA_deviceBuffer, *matrixB_deviceBuffer = executionContext->matrixB_deviceBuffer,
+		*matrixC_deviceBuffer = executionContext->matrixC_deviceBuffer;
+	int matrixA_M = executionContext->matrixA_M, matrixA_N = executionContext->matrixA_N,
+		matrixB_M = executionContext->matrixB_M, matrixB_N = executionContext->matrixB_N;
+	int *index_x = executionContext->index_x, *index_y = executionContext->index_y,
+		*index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
+		*rawIndexTemplate = executionContext->rawIndexTemplate, *rawIndexBuffer = executionContext->rawIndexBuffer,
+		block_M = executionContext->block_M, block_N = executionContext->block_N,
+		strideA_M = executionContext->strideA_M, strideA_N = executionContext->strideA_N,
+		strideB_M = executionContext->strideB_M, strideB_N = executionContext->strideB_N,
+		neighbour_M = executionContext->neighbour_M, neighbour_N = executionContext->neighbour_N,
+		numberOfBlockBPerBlockA = executionContext->numberOfBlockBPerBlockA,
+		numberOfIndexRetain = executionContext->numberOfIndexRetain,
+		startIndexOfMatrixA_M = executionContext->startIndexOfMatrixA_M, startIndexOfMatrixA_N = executionContext->startIndexOfMatrixA_N,
+		numberOfIteration = executionContext->numberOfIteration;
+	int matrixBPadding_M_pre = executionContext->matrixBPadding_M_pre, matrixBPadding_N_pre = executionContext->matrixBPadding_N_pre;
+
+	cudaStream_t streamA = executionContext->streamA, streamB = executionContext->streamB; // TODO: Double buffering
+	int maxNumberOfThreadsPerProcessor = executionContext->maxNumberOfThreadsPerProcessor,
+		numberOfSubmitThreadsPerProcessor = executionContext->numberOfSubmitThreadsPerProcessor,
+		numberOfSubmitProcessors = executionContext->numberOfSubmitProcessors,
+		lengthOfGpuTaskQueue = executionContext->lengthOfGpuTaskQueue;
+
 	int blockSize = executionContext->block_M * executionContext->block_N;
 	float *c_bufferA = executionContext->matrixA_buffer;
 	float *c_bufferB = executionContext->matrixB_buffer;
@@ -316,38 +328,45 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 		*c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
 
 	int numberOfBlockA = 0;
-	int numberOfIndexRetain = executionContext->numberOfIndexRetain;
 	if (!numberOfIndexRetain)
-		numberOfIndexRetain = executionContext->numberOfBlockBPerBlockA;
+		numberOfIndexRetain = numberOfBlockBPerBlockA;
 
 	int numberOfQueuedTasks = 0, indexOfIteration = 0;
-	int indexA_M = executionContext->startIndexOfMatrixA_M, indexA_N = executionContext->startIndexOfMatrixA_N;
+	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	for (; ; indexA_M += executionContext->strideA_M)
+	int indexA_M_end = determineEndOfIndex(matrixA_M, block_M);
+	int indexA_N_end = determineEndOfIndex(matrixA_N, block_N);
+
+	goto JumpIn;
+
+	for (indexA_M = 0; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
 	{
-		for (; ;)
+		for (indexA_N = 0; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
-			copyBlock(c_bufferA, executionContext->matrixA,
-				executionContext->matrixA_M, executionContext->matrixA_N,
-				indexA_M, indexA_N, executionContext->block_M, executionContext->block_N);
+		JumpIn:
+			copyBlock(c_bufferA, matrixA,
+				matrixA_M, matrixA_N,
+				indexA_M, indexA_N, block_M, block_N);
 
 #ifndef NDEBUG
 			int sequenceBCount = 0;
 #endif
 			int indexB_M_begin, indexB_M_end;
-			determineBlockB_M_index(&indexB_M_begin, &indexB_M_end,
-				executionContext->matrixB_M, executionContext->block_M,
-				executionContext->neighbour_M, indexA_M);
-			for (int indexB_M = indexB_M_begin; indexB_M < indexB_M_end; indexB_M += executionContext->strideB_M)
+			determineBlockB_index(&indexB_M_begin, &indexB_M_end,
+				matrixB_M, block_M,
+				neighbour_M, indexA_M,
+				matrixBPadding_M_pre);
+			for (int indexB_M = indexB_M_begin; indexB_M < indexB_M_end; indexB_M += strideB_M)
 			{
 				int indexB_N_begin, indexB_N_end;
-				determineBlockB_N_index(&indexB_N_begin, &indexB_N_end,
-					executionContext->matrixB_N, executionContext->block_N, executionContext->neighbour_N, indexA_N);
-				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += executionContext->strideB_N)
+				determineBlockB_index(&indexB_N_begin, &indexB_N_end,
+					matrixB_N, block_N, neighbour_N, indexA_N,
+					matrixBPadding_N_pre);
+				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					copyBlock(c_bufferB, executionContext->matrixB,
-						executionContext->matrixB_M, executionContext->matrixB_N,
-						indexB_M, indexB_N, executionContext->block_M, executionContext->block_N);
+					copyBlock(c_bufferB, matrixB,
+						matrixB_M, matrixB_N,
+						indexB_M, indexB_N, block_M, block_N);
 					recordIndexMethod(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 					c_bufferB += blockSize;
 
@@ -358,7 +377,7 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 			}
 
 #ifndef NDEBUG
-			if (sequenceBCount != executionContext->numberOfBlockBPerBlockA)
+			if (sequenceBCount != numberOfBlockBPerBlockA)
 				logger.critical("Internal logical error: sequenceBCount != numberOfBlockBPerBlockA");
 #endif
 
@@ -368,31 +387,31 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 
 			c_bufferA += blockSize;
 
-			if (numberOfQueuedTasks == executionContext->lengthOfGpuTaskQueue)
+			if (numberOfQueuedTasks == lengthOfGpuTaskQueue)
 			{
-				if (!submitGpuTask<processFunction>(executionContext->matrixA_buffer, executionContext->matrixB_buffer, executionContext->matrixC_buffer,
-					executionContext->matrixA_deviceBuffer, executionContext->matrixB_deviceBuffer, executionContext->matrixC_deviceBuffer,
-					blockSize, numberOfBlockA, executionContext->numberOfBlockBPerBlockA,
-					executionContext->numberOfSubmitProcessors, executionContext->numberOfSubmitThreadsPerProcessor, executionContext->streamA))
+				if (!submitGpuTask<processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
+					matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
+					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
+					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, streamA))
 					return false;
 
-				cudaError_t cuda_error = cudaStreamSynchronize(executionContext->streamA);
+				cudaError_t cuda_error = cudaStreamSynchronize(streamA);
 				if (cuda_error != cudaSuccess)
 					return false;
 
 				//std::swap(streamA, streamB);
 
-				c_index_x_buffer = executionContext->index_x_buffer;
-				c_index_y_buffer = executionContext->index_y_buffer;
+				c_index_x_buffer = index_x_buffer;
+				c_index_y_buffer = index_y_buffer;
 
-				sortMethod(c_index_x, c_index_y, c_result, executionContext->index_x_buffer, executionContext->index_y_buffer,
-					executionContext->matrixC_buffer,
-					numberOfBlockA, executionContext->numberOfBlockBPerBlockA, numberOfIndexRetain,
-					executionContext->rawIndexTemplate, executionContext->rawIndexBuffer);
+				sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer,
+					matrixC_buffer,
+					numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
+					rawIndexTemplate, rawIndexBuffer);
 
 				//c_result += numTasks;
-				c_bufferA = executionContext->matrixA_buffer;
-				c_bufferB = executionContext->matrixB_buffer;
+				c_bufferA = matrixA_buffer;
+				c_bufferB = matrixB_buffer;
 
 				numberOfBlockA = 0;
 				numberOfQueuedTasks = 0;
@@ -400,39 +419,32 @@ template <DetermineBlockBIndex determineBlockB_M_index, DetermineBlockBIndex det
 
 			++indexOfIteration;
 
-			if (indexOfIteration == executionContext->numberOfIteration)
+			if (indexOfIteration == numberOfIteration)
 				goto JumpOut;
-
-			indexA_N += executionContext->strideA_N;
-			if (indexA_N >= executionContext->index_A_N_end)
-			{
-				indexA_N = executionContext->index_A_N_begin;
-				break;
 			}
 		}
-	}
 JumpOut:
 	if (numberOfBlockA)
 	{
-		int remainBlocks = numberOfBlockA * executionContext->numberOfBlockBPerBlockA;
+		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 
-		if (!submitGpuTask<processFunction>(executionContext->matrixA_buffer, executionContext->matrixB_buffer,
-			executionContext->matrixC_buffer,
-			executionContext->matrixA_deviceBuffer, executionContext->matrixB_deviceBuffer,
-			executionContext->matrixC_deviceBuffer,
-			blockSize, numberOfBlockA, executionContext->numberOfBlockBPerBlockA,
-			(remainBlocks + executionContext->maxNumberOfThreadsPerProcessor - 1) / executionContext->maxNumberOfThreadsPerProcessor,
-			executionContext->maxNumberOfThreadsPerProcessor, executionContext->streamA))
+		if (!submitGpuTask<processFunction>(matrixA_buffer, matrixB_buffer,
+			matrixC_buffer,
+			matrixA_deviceBuffer, matrixB_deviceBuffer,
+			matrixC_deviceBuffer,
+			blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
+			(remainBlocks + maxNumberOfThreadsPerProcessor - 1) / maxNumberOfThreadsPerProcessor,
+			maxNumberOfThreadsPerProcessor, streamA))
 			return false;
 
-		cudaError_t cuda_error = cudaStreamSynchronize(executionContext->streamA);
+		cudaError_t cuda_error = cudaStreamSynchronize(streamA);
 		if (cuda_error != cudaSuccess)
 			return false;
 
-		sortMethod(c_index_x, c_index_y, c_result, executionContext->index_x_buffer, executionContext->index_y_buffer, executionContext->matrixC_buffer,
-			numberOfBlockA, executionContext->numberOfBlockBPerBlockA, numberOfIndexRetain,
-			executionContext->rawIndexTemplate, executionContext->rawIndexBuffer);
+		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
+			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
+			rawIndexTemplate, rawIndexBuffer);
 	}
 
 	return true;
-}
+	}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "lib_match.h"
+
 #include <spdlog/spdlog.h>
 
 extern spdlog::logger logger;
@@ -30,43 +32,48 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
+
+/* 
+ * M means the first dimension, N means the second dimension
+** So, two dimensions is assumed
+*/
+
+struct ExecutionContext
+{
+	float *matrixA, *matrixB, *matrixC,
+		*matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
+		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
+	int matrixA_M, matrixA_N,
+		matrixB_M, matrixB_N;
+	int *index_x, *index_y, *index_x_buffer, *index_y_buffer,
+		*rawIndexTemplate, *rawIndexBuffer,
+		block_M, block_N,
+		strideA_M, strideA_N,
+		strideB_M, strideB_N,
+		neighbour_M, neighbour_N,
+		numberOfBlockBPerBlockA,
+		numberOfIndexRetain,
+		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
+
+	int matrixBPadding_M_pre, matrixBPadding_N_pre;
+
+	/* Gpu Stuff */
+	cudaStream_t streamA, streamB; // TODO: Double buffering
+	int maxNumberOfThreadsPerProcessor,
+		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
+};
+
 typedef void PadMethod(const float *old_ptr, float *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
-typedef void ExecutionMethod(float *matrixA, float *matrixB, float *matrixC,
-	float *matrixA_buffer, int matrixA_M, int matrixA_N, int index_A_M_begin, int index_A_M_end, int index_A_N_begin, int index_A_N_end,
-	float *matrixB_buffer, int matrixB_M, int matrixB_N,
-	float *matrixC_buffer,
-	float *matrixA_deviceBuffer, float *matrixB_deviceBuffer, float *matrixC_deviceBuffer,
-	int *index_x, int *index_y, int *index_x_buffer, int *index_y_buffer,
-	int *rawIndexTemplate, int *rawIndexBuffer,
-	int block_M, int block_N,
-	int padB_M, int padB_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int neighbour_M, int neighbour_N,
-	int numberOfBlockBPerBlockA,
-	int numberOfIndexRetain,
-	/* Gpu Stuff */
-	cudaStream_t streamA, cudaStream_t streamB, // TODO: Double buffering
-	int maxNumberOfThreadsPerProcessor,
-	int numberOfSubmitThreadsPerProcessor, int numberOfSubmitProcessors, int numberOfIteration);
-
-/* M means the first dimension, N means the second dimension
-** So, two dimensions is assumed
-*/
-
-enum class SearchType
-{
-	Local,
-	Global
-};
+typedef unsigned ExecutionMethod(ExecutionContext *);
 
 // TODO support int64
 struct BlockMatchContext
 {
 	SearchType searchType;
+	LibMatchMeasureMethod measureMethod;
 
 	int matrixA_M;
 	int matrixA_N;
@@ -115,8 +122,8 @@ struct BlockMatchContext
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
-	void *threadPoolTaskHandle;
-
+	void **threadPoolTaskHandle;
+	
 	struct Buffer {
 		float *matrixA_buffer;
 		float *matrixB_buffer;
@@ -138,13 +145,14 @@ struct BlockMatchContext
 		int *rawMatrixCIndex_begin;
 		int *beginMatrixAIndex_M;
 		int *beginMatrixAIndex_N;
+		ExecutionContext *executionContext;
 	} workerContext;
 
 	struct OptionalPerThreadBufferPointer
 	{
-		int **index_x_internal;
-		int **index_y_internal;
-	} optionalPerThreadBufferPointer;
+		int *index_x_internal;
+		int *index_y_internal;
+	} *optionalPerThreadBufferPointer;
 
 	struct OptionalBuffer
 	{
@@ -156,18 +164,18 @@ struct BlockMatchContext
 
 	struct PerThreadBufferPointer
 	{
-		float **matrixA_buffer;
-		float **matrixB_buffer;
-		float **matrixC_buffer;
-		float **matrixA_deviceBuffer;
-		float **matrixB_deviceBuffer;
-		float **matrixC_deviceBuffer;
+		float *matrixA_buffer;
+		float *matrixB_buffer;
+		float *matrixC_buffer;
+		float *matrixA_deviceBuffer;
+		float *matrixB_deviceBuffer;
+		float *matrixC_deviceBuffer;
 
-		int **index_x_sorting_buffer;
-		int **index_y_sorting_buffer;
+		int *index_x_sorting_buffer;
+		int *index_y_sorting_buffer;
 
-		int **index_raw_sorting_buffer;
-	} perThreadBufferPointer;
+		int *index_raw_sorting_buffer;
+	} *perThreadBufferPointer;
 };
 
 struct ArrayMatchContext
@@ -182,6 +190,7 @@ struct ArrayMatchContext
 
 	int numberOfThreads;
 };
+
 
 namespace lib_match_internal {
 	template<typename R, template<typename...> class Params, typename... Args, std::size_t... I>
@@ -261,9 +270,6 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
-
-bool allocateMatrixAPaddedInternalBuffer(BlockMatchContext *context);
-bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext *context);
 
 BlockMatchContext * allocateContext(const int numberOfThreads);
 enum class InternalBufferType

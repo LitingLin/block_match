@@ -131,7 +131,7 @@ void symmetricPadding(const T *old_ptr, T *new_ptr,
 	T *t1_ptr;
 	T *t2_ptr;
 
-	T *t3_ptr;
+	const T *t3_ptr;
 
 	t3_ptr = old_ptr + old_width * (pad_up - 1);
 	new_ptr += pad_left;

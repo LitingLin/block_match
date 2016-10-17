@@ -1,144 +1,8 @@
 #include "lib_match_internal.h"
 
 #include <cuda_runtime.h>
-/*
-bool initialize_local(void **_instance,
-	int matA_M, int matA_N, int matB_M, int matB_N,
-	int block_M, int block_N, int neighbour_M, int neighbour_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N)
-{
-	static bool isGlobalContextInitialized = false;
-	if (!isGlobalContextInitialized)
-	{
-		globalContext.initialize();
-		isGlobalContextInitialized = true;
-	}
 
-	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
-	if (!instance)
-		return false;
-
-	instance->matrixA_M = matA_M;
-	instance->matrixA_N = matA_N;
-	instance->matrixB_M = matB_M;
-	instance->matrixB_N = matB_N;
-
-	instance->block_M = block_M;
-	instance->block_N = block_N;
-
-	instance->searchRegion_M = neighbour_M;
-	instance->searchRegion_N = neighbour_N;
-
-	instance->strideA_M = strideA_M;
-	instance->strideA_N = strideA_N;
-	instance->strideB_M = strideB_M;
-	instance->strideB_N = strideB_N;
-
-	int result_dim0 = (matA_M + 2 * paddingA_M - block_M + 1) / strideA_M;
-	int result_dim1 = (matA_N + 2 * paddingA_N - block_N + 1) / strideA_N;
-	int result_dim2 = (neighbour_M + strideB_M - 1) / strideB_M;
-	int result_dim3 = (neighbour_N + strideB_N - 1) / strideB_N;
-
-	instance->C_dimensions[0] = result_dim0;
-	instance->C_dimensions[1] = result_dim1;
-	instance->C_dimensions[2] = result_dim2;
-	instance->C_dimensions[3] = result_dim3;
-
-	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	cudaError_t cuda_error;
-
-	int numberOfThreads = globalContext.numberOfThreads;
-
-	instance->stream = new cudaStream_t[numberOfThreads];
-	if (!instance->stream)
-		goto release_cuda_stream;
-
-	for (int i = 0; i < numberOfThreads * 2; ++i)
-	{
-		cuda_error = cudaStreamCreate(&instance->stream[i]);
-		if (cuda_error != cudaSuccess)
-		{
-			for (int j = i - 1; j >= 0; j--)
-			{
-				cudaStreamDestroy(instance->stream[j]);
-			}
-			goto release_cuda_stream;
-		}
-	}
-
-	cuda_error = cudaMallocHost(&instance->matrixA_buffer,
-		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_instance;
-	}
-
-	cuda_error = cudaMallocHost(&instance->matrixB_buffer,
-		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_buffer_A;
-	}
-
-	cuda_error = cudaMallocHost(&instance->matrixC_buffer,
-		result_dim0 * result_dim1 * result_dim2 * result_dim3 * sizeof(float));
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_buffer_B;
-	}
-
-	cuda_error = cudaMalloc(&instance->matrixA_deviceBuffer,
-		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_result_buffer;
-	}
-
-	cuda_error = cudaMalloc(&instance->matrixB_deviceBuffer,
-		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N * sizeof(float));
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_device_buffer_A;
-	}
-	cuda_error = cudaMalloc(&instance->matrixC_deviceBuffer,
-		numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * sizeof(float));
-
-	if (cuda_error != cudaSuccess)
-	{
-		goto release_device_buffer_B;
-	}
-	*_instance = instance;
-
-	return true;
-
-release_device_buffer_B:
-
-	cudaFree(instance->matrixB_deviceBuffer);
-release_device_buffer_A:
-
-	cudaFree(instance->matrixA_deviceBuffer);
-release_result_buffer:
-
-	cudaFreeHost(instance->matrixC_buffer);
-release_buffer_B:
-
-	cudaFreeHost(instance->matrixB_buffer);
-release_buffer_A:
-
-	cudaFreeHost(instance->matrixA_buffer);
-release_cuda_stream:
-	delete[] instance->stream;
-
-release_instance:
-
-	free(instance);
-	return false;
-}*/
+#include "block_match_execute.hpp"
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
@@ -170,167 +34,9 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 		}
 	}
 }
-/*
-bool initialize_full(void **_instance,
-	int matA_M, int matA_N, int matB_M, int matB_N,
-	int block_M, int block_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N,
-	int retain)
-{
-
-	struct BlockMatchContext * instance = (struct BlockMatchContext *)malloc(sizeof(struct BlockMatchContext));
-	if (!instance)
-		return false;
-
-	instance->matrixA_M = matA_M;
-	instance->matrixA_N = matA_N;
-	instance->matrixB_M = matB_M;
-	instance->matrixB_N = matB_N;
-
-	instance->block_M = block_M;
-	instance->block_N = block_N;
-
-	instance->strideA_M = strideA_M;
-	instance->strideA_N = strideA_N;
-	instance->strideB_M = strideB_M;
-	instance->strideB_N = strideB_N;
-	instance->sequenceAPadding_M = paddingA_M;
-	instance->sequenceAPadding_N = paddingA_N;
-	instance->sequenceBPadding_M = paddingB_M;
-	instance->sequenceBPadding_N = paddingB_N;
-
-	instance->numberOfIndexRetain = retain;
-
-	int result_dim0 = getLength(matA_M, paddingA_M, block_M, strideA_M);
-	int result_dim1 = getLength(matA_N, paddingA_N, block_N, strideA_N);
-	int result_dim2;
-
-	int numberOfThreads = globalContext.numberOfThreads;
-	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	if (retain)
-		result_dim2 = retain;
-	else
-		result_dim2 = getLength(matB_M, paddingB_M, block_M, strideB_M)* getLength(matA_N, paddingB_N, block_N, strideB_N);
-	//int result_dim2 = (matrixB_M + 2 * paddingB_M - block_M + strideB_M - 1) / strideB_M;
-	//int result_dim3 = (matrixA_N + 2 * paddingB_N - block_N + strideB_N - 1) / strideB_N;
-
-	int group_M = getLength(matB_M, paddingB_M, block_M, strideB_M);
-	int group_N = getLength(matB_N, paddingB_N, block_N, strideB_N);
-	int numberOfBlockBPerBlockA = group_M * group_N;
-	if (numberOfBlockBPerBlockA > numberOfGPUProcessorThread)
-		numberOfGPUProcessorThread = numberOfBlockBPerBlockA;
-
-	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
-
-	if (retain > numberOfBlockBPerBlockA)
-		return false;
-	if (result_dim0 < globalContext.numberOfThreads)
-		return false;
-
-	int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
-	int resultSize = result_dim0 * result_dim1 * result_dim2;
-
-	int	bufferSize = numberOfGPUProcessorThread / numberOfBlockBPerBlockA * numberOfBlockBPerBlockA * numberOfGPUDeviceMultiProcessor;
-	instance->perThreadBufferSize = bufferSize;
-	bufferSize *= numberOfThreads;
-
-	instance->C_dimensions[0] = result_dim0;
-	instance->C_dimensions[1] = result_dim1;
-	instance->C_dimensions[2] = result_dim2;
-
-
-	cudaError_t cuda_error;
-
-	instance->stream = new cudaStream_t[numberOfThreads * 2];
-	if (!instance->stream) {
-		goto release_instance;
-	}
-
-	for (int i = 0; i < numberOfThreads * 2; ++i)
-	{
-		cuda_error = cudaStreamCreate(&instance->stream[i]);
-		if (cuda_error != cudaSuccess)
-		{
-			for (int j = i - 1; j >= 0; j--)
-			{
-				cudaStreamDestroy(instance->stream[j]);
-			}
-			delete[] instance->stream;
-			goto release_instance;
-		}
-	}
-
-	// Remember to * sizeof(type size)
-
-	cuda_error = cudaMallocHost(&instance->matrixA_buffer,
-		(matBufferSize * 2 + bufferSize) * sizeof(float)
-	);
-
-	if (cuda_error != cudaSuccess)
-		goto release_cuda_stream;
-
-	instance->matrixB_buffer = instance->matrixA_buffer + matBufferSize;
-	instance->matrixC_buffer = instance->matrixB_buffer + matBufferSize;
-
-	instance->index_x = (int *)malloc(
-		(resultSize + bufferSize) * 2 * sizeof(int) +
-		resultSize * sizeof(float) +
-		numberOfBlockBPerBlockA*(numberOfThreads + 1) * sizeof(int));
-
-	if (instance->index_x == nullptr)
-		goto release_page_locked_memory;
-
-	instance->index_y = instance->index_x + resultSize;
-	instance->index_x_sorting_buffer = instance->index_y + resultSize;
-	instance->index_y_sorting_buffer = instance->index_x_sorting_buffer + bufferSize;
-
-	instance->C = (float*)instance->index_y_sorting_buffer + bufferSize;
-
-	instance->common_buffer = (int*)(instance->C + resultSize);
-	instance->index_raw_sorting_buffer = instance->common_buffer + numberOfBlockBPerBlockA;
-
-	generateIndexSequence(instance->common_buffer, numberOfBlockBPerBlockA);
-
-	cuda_error = cudaMalloc(&instance->matrixA_deviceBuffer,
-		(matBufferSize * 2 + bufferSize) * sizeof(float));
-	if (cuda_error != cudaSuccess)
-		goto release_memory;
-
-	instance->matrixB_deviceBuffer = instance->matrixA_deviceBuffer + matBufferSize;
-	instance->matrixC_deviceBuffer = instance->matrixB_deviceBuffer + matBufferSize;
-
-	*_instance = instance;
-
-	return true;
-
-release_device_memory:
-	cudaFree(instance->matrixA_deviceBuffer);
-
-release_memory:
-	delete[] instance->index_x;
-release_page_locked_memory:
-
-	cudaFreeHost(instance->matrixA_buffer);
-
-release_cuda_stream:
-	for (int i = 0; i < numberOfThreads * 2; ++i)
-	{
-		cudaStreamDestroy(instance->stream[i]);
-	}
-	delete[] instance->stream;
-
-release_instance:
-
-	free(instance);
-	return false;
-}*/
 
 void initializeBasicInstanceInformation(BlockMatchContext *instance,
+	const SearchType searchType,
 	const int matrixA_M, const int matrixA_N, const int matrixB_M, const int matrixB_N,
 	const int searchRegion_M, const int searchRegion_N,
 	const int block_M, const int block_N,
@@ -345,6 +51,8 @@ void initializeBasicInstanceInformation(BlockMatchContext *instance,
 	const int matrixB_padded_M, const int matrixB_padded_N
 )
 {
+	instance->searchType = searchType;
+
 	instance->matrixA_M = matrixA_M;
 	instance->matrixA_N = matrixA_N;
 	instance->matrixB_M = matrixB_M;
@@ -396,6 +104,26 @@ int determineSizeOfMatrixC_O(int numberOfIndexRetain, int group_M, int group_N)
 		return group_M * group_N;
 }
 
+/*
+ * Initialized parameter list:
+ * WorkerContext:
+ *  numberOfIteration
+ *  rawMatrixCIndex_begin
+ *  beginMatrixAIndex_M
+ *  beginMatrixAIndex_N
+ * stream
+ * Buffer:
+ *  matrixA_buffer
+ *  matrixB_buffer
+ *  matrixC_buffer
+ *  index_x_sorting_buffer
+ *  index_y_sorting_buffer
+ *  common_buffer
+ *  index_raw_sorting_buffer
+ *  matrixA_deviceBuffer
+ *  matrixB_deviceBuffer
+ *  matrixC_deviceBuffer
+ */
 bool initializeMemoryResources(BlockMatchContext *instance)
 {
 	const int block_M = instance->block_M;
@@ -410,19 +138,21 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 	const int bufferSize = numberOfGPUProcessorThread * numberOfGPUDeviceMultiProcessor * numberOfThreads;
 
 	BlockMatchContext::WorkerContext &workerContext = instance->workerContext;
-	workerContext.numberOfIteration = (int*)malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext::WorkerContext) / sizeof(int*));
+	workerContext.numberOfIteration = static_cast<int*>(malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext::WorkerContext) / sizeof(int*)
+		+ numberOfThreads * sizeof(void*)));
 	if (workerContext.numberOfIteration == nullptr)
-		goto release_instance;
+		goto failed;
 
 	workerContext.rawMatrixCIndex_begin = workerContext.numberOfIteration + numberOfThreads;
 	workerContext.beginMatrixAIndex_M = workerContext.rawMatrixCIndex_begin + numberOfThreads;
 	workerContext.beginMatrixAIndex_N = workerContext.beginMatrixAIndex_M + numberOfThreads;
+	instance->threadPoolTaskHandle = reinterpret_cast<void**>(workerContext.beginMatrixAIndex_N) + numberOfThreads;
 
 	BlockMatchContext::Buffer &buffer = instance->buffer;
 
 	cudaError_t cuda_error;
 
-	instance->stream = new cudaStream_t[numberOfThreads * 2];
+	instance->stream = static_cast<cudaStream_t*>(malloc(numberOfThreads * 2 * sizeof(cudaStream_t)));
 	if (!instance->stream) {
 		goto release_worker_context;
 	}
@@ -436,7 +166,7 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 			{
 				cudaStreamDestroy(instance->stream[j]);
 			}
-			delete[] instance->stream;
+			free(instance->stream);
 			goto release_worker_context;
 		}
 	}
@@ -452,9 +182,9 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 	buffer.matrixB_buffer = buffer.matrixA_buffer + matBufferSize;
 	buffer.matrixC_buffer = buffer.matrixB_buffer + matBufferSize;
 
-	buffer.index_x_sorting_buffer = (int *)malloc(
+	buffer.index_x_sorting_buffer = static_cast<int *>(malloc(
 		bufferSize * 2 * sizeof(int) +
-		numberOfBlockBPerBlockA*(numberOfThreads + 1) * sizeof(int));
+		numberOfBlockBPerBlockA * (numberOfThreads + 1) * sizeof(int)));
 
 	if (buffer.index_x_sorting_buffer == nullptr)
 		goto release_page_locked_memory;
@@ -463,8 +193,6 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 
 	buffer.common_buffer = buffer.index_y_sorting_buffer + bufferSize;
 	buffer.index_raw_sorting_buffer = buffer.common_buffer + numberOfBlockBPerBlockA;
-
-	generateIndexSequence(buffer.common_buffer, numberOfBlockBPerBlockA);
 
 	cuda_error = cudaMalloc(&buffer.matrixA_deviceBuffer,
 		(matBufferSize * 2 + bufferSize) * sizeof(float));
@@ -491,56 +219,25 @@ release_cuda_stream:
 	{
 		cudaStreamDestroy(instance->stream[i]);
 	}
-	delete[] instance->stream;
+	free(instance->stream);
 
 release_worker_context:
 	free(instance->workerContext.numberOfIteration);
 
-release_instance:
-
-	free(instance);
+failed:
 	return false;
-}
-
-void determineBeginMatrixAIndex(int *beginMatrixAIndex_M, int *beginMatrixAIndex_N, SearchType searchType,
-	int indexOfWorker, int numberOfWorker,
-	int matrixA_M, int matrixA_N,
-	int matrixAPadding_M_pre, int matrixAPadding_M_post, int matrixAPadding_N_pre, int matrixAPadding_N_post,
-	int searchRegion_M, int searchRegion_N)
-{
-	switch (searchType)
-	{
-	case SearchType::Local:
-	{
-		const int searchRegion_M_pre = searchRegion_M / 2,
-			searchRegion_M_post = searchRegion_M - searchRegion_M_pre,
-			searchRegion_N_pre = searchRegion_N / 2,
-			searchRegion_N_post = searchRegion_N - searchRegion_N_pre;
-
-		const int matrixAIndex_M_begin = 
-
-
-	}
-	break;
-	case SearchType::Global:
-
-		break;
-	default: break;
-	}
 }
 
 void initializeInstanceWorkerContext(BlockMatchContext *context)
 {
 	const int numberOfThreads = context->numberOfThreads;
-	char *beginPointer = reinterpret_cast<char*>(context) + sizeof(BlockMatchContext);
+	context->perThreadBufferPointer =
+		reinterpret_cast<BlockMatchContext::PerThreadBufferPointer*>(reinterpret_cast<char*>(context) + sizeof(BlockMatchContext));
+	context->optionalPerThreadBufferPointer =
+		reinterpret_cast<BlockMatchContext::OptionalPerThreadBufferPointer*>
+		(reinterpret_cast<char*>(context) + sizeof(BlockMatchContext) + sizeof(BlockMatchContext::PerThreadBufferPointer) * numberOfThreads);
 
-	for (ptrdiff_t offset = 0; offset < sizeof(BlockMatchContext::PerThreadBufferPointer); offset += sizeof(void*))
-	{
-		void** pointer = reinterpret_cast<void**>(reinterpret_cast<char*>(&context->perThreadBufferPointer) + offset);
-		*pointer = beginPointer + numberOfThreads * offset;
-	}
-
-	BlockMatchContext::PerThreadBufferPointer &perThreadBufferPointer = context->perThreadBufferPointer;
+	BlockMatchContext::PerThreadBufferPointer* &perThreadBufferPointer = context->perThreadBufferPointer;
 	BlockMatchContext::WorkerContext &workerContext = context->workerContext;
 
 	const int numberOfSubmitProcessors = context->numberOfSubmitProcessors;
@@ -558,30 +255,33 @@ void initializeInstanceWorkerContext(BlockMatchContext *context)
 	const int matrixC_M = context->C_dimensions[0], matrixC_N = context->C_dimensions[1], matrixC_O = context->C_dimensions[2];
 	const int numberOfTasks = matrixC_M * matrixC_N;
 	const int numberOfTasksPerWorker_minimum = numberOfTasks / numberOfThreads;
+	const int strideA_M = context->strideA_M;
+	const int strideA_N = context->strideA_N;
 
 	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
 	{
-		perThreadBufferPointer.matrixA_buffer[indexOfThread] = buffer.matrixA_buffer +
+		perThreadBufferPointer[indexOfThread].matrixA_buffer = buffer.matrixA_buffer +
 			indexOfThread * sizeOfTaskSourceData;
 
-		perThreadBufferPointer.matrixB_buffer[indexOfThread] = buffer.matrixB_buffer +
+		perThreadBufferPointer[indexOfThread].matrixB_buffer = buffer.matrixB_buffer +
 			indexOfThread * sizeOfTaskSourceData;
 
-		perThreadBufferPointer.matrixC_buffer[indexOfThread] = buffer.matrixC_buffer + indexOfThread * sizeOfTaskQueue;
-		perThreadBufferPointer.matrixA_deviceBuffer[indexOfThread] = buffer.matrixA_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
-		perThreadBufferPointer.matrixB_deviceBuffer[indexOfThread] = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
-		perThreadBufferPointer.matrixC_deviceBuffer[indexOfThread] = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].matrixC_buffer = buffer.matrixC_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].matrixA_deviceBuffer = buffer.matrixA_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
+		perThreadBufferPointer[indexOfThread].matrixB_deviceBuffer = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
+		perThreadBufferPointer[indexOfThread].matrixC_deviceBuffer = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer.index_x_sorting_buffer[indexOfThread] = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
-		perThreadBufferPointer.index_y_sorting_buffer[indexOfThread] = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer.index_raw_sorting_buffer[indexOfThread] = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
+		perThreadBufferPointer[indexOfThread].index_raw_sorting_buffer = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
 
-		// TODO
 		workerContext.numberOfIteration[indexOfThread] = numberOfTasksPerWorker_minimum;
 		workerContext.rawMatrixCIndex_begin[indexOfThread] = indexOfThread * numberOfTasksPerWorker_minimum;
-		//workerContext.beginMatrixAIndex_M[indexOfThread] = ;
-		//workerContext.beginMatrixAIndex_N[indexOfThread];
+		int indexC_M = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_M;
+		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] / matrixC_M;
+		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M;
+		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N;
 	}
 }
 
@@ -631,18 +331,54 @@ size_t getIndexSizeInBytes(BlockMatchContext *context)
 	return context->C_dimensions[0] * context->C_dimensions[1] * context->C_dimensions[2];
 }
 
+void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType)
+{
+	size_t size = context->C_dimensions[2];
+
+	switch (bufferType)
+	{
+	case InternalBufferType::Index_X_Internal:
+		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
+		{
+			context->optionalPerThreadBufferPointer[indexOfThreads].index_x_internal = static_cast<int*>(buffer) +
+				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
+		}
+		break;
+	case InternalBufferType::Index_Y_Internal:
+		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
+		{
+			context->optionalPerThreadBufferPointer[indexOfThreads].index_y_internal = static_cast<int*>(buffer) +
+				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
+		}
+		break;
+	default: break;
+	}
+}
+
 bool allocateIndexXInternal(BlockMatchContext *context)
 {
 	size_t size = getIndexSizeInBytes(context);
 
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_x_internal), size);
+	if (allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_x_internal), size))
+	{
+		initializeWorkerInternalBuffer(context, context->optionalBuffer.index_x_internal, InternalBufferType::Index_X_Internal);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool allocateIndexYInternal(BlockMatchContext *context)
 {
 	size_t size = getIndexSizeInBytes(context);
 
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_y_internal), size);
+	if (allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_y_internal), size))
+	{
+		initializeWorkerInternalBuffer(context, context->optionalBuffer.index_y_internal, InternalBufferType::Index_Y_Internal);
+		return true;
+	}
+	else
+		return false;
 }
 
 bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType)
@@ -663,40 +399,27 @@ bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBuffe
 }
 
 
-
-void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType)
-{
-	size_t size = context->C_dimensions[2];
-
-	switch (bufferType)
-	{
-	case InternalBufferType::Index_X_Internal:
-		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
-		{
-			context->optionalPerThreadBufferPointer.index_x_internal[indexOfThreads] = static_cast<int*>(buffer) +
-				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
-		}
-		break;
-	case InternalBufferType::Index_Y_Internal:
-		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
-		{
-			context->optionalPerThreadBufferPointer.index_y_internal[indexOfThreads] = static_cast<int*>(buffer) +
-				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
-		}
-		break;
-	default: break;
-	}
-}
-
-
-
 BlockMatchContext * allocateContext(const int numberOfThreads)
 {
 	return static_cast<BlockMatchContext*>(malloc(sizeof(BlockMatchContext) +
 		(sizeof(BlockMatchContext::PerThreadBufferPointer) + sizeof(BlockMatchContext::OptionalPerThreadBufferPointer)) * numberOfThreads));
 }
 
+int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
+	int matrixB, int matrixBPadding_pre, int matrixBPadding_post, int block, int strideB)
+{
+	if (searchType == SearchType::global)
+	{
+		return searchRegion;
+	}
+	else
+	{
+		return getLength(matrixB, matrixBPadding_pre, matrixBPadding_post, block, strideB);
+	}
+}
 bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
+	SearchType searchType,
+	LibMatchMeasureMethod measureMethod,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -711,9 +434,13 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixA_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixA_padded_N) = nullptr,
 	int *LIB_MATCH_OUT(matrixB_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixB_padded_N) = nullptr)
 {
-	// TODO glocal and local
-	const int numberOfBlockBPerBlockA_M = getLength(matrixB_M, matrixBPadding_M_pre, matrixBPadding_N_post, block_M, strideB_M);
-	const int numberOfBlockBPerBlockA_N = getLength(matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
+		searchRegion_M,
+		matrixB_M, matrixBPadding_M_pre, matrixBPadding_M_post, block_M, strideB_M);
+	const int numberOfBlockBPerBlockA_N = determineNumberOfBlockBPerBlockA(searchType,
+		searchRegion_N,
+		matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+
 
 	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
 	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
@@ -728,12 +455,42 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 		return false;
 	}
 
+	if (searchType == SearchType::local)
+	{
+		if (measureMethod == LibMatchMeasureMethod::mse)
+			if (numberOfIndexRetain)
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex_partial>;
+			else
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex>;
+		else if (measureMethod == LibMatchMeasureMethod::cc)
+			if (numberOfIndexRetain)
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_partial>;
+			else
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex>;
+	}
+	else if (searchType == SearchType::global)
+	{
+		if (measureMethod == LibMatchMeasureMethod::mse)
+			if (numberOfIndexRetain)
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex_partial>;
+			else
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex>;
+		else if (measureMethod == LibMatchMeasureMethod::cc)
+			if (numberOfIndexRetain)
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_partial>;
+			else
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex>;
+	}
+
+	instance->padMethod = symmetricPadding<float>;
+
 	const int matrixA_padded_M = matrixA_M + matrixAPadding_M_pre + matrixAPadding_M_post;
 	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
 	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
 	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
 
 	initializeBasicInstanceInformation(instance,
+		searchType,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		searchRegion_M, searchRegion_N,
 		block_M, block_N,
@@ -774,17 +531,19 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 	{
 		setLastErrorString("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
-		return false;
+		goto Failed;
 	}
 
 	if (!initializeMemoryResources(instance)) {
 		setLastErrorString("Error: memory allocation failed");
-		return false;
+		goto Failed;
 	}
 
 	zeroInstanceOptionalInformation(instance);
 
 	initializeInstanceWorkerContext(instance);
+
+	generateIndexSequence(instance->buffer.common_buffer, numberOfBlockBPerBlockA);
 
 	*LIB_MATCH_OUT(instance) = instance;
 
@@ -806,32 +565,8 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	}
 
 	return true;
-}
 
-bool blockMatchInitialize(void **_instance,
-	int matA_M, int matA_N, int matB_M, int matB_N,
-	int searchRegion_M, int searchRegion_N,
-	int block_M, int block_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N,
-	int retain)
-{/*
-	static bool isGlobalContextInitialized = false;
-	if (!isGlobalContextInitialized)
-	{
-		if (!globalContext.initialize())
-			return false;
-		isGlobalContextInitialized = true;
-	}
-
-	return initialize_full(_instance,
-		matA_M, matA_N, matB_M, matB_N,
-		block_M, block_N,
-		strideA_M, strideA_N,
-		strideB_M, strideB_N,
-		paddingA_M, paddingA_N,
-		paddingB_M, paddingB_N,
-		retain);*/
+Failed:
+	free(instance);
+	return false;
 }

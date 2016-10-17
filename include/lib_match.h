@@ -14,6 +14,12 @@ enum class LibMatchErrorCode
 	success
 };
 
+enum class SearchType
+{
+	local,
+	global
+};
+
 // SearchRegion size 0 for full search
 LIB_MATCH_EXPORT
 bool blockMatchInitialize(void **_instance,
