@@ -67,9 +67,6 @@
     <ClCompile Include="lib_match_internal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pad.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="block_copying.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
