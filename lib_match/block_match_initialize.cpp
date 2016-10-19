@@ -273,8 +273,8 @@ void initializeInstanceWorkerContext(BlockMatchContext *context)
 		perThreadBufferPointer[indexOfThread].matrixB_deviceBuffer = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
 		perThreadBufferPointer[indexOfThread].matrixC_deviceBuffer = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
-		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
+		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
 
 		perThreadBufferPointer[indexOfThread].index_raw_sorting_buffer = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
 
