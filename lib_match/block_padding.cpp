@@ -43,7 +43,7 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 
 template <typename T>
 void zeroPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height, 
+	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
 {
 	size_t new_width = old_width + pad_left + pad_right;
@@ -76,7 +76,7 @@ void zeroPadding(const T *old_ptr, T *new_ptr,
 *******************/
 
 template <typename T>
-void circularPadding(const T *old_ptr, T *new_ptr, 
+void circularPadding(const T *old_ptr, T *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
 {
@@ -95,7 +95,7 @@ void circularPadding(const T *old_ptr, T *new_ptr,
 }
 
 template <typename T>
-void replicatePadding(const T *old_ptr, T *new_ptr, 
+void replicatePadding(const T *old_ptr, T *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
 {
@@ -123,8 +123,8 @@ void replicatePadding(const T *old_ptr, T *new_ptr,
 
 // Ensure pad_left <= old_width, pad_right <= old_width, pad_up <= old_height, pad_buttom <= old_height
 template <typename T>
-void symmetricPadding(const T *old_ptr, T *new_ptr, 
-	size_t old_width, size_t old_height, 
+void symmetricPadding(const T *old_ptr, T *new_ptr,
+	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
 {
 	size_t new_width = old_width + pad_left + pad_right;

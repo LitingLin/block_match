@@ -121,3 +121,11 @@ void fillWithSequence(float *ptr, size_t size)
 		ptr[i] = i;
 	}
 }
+
+void fillWithSequence(int *ptr, size_t size)
+{
+	for (size_t i = 0; i<size; ++i)
+	{
+		ptr[i] = i;
+	}
+}

@@ -33,7 +33,7 @@ struct GlobalContext
 extern GlobalContext globalContext;
 
 
-/* 
+/*
  * M means the first dimension, N means the second dimension
 ** So, two dimensions is assumed
 */
@@ -53,21 +53,21 @@ struct ExecutionContext
 		neighbour_M, neighbour_N,
 		numberOfBlockBPerBlockA,
 		numberOfIndexRetain,
+		indexA_M_begin, indexA_N_begin,
+		indexA_M_end, indexA_N_end,
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
-
-	int matrixBPadding_M_pre, matrixBPadding_N_pre;
-
+	
 	/* Gpu Stuff */
 	cudaStream_t streamA, streamB; // TODO: Double buffering
 	int maxNumberOfThreadsPerProcessor,
 		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
 };
 
-typedef void PadMethod(const float *old_ptr, float *new_ptr,
+typedef void PadFunction(const float *old_ptr, float *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
-typedef unsigned ExecutionMethod(ExecutionContext *);
+typedef unsigned ExecutionFunction(ExecutionContext *);
 
 // TODO support int64
 struct BlockMatchContext
@@ -105,12 +105,17 @@ struct BlockMatchContext
 	int matrixBPadding_N_pre;
 	int matrixBPadding_N_post;
 
+	int indexA_M_begin;
+	int indexA_M_end;
+	int indexA_N_begin;
+	int indexA_N_end;
+
 	int numberOfIndexRetain;
 
 	int numberOfThreads;
 
-	PadMethod* padMethod;
-	ExecutionMethod *executionMethod;
+	PadFunction* padMethod;
+	ExecutionFunction *executionMethod;
 
 	int numberOfBlockBPerBlockA_M;
 	int numberOfBlockBPerBlockA_N;
@@ -123,7 +128,7 @@ struct BlockMatchContext
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
 	void **threadPoolTaskHandle;
-	
+
 	struct Buffer {
 		float *matrixA_buffer;
 		float *matrixB_buffer;

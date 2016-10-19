@@ -4,8 +4,8 @@
 
 bool blockMatchExecute(void *_instance, float *A, float *B,
 	float *C,
-	float *padded_A = nullptr, float *padded_B = nullptr,
-	int *index_x = nullptr, int *index_y = nullptr)
+	float *padded_A, float *padded_B,
+	int *index_x, int *index_y)
 {
 	BlockMatchContext *instance = static_cast<BlockMatchContext*>(_instance);
 
@@ -113,8 +113,6 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 		executionContext->matrixA_deviceBuffer = instance->perThreadBufferPointer[i].matrixA_deviceBuffer;
 		executionContext->matrixB_deviceBuffer = instance->perThreadBufferPointer[i].matrixB_deviceBuffer;
 		executionContext->matrixC_deviceBuffer = instance->perThreadBufferPointer[i].matrixC_deviceBuffer;
-		executionContext->matrixBPadding_M_pre = instance->matrixBPadding_M_pre;
-		executionContext->matrixBPadding_N_pre = instance->matrixBPadding_N_pre;
 		executionContext->maxNumberOfThreadsPerProcessor = globalContext.numberOfGPUProcessorThread;
 		executionContext->neighbour_M = instance->searchRegion_M;
 		executionContext->neighbour_N = instance->searchRegion_N;
@@ -122,11 +120,17 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 		executionContext->rawIndexBuffer = instance->perThreadBufferPointer[i].index_raw_sorting_buffer;
 		executionContext->rawIndexTemplate = instance->buffer.common_buffer;
 		executionContext->startIndexOfMatrixA_M = instance->workerContext.beginMatrixAIndex_M[i];
+		executionContext->indexA_M_begin = instance->indexA_M_begin;
+		executionContext->indexA_M_end = instance->indexA_M_end;
+		executionContext->indexA_N_begin = instance->indexA_N_begin;
+		executionContext->indexA_N_end = instance->indexA_N_end;
 		executionContext->startIndexOfMatrixA_N = instance->workerContext.beginMatrixAIndex_N[i];
 		executionContext->streamA = instance->stream[2 * i];
 		executionContext->streamB = instance->stream[2 * i + 1];
 		executionContext->strideA_M = instance->strideA_M;
 		executionContext->strideA_N = instance->strideA_N;
+		executionContext->strideB_M = instance->strideB_M;
+		executionContext->strideB_N = instance->strideB_N;
 		executionContext->matrixC = C + instance->workerContext.rawMatrixCIndex_begin[i] * instance->C_dimensions[2];
 
 		instance->threadPoolTaskHandle[i] = pool.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),

@@ -20,17 +20,13 @@ enum class SearchType
 	global
 };
 
-// SearchRegion size 0 for full search
-LIB_MATCH_EXPORT
-bool blockMatchInitialize(void **_instance,
-	int matA_M, int matA_N, int matB_M, int matB_N,
-	int searchRegion_M, int searchRegion_N,
-	int block_M, int block_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int paddingA_M, int paddingA_N,
-	int paddingB_M, int paddingB_N,
-	int retain);
+enum class PadMethod
+{
+	zero,
+	circular,
+	replicate,
+	symmetric
+};
 
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchInitialize(void **instance,
@@ -57,9 +53,30 @@ size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int numberOfArray, int length
 LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int lengthOfArray);
 
+// SearchRegion size 0 for full search
+bool blockMatchAndSortingInitialize(void **instance,
+	SearchType searchType,
+	LibMatchMeasureMethod measureMethod,
+	PadMethod padMethod,
+	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int searchRegion_M, int searchRegion_N,
+	int block_M, int block_N,
+	int strideA_M, int strideA_N,
+	int strideB_M, int strideB_N,
+	int matrixAPadding_M_pre, int matrixAPadding_M_post,
+	int matrixAPadding_N_pre, int matrixAPadding_N_post,
+	int matrixBPadding_M_pre, int matrixBPadding_M_post,
+	int matrixBPadding_N_pre, int matrixBPadding_N_post,
+	int numberOfIndexRetain,
+	int *matrixC_M, int *matrixC_N, int *matrixC_O,
+	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
+	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
+
 LIB_MATCH_EXPORT
-bool blockMatchExecute(void *_instance, float *matA, float *matB, LibMatchMeasureMethod method, 
-	int **_index_x, int **_index_y, float **_result, int *dimensionOfResult);
+bool blockMatchExecute(void *_instance, float *A, float *B,
+	float *C,
+	float *padded_A = nullptr, float *padded_B = nullptr,
+	int *index_x = nullptr, int *index_y = nullptr);
 
 LIB_MATCH_EXPORT
 void blockMatchFinalize(void *instance);
@@ -78,8 +95,8 @@ LIB_MATCH_EXPORT
 void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction);
 
 template <typename T>
-void zeroPadding(const T *old_ptr, T *new_ptr, 
-	size_t old_width, size_t old_height, 
+void zeroPadding(const T *old_ptr, T *new_ptr,
+	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 template <typename T>
 void circularPadding(const T *old_ptr, T *new_ptr,

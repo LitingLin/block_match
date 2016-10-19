@@ -7,3 +7,5 @@
 void isNormal(float *ptr, int size);
 
 void fillWithSequence(float *ptr, size_t size);
+
+void fillWithSequence(int *ptr, size_t size);

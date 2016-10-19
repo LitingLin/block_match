@@ -139,14 +139,16 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 
 	BlockMatchContext::WorkerContext &workerContext = instance->workerContext;
 	workerContext.numberOfIteration = static_cast<int*>(malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext::WorkerContext) / sizeof(int*)
-		+ numberOfThreads * sizeof(void*)));
+		+ numberOfThreads * sizeof(void*)
+		+ numberOfThreads * sizeof(ExecutionContext)));
 	if (workerContext.numberOfIteration == nullptr)
 		goto failed;
 
 	workerContext.rawMatrixCIndex_begin = workerContext.numberOfIteration + numberOfThreads;
 	workerContext.beginMatrixAIndex_M = workerContext.rawMatrixCIndex_begin + numberOfThreads;
 	workerContext.beginMatrixAIndex_N = workerContext.beginMatrixAIndex_M + numberOfThreads;
-	instance->threadPoolTaskHandle = reinterpret_cast<void**>(workerContext.beginMatrixAIndex_N) + numberOfThreads;
+	instance->threadPoolTaskHandle = reinterpret_cast<void**>(workerContext.beginMatrixAIndex_N + numberOfThreads);
+	workerContext.executionContext = reinterpret_cast<ExecutionContext*>(instance->threadPoolTaskHandle + numberOfThreads);
 
 	BlockMatchContext::Buffer &buffer = instance->buffer;
 
@@ -280,9 +282,10 @@ void initializeInstanceWorkerContext(BlockMatchContext *context)
 		workerContext.rawMatrixCIndex_begin[indexOfThread] = indexOfThread * numberOfTasksPerWorker_minimum;
 		int indexC_M = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_M;
 		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] / matrixC_M;
-		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M;
-		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N;
+		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M + context->indexA_M_begin;
+		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N + context->indexA_N_begin;
 	}
+	workerContext.numberOfIteration[numberOfThreads - 1] += (numberOfTasks - numberOfThreads * numberOfTasksPerWorker_minimum);
 }
 
 void zeroInstanceOptionalInformation(BlockMatchContext *context)
@@ -408,7 +411,7 @@ BlockMatchContext * allocateContext(const int numberOfThreads)
 int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 	int matrixB, int matrixBPadding_pre, int matrixBPadding_post, int block, int strideB)
 {
-	if (searchType == SearchType::global)
+	if (searchType == SearchType::local)
 	{
 		return searchRegion;
 	}
@@ -420,6 +423,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
+	PadMethod padMethod,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -431,8 +435,8 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
 	int numberOfIndexRetain,
 	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
-	int *LIB_MATCH_OUT(matrixA_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixA_padded_N) = nullptr,
-	int *LIB_MATCH_OUT(matrixB_padded_M) = nullptr, int *LIB_MATCH_OUT(matrixB_padded_N) = nullptr)
+	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
+	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N))
 {
 	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_M,
@@ -440,10 +444,36 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	const int numberOfBlockBPerBlockA_N = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_N,
 		matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
+	int indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end;
 
+	const int matrixA_padded_M = matrixA_M + matrixAPadding_M_pre + matrixAPadding_M_post;
+	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
+	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
+	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
 
-	const int matrixC_M = getLength(matrixA_M, matrixAPadding_M_pre, matrixAPadding_M_post, block_M, strideA_M);
-	const int matrixC_N = getLength(matrixA_N, matrixAPadding_N_pre, matrixAPadding_N_post, block_N, strideA_N);
+	if (searchType == SearchType::local)
+	{
+		indexA_M_begin = searchRegion_M / 2;
+		if (matrixA_padded_M > matrixB_padded_M)
+			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
+		else
+			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
+		indexA_N_begin = searchRegion_N / 2;
+		if (matrixA_padded_N > matrixB_padded_N)
+			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
+		else
+			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
+	}
+	else
+	{
+		indexA_M_begin = 0;
+		indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+		indexA_N_begin = 0;
+		indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+	}
+
+	const int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
+	const int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
 	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
 
 	// In case number of threads > size of A
@@ -454,6 +484,11 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 		setLastErrorString("Error: memory allocation failed");
 		return false;
 	}
+
+	instance->indexA_M_begin = indexA_M_begin;
+	instance->indexA_M_end = indexA_M_end;
+	instance->indexA_N_begin = indexA_N_begin;
+	instance->indexA_N_end = indexA_N_end;
 
 	if (searchType == SearchType::local)
 	{
@@ -482,12 +517,22 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex>;
 	}
 
-	instance->padMethod = symmetricPadding<float>;
-
-	const int matrixA_padded_M = matrixA_M + matrixAPadding_M_pre + matrixAPadding_M_post;
-	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
-	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
-	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
+	switch (padMethod)
+	{
+	case PadMethod::zero:
+		instance->padMethod = zeroPadding<float>;
+		break;
+	case PadMethod::circular:
+		instance->padMethod = circularPadding<float>;
+		break;
+	case PadMethod::replicate:
+		instance->padMethod = replicatePadding<float>;
+		break;
+	case PadMethod::symmetric:
+		instance->padMethod = symmetricPadding<float>;
+		break;
+	default: break;
+	}
 
 	initializeBasicInstanceInformation(instance,
 		searchType,
