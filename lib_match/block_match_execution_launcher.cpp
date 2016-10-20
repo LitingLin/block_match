@@ -1,6 +1,4 @@
-#include "lib_match.h"
-
-#include "block_match_execute.hpp"
+#include "block_match_execute.h"
 
 bool blockMatchExecute(void *_instance, float *A, float *B,
 	float *C,
@@ -137,7 +135,7 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 			static_cast<void*>(executionContext));
 	}
 
-	for (unsigned i = 0; i < numberOfThreads; ++i)
+	for (int i = 0; i < numberOfThreads; ++i)
 	{
 		pool.join(taskHandle[i]);
 	}

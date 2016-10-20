@@ -108,6 +108,7 @@ LibMatchMexError parseSearchRegion(struct BlockMatchMexContext *context,
 			return LibMatchMexError::errorInvalidValue;
 
 		searchRegionWidth = searchRegionHeight = 0;
+		context->searchType = SearchType::global;
 	}
 	else
 	{
@@ -130,6 +131,7 @@ LibMatchMexError parseSearchRegion(struct BlockMatchMexContext *context,
 		{
 			return LibMatchMexError::errorSizeOfArray;
 		}
+		context->searchType = SearchType::local;
 	}
 
 	context->searchRegionWidth = searchRegionWidth;

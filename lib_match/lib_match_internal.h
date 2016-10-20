@@ -3,6 +3,7 @@
 #include "lib_match.h"
 
 #include <spdlog/spdlog.h>
+#include "stack_trace.h"
 
 extern spdlog::logger logger;
 
@@ -72,9 +73,6 @@ typedef unsigned ExecutionFunction(ExecutionContext *);
 // TODO support int64
 struct BlockMatchContext
 {
-	SearchType searchType;
-	LibMatchMeasureMethod measureMethod;
-
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -276,6 +274,8 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
 
+void appendLastErrorString(const char *string, ...);
+
 BlockMatchContext * allocateContext(const int numberOfThreads);
 enum class InternalBufferType
 {
@@ -287,3 +287,37 @@ enum class InternalBufferType
 
 bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType);
 void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType);
+
+class StackTracker : private StackWalker
+{
+public:
+	char *getStackTraceMessage();
+protected:
+	enum { STACKTRACER_MESSAGE_MAX_LENGTH = 4096 };
+private:
+	virtual void OnOutput(LPCSTR szText) override;
+};
+
+__forceinline__
+void traceStackToLastErrorString()
+{
+	StackTracker stackTracker;
+	appendLastErrorString(stackTracker.getStackTraceMessage());
+}
+
+#ifndef DEBUG
+#define CALL_DBG __debugbreak();
+#else
+#define CALL_DBG
+#endif
+
+enum { ERROR_MESSAGE_LENGTH = 8192 };
+
+#define ERROR_CHECK_POINT(message, ...) \
+{CALL_DBG \
+setLastErrorString("Check point failed in file %s(%d) in function %s\n", __FILE__, __LINE__, __func__); \
+appendLastErrorString(message, __VA_ARGS__); \
+traceStackToLastErrorString();}
+
+#define CUDA_ERROR_CHECK_POINT(cudaError) \
+ERROR_CHECK_POINT("Cuda Error Code: %d, Message: %s", cudaError, cudaGetErrorString(cudaError))

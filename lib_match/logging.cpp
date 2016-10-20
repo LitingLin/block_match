@@ -1,6 +1,7 @@
 #include <spdlog/logger.h>
 
-#include "lib_match.h"
+#include "lib_match_internal.h"
+#include "stack_trace.h"
 
 LibMatchSinkFunction *sinkFunction = nullptr;
 
@@ -28,3 +29,17 @@ void custom_sink::_sink_it(const spdlog::details::log_msg& msg)
 }
 
 spdlog::logger logger("logging", std::make_shared<custom_sink>());
+
+char buffer[20000];
+
+char *StackTracker::getStackTraceMessage()
+{
+	buffer[0] = '\0';
+	ShowCallstack();
+	return buffer;
+}
+void StackTracker::OnOutput(LPCSTR szText)
+{
+	strncat_s(buffer, szText, _TRUNCATE);
+	//StackWalker::OnOutput(szText);
+}

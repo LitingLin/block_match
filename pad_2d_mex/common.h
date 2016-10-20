@@ -2,14 +2,6 @@
 
 #include <lib_match_mex_common.h>
 
-enum class PadMethod
-{
-	zero,
-	circular,
-	replicate,
-	symmetric
-};
-
 struct PaddingMexContext
 {
 	double *originImage;

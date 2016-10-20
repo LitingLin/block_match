@@ -2,7 +2,7 @@
 
 #include <cuda_runtime.h>
 
-#include "block_match_execute.hpp"
+#include "block_match_execute.h"
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
@@ -36,7 +36,6 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 }
 
 void initializeBasicInstanceInformation(BlockMatchContext *instance,
-	const SearchType searchType,
 	const int matrixA_M, const int matrixA_N, const int matrixB_M, const int matrixB_N,
 	const int searchRegion_M, const int searchRegion_N,
 	const int block_M, const int block_N,
@@ -51,8 +50,6 @@ void initializeBasicInstanceInformation(BlockMatchContext *instance,
 	const int matrixB_padded_M, const int matrixB_padded_N
 )
 {
-	instance->searchType = searchType;
-
 	instance->matrixA_M = matrixA_M;
 	instance->matrixA_N = matrixA_N;
 	instance->matrixB_M = matrixB_M;
@@ -535,7 +532,6 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	}
 
 	initializeBasicInstanceInformation(instance,
-		searchType,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		searchRegion_M, searchRegion_N,
 		block_M, block_N,

@@ -9,6 +9,9 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 	const float *c_value = value;
 
 	mxArray *pa = mxCreateCellMatrix(sequenceAHeight, sequenceAWidth);
+	if (!pa)
+		return false;
+
 	for (int i = 0; i<sequenceAHeight; i++)
 		for (int j = 0; j < sequenceAWidth; j++)
 		{

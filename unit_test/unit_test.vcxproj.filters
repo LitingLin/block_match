@@ -51,9 +51,6 @@
     <ClCompile Include="test_determine_end_of_index.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_determine_block_index.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="test_determine_gpu_task_configuration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

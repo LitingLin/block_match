@@ -5,6 +5,8 @@
 struct BlockMatchMexContext
 {
 	LibMatchMeasureMethod method;
+	SearchType searchType;
+	PadMethod padMethod;
 	int sequenceMatrixNumberOfDimensions;
 
 	int sequenceAMatrixDimensions[4];
