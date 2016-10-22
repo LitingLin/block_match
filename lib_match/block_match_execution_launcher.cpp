@@ -1,4 +1,4 @@
-#include "block_match_execute.h"
+#include "block_match_execute.hpp"
 
 bool blockMatchExecute(void *_instance, float *A, float *B,
 	float *C,
@@ -102,7 +102,7 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 		executionContext->index_x_buffer = instance->perThreadBufferPointer[i].index_x_sorting_buffer;
 		executionContext->index_y_buffer = instance->perThreadBufferPointer[i].index_y_sorting_buffer;
 		executionContext->numberOfIndexRetain = instance->numberOfIndexRetain;
-		executionContext->lengthOfGpuTaskQueue = instance->numberOfSubmitProcessors * instance->numberOfSubmitThreadsPerProcessor;
+		executionContext->lengthOfGpuTaskQueue = instance->sizeOfGpuTaskQueue;
 		executionContext->numberOfSubmitProcessors = instance->numberOfSubmitProcessors;
 		executionContext->numberOfSubmitThreadsPerProcessor = instance->numberOfSubmitThreadsPerProcessor;
 		executionContext->matrixA_buffer = instance->perThreadBufferPointer[i].matrixA_buffer;

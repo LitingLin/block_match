@@ -211,7 +211,7 @@ LibMatchMexError parseMethod(struct BlockMatchMexContext *context,
 LibMatchMexError parseOutputArgument(struct BlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[])
 {
-	if (nlhs >= 2)
+	if (nlhs >= 4)
 		return LibMatchMexError::errorNumberOfArguments;
 
 	return LibMatchMexError::success;

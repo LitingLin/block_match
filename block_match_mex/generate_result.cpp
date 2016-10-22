@@ -34,3 +34,17 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 
 	return true;
 }
+
+bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data)
+{
+	mxArray *pa = mxCreateDoubleMatrix(sequencePaddedHeight, sequencePaddedWidth, mxREAL);
+	if (!pa)
+		return false;
+
+	double *matPointer = mxGetPr(pa);
+	convertArrayFromFloatToDouble(data, matPointer, sequencePaddedHeight * sequencePaddedWidth);
+
+	*_pa = pa;
+
+	return true;
+}

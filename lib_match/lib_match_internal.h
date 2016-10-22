@@ -242,6 +242,8 @@ void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, in
 
 void block_sort(int *index, float *value, int size);
 void block_sort_partial(int *index, float *value, int size, int retain);
+void block_sort_descend(int *index, float *value, int size);
+void block_sort_partial_descend(int *index, float *value, int size, int retain);
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations);

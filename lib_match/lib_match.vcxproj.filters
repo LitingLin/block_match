@@ -70,9 +70,6 @@
     <ClCompile Include="block_padding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_execute.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stack_trace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -89,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="stack_trace.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="block_match_execute.hpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

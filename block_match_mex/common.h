@@ -40,4 +40,6 @@ struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *c
 
 struct LibMatchMexErrorWithMessage validateParameter(struct BlockMatchMexContext *context);
 
-bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y, const float *value, const int size);
+bool generate_result(mxArray **pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y, const float *value, const int size);
+
+bool generatePaddedMatrix(mxArray **pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);

@@ -2,7 +2,7 @@
 
 #include <cuda_runtime.h>
 
-#include "block_match_execute.h"
+#include "block_match_execute.hpp"
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
@@ -130,9 +130,9 @@ bool initializeMemoryResources(BlockMatchContext *instance)
 	const int numberOfThreads = instance->numberOfThreads;
 	const int numberOfGPUDeviceMultiProcessor = instance->numberOfSubmitProcessors;
 	const int numberOfGPUProcessorThread = instance->numberOfSubmitThreadsPerProcessor;
-	const int matBufferSize = numberOfThreads * numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread * block_M * block_N;
 
-	const int bufferSize = numberOfGPUProcessorThread * numberOfGPUDeviceMultiProcessor * numberOfThreads;
+	const int bufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA * numberOfThreads;
+	const int matBufferSize = bufferSize * block_M * block_N;
 
 	BlockMatchContext::WorkerContext &workerContext = instance->workerContext;
 	workerContext.numberOfIteration = static_cast<int*>(malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext::WorkerContext) / sizeof(int*)
@@ -244,7 +244,7 @@ void initializeInstanceWorkerContext(BlockMatchContext *context)
 	const int block_M = context->block_M;
 	const int block_N = context->block_N;
 
-	const size_t sizeOfTaskQueue = numberOfSubmitProcessors * numberOfSubmitThreadsPerProcessor;
+	const size_t sizeOfTaskQueue = context->sizeOfGpuTaskQueue * context->numberOfBlockBPerBlockA;
 	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
 
 	BlockMatchContext::Buffer &buffer = context->buffer;
@@ -270,15 +270,15 @@ void initializeInstanceWorkerContext(BlockMatchContext *context)
 		perThreadBufferPointer[indexOfThread].matrixB_deviceBuffer = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
 		perThreadBufferPointer[indexOfThread].matrixC_deviceBuffer = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
 
-		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
-		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
+		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
+		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
 
 		perThreadBufferPointer[indexOfThread].index_raw_sorting_buffer = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
 
 		workerContext.numberOfIteration[indexOfThread] = numberOfTasksPerWorker_minimum;
 		workerContext.rawMatrixCIndex_begin[indexOfThread] = indexOfThread * numberOfTasksPerWorker_minimum;
-		int indexC_M = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_M;
-		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] / matrixC_M;
+		int indexC_M = workerContext.rawMatrixCIndex_begin[indexOfThread] / matrixC_N;
+		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_N;
 		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M + context->indexA_M_begin;
 		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N + context->indexA_N_begin;
 	}
@@ -496,9 +496,9 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex>;
 		else if (measureMethod == LibMatchMeasureMethod::cc)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_partial>;
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_partial_descend>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex>;
+				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_descend>;
 	}
 	else if (searchType == SearchType::global)
 	{
@@ -509,9 +509,9 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex>;
 		else if (measureMethod == LibMatchMeasureMethod::cc)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_partial>;
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_partial_descend>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex>;
+				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_descend>;
 	}
 
 	switch (padMethod)

@@ -25,12 +25,14 @@ unsigned getNumberOfPhysicalProcessor()
 	return bufferLength / structSize;
 }
 
+#define LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE 0
+
 GlobalContext::GlobalContext()
 	: 
-#ifdef NDEBUG
-	numberOfThreads(getNumberOfPhysicalProcessor()),
-#else
+#if (LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE && !(defined NDEBUG))
 	numberOfThreads(1),
+#else
+	numberOfThreads(getNumberOfPhysicalProcessor()),
 #endif
 	pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {

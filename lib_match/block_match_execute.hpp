@@ -102,6 +102,58 @@ void sortWithIndex(int *&index_x, int *&index_y, float *&result,
 		result_buffer += numberOfBlockBPerBlockA;
 	}
 }
+
+inline
+void sortWithIndex_partial_descend(int *&index_x, int *&index_y, float *&result,
+	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	const int *index_buffer, int *index_buffer_sort)
+{
+	for (int i = 0; i < numberOfBlockA; ++i)
+	{
+		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
+
+		block_sort_partial_descend(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
+
+		for (int j = 0; j < retain; ++j)
+		{
+			*result++ = result_buffer[index_buffer_sort[j]];
+
+			*index_x++ = index_x_buffer[index_buffer_sort[j]];
+			*index_y++ = index_y_buffer[index_buffer_sort[j]];
+		}
+
+		index_x_buffer += numberOfBlockBPerBlockA;
+		index_y_buffer += numberOfBlockBPerBlockA;
+		result_buffer += numberOfBlockBPerBlockA;
+	}
+}
+
+inline
+void sortWithIndex_descend(int *&index_x, int *&index_y, float *&result,
+	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	const int *index_buffer, int *index_buffer_sort)
+{
+	for (int i = 0; i < numberOfBlockA; ++i)
+	{
+		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
+
+		block_sort_descend(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA);
+
+		for (int j = 0; j < retain; ++j)
+		{
+			*result++ = result_buffer[index_buffer_sort[j]];
+
+			*index_x++ = index_x_buffer[index_buffer_sort[j]];
+			*index_y++ = index_y_buffer[index_buffer_sort[j]];
+		}
+
+		index_x_buffer += numberOfBlockBPerBlockA;
+		index_y_buffer += numberOfBlockBPerBlockA;
+		result_buffer += numberOfBlockBPerBlockA;
+	}
+}
 inline
 void dummySort(int *&index_x, int *&index_y, float *&result,
 	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
@@ -234,7 +286,6 @@ template <DetermineBlockBIndex determineBlockB_index,
 						indexB_M, indexB_N, block_M, block_N);
 					recordIndexMethod(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 					c_bufferB += blockSize;
-					++numberOfQueuedTasks;
 
 #ifndef NDEBUG
 					sequenceBCount++;
@@ -248,6 +299,7 @@ template <DetermineBlockBIndex determineBlockB_index,
 #endif
 
 
+			++numberOfQueuedTasks;
 			numberOfBlockA += 1;
 
 			c_bufferA += blockSize;
