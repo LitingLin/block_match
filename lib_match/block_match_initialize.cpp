@@ -627,6 +627,7 @@ Failed:
 	return false;
 }
 
+LIB_MATCH_EXPORT
 template
 bool blockMatchAndSortingInitialize<float>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
@@ -645,6 +646,8 @@ bool blockMatchAndSortingInitialize<float>(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
 	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
 	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
+
+LIB_MATCH_EXPORT
 template
 bool blockMatchAndSortingInitialize<double>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
