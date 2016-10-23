@@ -54,6 +54,7 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int lengthOfArray);
 
 // SearchRegion size 0 for full search
+template <typename Type>
 bool blockMatchAndSortingInitialize(void **instance,
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
@@ -72,10 +73,10 @@ bool blockMatchAndSortingInitialize(void **instance,
 	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
 	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
 
-LIB_MATCH_EXPORT
-bool blockMatchExecute(void *_instance, float *A, float *B,
-	float *C,
-	float *padded_A = nullptr, float *padded_B = nullptr,
+template <typename Type>
+bool blockMatchExecute(void *_instance, Type *A, Type *B,
+	Type *C,
+	Type *padded_A = nullptr, Type *padded_B = nullptr,
 	int *index_x = nullptr, int *index_y = nullptr);
 
 LIB_MATCH_EXPORT

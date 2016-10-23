@@ -68,7 +68,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60</CodeGeneration>
       <AdditionalCompilerOptions>/arch:AVX /wd"4819"</AdditionalCompilerOptions>
       <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
@@ -100,7 +100,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60</CodeGeneration>
       <AdditionalCompilerOptions>/arch:AVX /wd"4819"</AdditionalCompilerOptions>
       <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>

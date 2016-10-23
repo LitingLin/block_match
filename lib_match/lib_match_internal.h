@@ -39,9 +39,10 @@ extern GlobalContext globalContext;
 ** So, two dimensions is assumed
 */
 
+template <typename Type>
 struct ExecutionContext
 {
-	float *matrixA, *matrixB, *matrixC,
+	Type *matrixA, *matrixB, *matrixC,
 		*matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
 		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
 	int matrixA_M, matrixA_N,
@@ -64,13 +65,16 @@ struct ExecutionContext
 		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
 };
 
-typedef void PadFunction(const float *old_ptr, float *new_ptr,
+template <typename Type>
+typedef void PadFunction(const Type *old_ptr, Type *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
-typedef unsigned ExecutionFunction(ExecutionContext *);
+template <typename Type>
+typedef unsigned ExecutionFunction(ExecutionContext<Type> *);
 
 // TODO support int64
+template <typename Type>
 struct BlockMatchContext
 {
 	int matrixA_M;
@@ -112,8 +116,8 @@ struct BlockMatchContext
 
 	int numberOfThreads;
 
-	PadFunction* padMethod;
-	ExecutionFunction *executionMethod;
+	PadFunction<Type> *padMethod;
+	ExecutionFunction<Type> *executionMethod;
 
 	int numberOfBlockBPerBlockA_M;
 	int numberOfBlockBPerBlockA_N;
@@ -128,12 +132,12 @@ struct BlockMatchContext
 	void **threadPoolTaskHandle;
 
 	struct Buffer {
-		float *matrixA_buffer;
-		float *matrixB_buffer;
-		float *matrixC_buffer;
-		float *matrixA_deviceBuffer;
-		float *matrixB_deviceBuffer;
-		float *matrixC_deviceBuffer;
+		Type *matrixA_buffer;
+		Type *matrixB_buffer;
+		Type *matrixC_buffer;
+		Type *matrixA_deviceBuffer;
+		Type *matrixB_deviceBuffer;
+		Type *matrixC_deviceBuffer;
 
 		int *index_x_sorting_buffer;
 		int *index_y_sorting_buffer;
@@ -159,20 +163,20 @@ struct BlockMatchContext
 
 	struct OptionalBuffer
 	{
-		float *matrixA_padded_internal;
-		float *matrixB_padded_internal;
+		Type *matrixA_padded_internal;
+		Type *matrixB_padded_internal;
 		int *index_x_internal;
 		int *index_y_internal;
 	} optionalBuffer;
 
 	struct PerThreadBufferPointer
 	{
-		float *matrixA_buffer;
-		float *matrixB_buffer;
-		float *matrixC_buffer;
-		float *matrixA_deviceBuffer;
-		float *matrixB_deviceBuffer;
-		float *matrixC_deviceBuffer;
+		Type *matrixA_buffer;
+		Type *matrixB_buffer;
+		Type *matrixC_buffer;
+		Type *matrixA_deviceBuffer;
+		Type *matrixB_deviceBuffer;
+		Type *matrixC_deviceBuffer;
 
 		int *index_x_sorting_buffer;
 		int *index_y_sorting_buffer;
@@ -222,28 +226,42 @@ int determineEndOfIndex(int matSize, int blockSize);
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize);
 void generateIndexSequence(int *index, int size);
 
-void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-void copyBlockWithSymmetricPadding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type>
+void copyBlock(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type>
+void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
-void standardize_cpu(float *sequence, int size);
-cudaError_t standardize(float *sequence, int numberOfBlocks, int size, int numThreads, cudaStream_t stream);
+template <typename Type>
+void standardize_cpu(Type *sequence, int size);
+template <typename Type>
+cudaError_t standardize(Type *sequence, int numberOfBlocks, int size, int numThreads, cudaStream_t stream);
 
-cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-cudaError_t block_match_mse_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-cudaError_t block_match_cc(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_blockSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
-cudaError_t block_match_cc_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+cudaError_t block_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+cudaError_t block_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+cudaError_t block_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_blockSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+cudaError_t block_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 
-void block_match_mse_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, float *result);
-void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, float *result);
+template <typename Type>
+void block_match_mse_cpu(Type *blocks_A, Type *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, Type *result);
+template <typename Type>
+void block_match_cc_cpu(Type *blocks_A, Type *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, Type *result);
 
-void block_sort(int *index, float *value, int size);
-void block_sort_partial(int *index, float *value, int size, int retain);
-void block_sort_descend(int *index, float *value, int size);
-void block_sort_partial_descend(int *index, float *value, int size, int retain);
+template <typename Type>
+void block_sort(int *index, Type *value, int size);
+template <typename Type>
+void block_sort_partial(int *index, Type *value, int size, int retain);
+template <typename Type>
+void block_sort_descend(int *index, Type *value, int size);
+template <typename Type>
+void block_sort_partial_descend(int *index, Type *value, int size, int retain);
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations);
