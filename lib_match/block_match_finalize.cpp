@@ -1,9 +1,10 @@
 #include "lib_match_internal.h"
 
+template <typename Type>
 void blockMatchFinalize(void *_instance)
 {
 	cudaError_t cuda_error;
-	BlockMatchContext *instance = static_cast<BlockMatchContext *>(_instance);
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(_instance);
 
 	const unsigned numberOfThreads = globalContext.numberOfThreads;
 
@@ -26,3 +27,8 @@ void blockMatchFinalize(void *_instance)
 
 	free(instance);
 }
+
+template
+void blockMatchFinalize<float>(void *_instance);
+template
+void blockMatchFinalize<double>(void *_instance);

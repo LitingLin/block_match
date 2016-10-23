@@ -1,11 +1,12 @@
 #include "block_match_execute.hpp"
 
-bool blockMatchExecute(void *_instance, float *A, float *B,
-	float *C,
-	float *padded_A, float *padded_B,
+template <typename Type>
+bool blockMatchExecute(void *_instance, Type *A, Type *B,
+	Type *C,
+	Type *padded_A, Type *padded_B,
 	int *index_x, int *index_y)
 {
-	BlockMatchContext *instance = static_cast<BlockMatchContext*>(_instance);
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(_instance);
 
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
@@ -87,7 +88,7 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
-		ExecutionContext *executionContext = &instance->workerContext.executionContext[i];
+		ExecutionContext<Type> *executionContext = &instance->workerContext.executionContext[i];
 		executionContext->block_M = instance->block_M;
 		executionContext->block_N = instance->block_N;
 		executionContext->matrixA_M = instance->matrixA_padded_M;
@@ -149,3 +150,17 @@ bool blockMatchExecute(void *_instance, float *A, float *B,
 
 	return !isFailed;
 }
+
+LIB_MATCH_EXPORT
+template
+bool blockMatchExecute(void *_instance, float *A, float *B,
+	float *C,
+	float *padded_A, float *padded_B,
+	int *index_x, int *index_y);
+
+LIB_MATCH_EXPORT
+template
+bool blockMatchExecute(void *_instance, double *A, double *B,
+	double *C,
+	double *padded_A, double *padded_B,
+	int *index_x, int *index_y);

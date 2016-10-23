@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	int matrixC_M, matrixC_N, matrixC_O;
 	int matrixA_padded_M, matrixA_padded_N,
 		matrixB_padded_M, matrixB_padded_N;
-	if (!blockMatchAndSortingInitialize(&instance, context.searchType, context.method, PadMethod::symmetric,
+	if (!blockMatchAndSortingInitialize<float>(&instance, context.searchType, context.method, PadMethod::symmetric,
 		context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
 		context.searchRegionWidth, context.searchRegionHeight,
 		context.blockWidth, context.blockHeight,
@@ -104,11 +104,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	if (!blockMatchExecute(instance, sequenceAPointer_converted, sequenceBPointer_converted, matrixC, matrixA_padded, matrixB_padded, index_x, index_y))
 	{
 		libMatchGetLastErrorString(errorStringBuffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		blockMatchFinalize(instance);
+		blockMatchFinalize<float>(instance);
 		goto runtime_error;
 	}
 
-	blockMatchFinalize(instance);
+	blockMatchFinalize<float>(instance);
 
 	free(sequenceAPointer_converted);
 	free(sequenceBPointer_converted);

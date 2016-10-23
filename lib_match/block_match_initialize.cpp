@@ -491,7 +491,7 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
-	BlockMatchContext<Type> * instance = allocateContext(numberOfThreads);
+	BlockMatchContext<Type> * instance = allocateContext<Type>(numberOfThreads);
 	if (!instance) {
 		setLastErrorString("Error: memory allocation failed");
 		return false;
@@ -506,42 +506,42 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	{
 		if (measureMethod == LibMatchMeasureMethod::mse)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex_partial>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
 		else if (measureMethod == LibMatchMeasureMethod::cc)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_partial_descend>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex_descend>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
 	}
 	else if (searchType == SearchType::global)
 	{
 		if (measureMethod == LibMatchMeasureMethod::mse)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex_partial>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
 		else if (measureMethod == LibMatchMeasureMethod::cc)
 			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_partial_descend>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
 			else
-				instance->executionMethod = processWorker<determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex_descend>;
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
 	}
 
 	switch (padMethod)
 	{
 	case PadMethod::zero:
-		instance->padMethod = zeroPadding<float>;
+		instance->padMethod = zeroPadding<Type>;
 		break;
 	case PadMethod::circular:
-		instance->padMethod = circularPadding<float>;
+		instance->padMethod = circularPadding<Type>;
 		break;
 	case PadMethod::replicate:
-		instance->padMethod = replicatePadding<float>;
+		instance->padMethod = replicatePadding<Type>;
 		break;
 	case PadMethod::symmetric:
-		instance->padMethod = symmetricPadding<float>;
+		instance->padMethod = symmetricPadding<Type>;
 		break;
 	default: break;
 	}
@@ -666,3 +666,16 @@ bool blockMatchAndSortingInitialize<double>(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
 	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
 	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
+
+template
+BlockMatchContext<float> * allocateContext(const int numberOfThreads);
+template
+BlockMatchContext<double> * allocateContext(const int numberOfThreads);
+template
+bool allocateInternalBuffer(BlockMatchContext<float> *context, enum class InternalBufferType bufferType);
+template
+bool allocateInternalBuffer(BlockMatchContext<double> *context, enum class InternalBufferType bufferType);
+template
+void initializeWorkerInternalBuffer(BlockMatchContext<float> *context, void *buffer, enum class InternalBufferType bufferType);
+template
+void initializeWorkerInternalBuffer(BlockMatchContext<double> *context, void *buffer, enum class InternalBufferType bufferType);

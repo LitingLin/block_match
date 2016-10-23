@@ -24,9 +24,6 @@
     <ClCompile Include="test_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_whole_program.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="test_standardize_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

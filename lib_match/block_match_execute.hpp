@@ -2,16 +2,16 @@
 
 #include "lib_match_internal.h"
 
-typedef cudaError_t(ProcessFunction)(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+using ProcessFunction = cudaError_t(*)(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
+	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-typedef void(SequenceBIndexMethod)(float *buf, float *src, int);
 
 /*
  * All false are cuda error
  */
-template <ProcessFunction processFunction>
-cudaError_t submitGpuTask(float *bufferA, float *bufferB, float *resultBuffer, float *deviceBufferA, float *deviceBufferB, float *deviceResultBuffer,
+template <typename Type, ProcessFunction<Type> processFunction>
+cudaError_t submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
 	int blockSize,
 	int numberOfBlockA, int numberOfBlockBPerBlockA,
 	int numberOfGpuProcessors, int numberOfGpuThreads,
@@ -19,13 +19,13 @@ cudaError_t submitGpuTask(float *bufferA, float *bufferB, float *resultBuffer, f
 {
 	int numberOfBlockB = numberOfBlockA * numberOfBlockBPerBlockA;
 
-	cudaError_t cuda_error = cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+	cudaError_t cuda_error = cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream);
 	if (cuda_error != cudaSuccess) {
 		CUDA_ERROR_CHECK_POINT(cuda_error);
 		return cuda_error;
 	}
 
-	cuda_error = cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(float), cudaMemcpyHostToDevice, stream);
+	cuda_error = cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream);
 	if (cuda_error != cudaSuccess) {
 		CUDA_ERROR_CHECK_POINT(cuda_error);
 		return cuda_error;
@@ -38,22 +38,53 @@ cudaError_t submitGpuTask(float *bufferA, float *bufferB, float *resultBuffer, f
 		return cuda_error;
 	}
 
-	cuda_error = cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(float), cudaMemcpyDeviceToHost, stream);
+	cuda_error = cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream);
 	if (cuda_error != cudaSuccess)
 		CUDA_ERROR_CHECK_POINT(cuda_error);
 
 	return cuda_error;
-
 }
 
-typedef void(SortMethod)(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+template <typename Type>
+using SortType = void(*)(int *index, Type *value, int size, int retain);
+
+namespace SortMethodProxy {
+	template <typename Type>
+	void sortAscend(int *index, Type *value, int size, int retain)
+	{
+		block_sort(index, value, size);
+	}
+
+	template <typename Type>
+	void sortPartialAscend(int *index, Type *value, int size, int retain)
+	{
+		block_sort_partial(index, value, size, retain);
+	}
+
+	template <typename Type>
+	void sortDescend(int *index, Type *value, int size, int retain)
+	{
+		block_sort_descend(index, value, size);
+	}
+
+	template <typename Type>
+	void sortPartialDescend(int *index, Type *value, int size, int retain)
+	{
+		block_sort_partial_descend(index, value, size, retain);
+	}
+}
+
+template <typename Type>
+using SortMethod = 
+void (*)(int *&index_x, int *&index_y, Type *&result,
+	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort);
 
-inline
-void sortWithIndex_partial(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+template <typename Type, SortType<Type> sortType>
+inline void
+sortWithIndex(int *&index_x, int *&index_y, Type *&result,
+	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
@@ -61,7 +92,7 @@ void sortWithIndex_partial(int *&index_x, int *&index_y, float *&result,
 	{
 		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
 
-		block_sort_partial(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
+		sortType(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
 
 		for (int j = 0; j < retain; ++j)
 		{
@@ -74,89 +105,13 @@ void sortWithIndex_partial(int *&index_x, int *&index_y, float *&result,
 		index_x_buffer += numberOfBlockBPerBlockA;
 		index_y_buffer += numberOfBlockBPerBlockA;
 		result_buffer += numberOfBlockBPerBlockA;
-	}
+	}	
 }
 
+template <typename Type>
 inline
-void sortWithIndex(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
-	const int *index_buffer, int *index_buffer_sort)
-{
-	for (int i = 0; i < numberOfBlockA; ++i)
-	{
-		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
-
-		block_sort(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA);
-
-		for (int j = 0; j < retain; ++j)
-		{
-			*result++ = result_buffer[index_buffer_sort[j]];
-
-			*index_x++ = index_x_buffer[index_buffer_sort[j]];
-			*index_y++ = index_y_buffer[index_buffer_sort[j]];
-		}
-
-		index_x_buffer += numberOfBlockBPerBlockA;
-		index_y_buffer += numberOfBlockBPerBlockA;
-		result_buffer += numberOfBlockBPerBlockA;
-	}
-}
-
-inline
-void sortWithIndex_partial_descend(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
-	const int *index_buffer, int *index_buffer_sort)
-{
-	for (int i = 0; i < numberOfBlockA; ++i)
-	{
-		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
-
-		block_sort_partial_descend(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
-
-		for (int j = 0; j < retain; ++j)
-		{
-			*result++ = result_buffer[index_buffer_sort[j]];
-
-			*index_x++ = index_x_buffer[index_buffer_sort[j]];
-			*index_y++ = index_y_buffer[index_buffer_sort[j]];
-		}
-
-		index_x_buffer += numberOfBlockBPerBlockA;
-		index_y_buffer += numberOfBlockBPerBlockA;
-		result_buffer += numberOfBlockBPerBlockA;
-	}
-}
-
-inline
-void sortWithIndex_descend(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
-	const int *index_buffer, int *index_buffer_sort)
-{
-	for (int i = 0; i < numberOfBlockA; ++i)
-	{
-		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
-
-		block_sort_descend(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA);
-
-		for (int j = 0; j < retain; ++j)
-		{
-			*result++ = result_buffer[index_buffer_sort[j]];
-
-			*index_x++ = index_x_buffer[index_buffer_sort[j]];
-			*index_y++ = index_y_buffer[index_buffer_sort[j]];
-		}
-
-		index_x_buffer += numberOfBlockBPerBlockA;
-		index_y_buffer += numberOfBlockBPerBlockA;
-		result_buffer += numberOfBlockBPerBlockA;
-	}
-}
-inline
-void dummySort(int *&index_x, int *&index_y, float *&result,
-	int *index_x_buffer, int *index_y_buffer, float *result_buffer,
+void dummySort(int *&index_x, int *&index_y, Type *&result,
+	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
@@ -206,13 +161,14 @@ bool indexA_M_outOfIndexError()
 }
 
 // TODO: Fix busy waiting gpu tasks
-template <DetermineBlockBIndex determineBlockB_index,
+template <typename Type,
+	DetermineBlockBIndex determineBlockB_index,
 	RecordIndex recordIndexMethod,
-	ProcessFunction processFunction,
-	SortMethod sortMethod>
-	unsigned processWorker(ExecutionContext *executionContext)
+	ProcessFunction<Type> processFunction,
+	SortMethod<Type> sortMethod>
+	unsigned processWorker(ExecutionContext<Type> *executionContext)
 {
-	float *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
+	Type *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
 		*matrixC = executionContext->matrixC,
 		*matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
 		*matrixC_buffer = executionContext->matrixC_buffer,
@@ -241,9 +197,9 @@ template <DetermineBlockBIndex determineBlockB_index,
 		lengthOfGpuTaskQueue = executionContext->lengthOfGpuTaskQueue;
 
 	int blockSize = executionContext->block_M * executionContext->block_N;
-	float *c_bufferA = executionContext->matrixA_buffer;
-	float *c_bufferB = executionContext->matrixB_buffer;
-	float *c_result = executionContext->matrixC;
+	Type *c_bufferA = executionContext->matrixA_buffer;
+	Type *c_bufferB = executionContext->matrixB_buffer;
+	Type *c_result = executionContext->matrixC;
 	int *c_index_x = executionContext->index_x, *c_index_y = executionContext->index_y,
 		*c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
 
@@ -306,7 +262,7 @@ template <DetermineBlockBIndex determineBlockB_index,
 
 			if (numberOfQueuedTasks == lengthOfGpuTaskQueue)
 			{
-				cuda_error = submitGpuTask<processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
+				cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
 					matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, streamA);
@@ -347,7 +303,7 @@ JumpOut:
 	{
 		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 
-		cuda_error = submitGpuTask<processFunction>(matrixA_buffer, matrixB_buffer,
+		cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer,
 			matrixC_buffer,
 			matrixA_deviceBuffer, matrixB_deviceBuffer,
 			matrixC_deviceBuffer,

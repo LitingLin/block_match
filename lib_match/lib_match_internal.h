@@ -66,12 +66,12 @@ struct ExecutionContext
 };
 
 template <typename Type>
-typedef void PadFunction(const Type *old_ptr, Type *new_ptr,
+using PadFunction = void(const Type *old_ptr, Type *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
 template <typename Type>
-typedef unsigned ExecutionFunction(ExecutionContext<Type> *);
+using ExecutionFunction = unsigned(ExecutionContext<Type> *);
 
 // TODO support int64
 template <typename Type>
@@ -152,7 +152,7 @@ struct BlockMatchContext
 		int *rawMatrixCIndex_begin;
 		int *beginMatrixAIndex_M;
 		int *beginMatrixAIndex_N;
-		ExecutionContext *executionContext;
+		ExecutionContext<Type> *executionContext;
 	} workerContext;
 
 	struct OptionalPerThreadBufferPointer
@@ -296,7 +296,8 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 
 void appendLastErrorString(const char *string, ...);
 
-BlockMatchContext * allocateContext(const int numberOfThreads);
+template <typename Type>
+BlockMatchContext<Type> * allocateContext(const int numberOfThreads);
 enum class InternalBufferType
 {
 	MatrixA_Padded_Buffer,
@@ -305,8 +306,10 @@ enum class InternalBufferType
 	Index_Y_Internal
 };
 
-bool allocateInternalBuffer(BlockMatchContext *context, enum class InternalBufferType bufferType);
-void initializeWorkerInternalBuffer(BlockMatchContext *context, void *buffer, enum class InternalBufferType bufferType);
+template <typename Type>
+bool allocateInternalBuffer(BlockMatchContext<Type> *context, enum class InternalBufferType bufferType);
+template <typename Type>
+void initializeWorkerInternalBuffer(BlockMatchContext<Type> *context, void *buffer, enum class InternalBufferType bufferType);
 
 class StackTracker : private StackWalker
 {

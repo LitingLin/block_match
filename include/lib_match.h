@@ -79,7 +79,7 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 	Type *padded_A = nullptr, Type *padded_B = nullptr,
 	int *index_x = nullptr, int *index_y = nullptr);
 
-LIB_MATCH_EXPORT
+template <typename Type>
 void blockMatchFinalize(void *instance);
 
 LIB_MATCH_EXPORT

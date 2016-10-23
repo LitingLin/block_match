@@ -89,7 +89,6 @@
     <ClCompile Include="test_sort.cpp" />
     <ClCompile Include="test_standardize_cpu.cpp" />
     <ClCompile Include="test_standardize_gpu.cpp" />
-    <ClCompile Include="test_whole_program.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_common.h" />
