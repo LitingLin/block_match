@@ -76,7 +76,7 @@ namespace SortMethodProxy {
 
 template <typename Type>
 using SortMethod = 
-void (*)(int *&index_x, int *&index_y, Type *&result,
+void (int *&index_x, int *&index_y, Type *&result,
 	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort);

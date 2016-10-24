@@ -1,5 +1,7 @@
 #include "lib_match_mex_common.h"
 #include <stdarg.h>
+#include <type_traits>
+#include <memory>
 
 LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...)
 {
@@ -11,23 +13,35 @@ LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char me
 	return errorWithMessage;
 }
 
-void convertArrayFromDoubleToFloat(const double *source, float *destination, size_t size)
+template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
+void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
-	for (size_t i = 0; i < size; ++i)
+	for (size_t i = 0; i<n; i++)
 	{
-		destination[i] = source[i];
+		out[i] = in[i];
 	}
 }
 
-void convertArrayFromFloatToDouble(const float *source, double *destination, size_t size)
+template <typename Type1, typename Type2, typename std::enable_if<std::is_same<Type1, Type2>::value>::type * = nullptr>
+void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
-	for (size_t i = 0; i < size; ++i)
-	{
-		destination[i] = source[i];
-	}
+	memcpy(out, in, n * sizeof(Type1));
 }
 
 LibMatchMexErrorWithMessage internalErrorMessage()
 {
 	return generateErrorMessage(LibMatchMexError::errorInternal, "Unknown internal error.");
 }
+
+template
+void convertArrayType(const float*, double *, size_t);
+template
+void convertArrayType(const double*, float *, size_t);
+template
+void convertArrayType(const int*, double *, size_t);
+template
+void convertArrayType(const int*, float *, size_t);
+template
+void convertArrayType(const float*, float *, size_t);
+template
+void convertArrayType(const double*, double *, size_t);

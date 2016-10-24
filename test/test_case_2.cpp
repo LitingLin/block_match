@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(test_case_2)
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BOOST_TEST(blockMatchAndSortingInitialize(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero,
+	BOOST_TEST(blockMatchAndSortingInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		0, 0, 0, 0, 0, 0, 0, 0,
 		numberOfResultRetain,
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(test_case_2)
 	int *indexY = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(int));
 
 	BOOST_TEST(blockMatchExecute(instance, inputMatrix, inputMatrix, matrixC, matrixAPadded, matrixBPadded, indexX, indexY), getLastErrorString());
-	blockMatchFinalize(instance);
+	blockMatchFinalize<float>(instance);
 	free(matrixC);
 	free(matrixAPadded);
 	free(matrixBPadded);

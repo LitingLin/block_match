@@ -3,6 +3,7 @@
 #include <mex.h>
 
 #include <lib_match.h>
+#include <type_traits>
 
 enum class LibMatchMexError
 {
@@ -35,8 +36,10 @@ void libMatchMexInitalize();
 struct LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...);
 struct LibMatchMexErrorWithMessage internalErrorMessage();
 
-void convertArrayFromDoubleToFloat(const double *source, float *destination, size_t size);
-void convertArrayFromFloatToDouble(const float *source, double *destination, size_t size);
+template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
+void convertArrayType(const Type1 *in, Type2 *out, size_t n);
+template <typename Type1, typename Type2, typename std::enable_if<std::is_same<Type1, Type2>::value>::type * = nullptr>
+void convertArrayType(const Type1 *in, Type2 *out, size_t n);
 
 /* Return:
  * errorTypeOfArgument

@@ -116,7 +116,8 @@ struct BlockMatchContext
 
 	int numberOfThreads;
 
-	PadFunction<Type> *padMethod;
+	PadFunction<Type> *padMethodA;
+	PadFunction<Type> *padMethodB;
 	ExecutionFunction<Type> *executionMethod;
 
 	int numberOfBlockBPerBlockA_M;

@@ -2,7 +2,7 @@
 
 // TODO fix fail
 // But it seems like the precision problem of float
-BOOST_AUTO_TEST_CASE(test_cc_gpu)
+BOOST_AUTO_TEST_CASE(test_cc_gpu_float)
 {
 	float a[] = { 1.7339,3.9094,8.3138,8.0336,0.6047,3.9926,5.2688,
 		4.1680,6.5686,6.2797,2.9198,4.3165,0.1549,9.8406,1.6717,1.0622,3.7241,1.9812,4.8969,3.3949 };

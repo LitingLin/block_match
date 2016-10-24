@@ -435,7 +435,7 @@ template <typename Type>
 bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethod,
+	PadMethod padMethodA, PadMethod padMethodB,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -529,19 +529,36 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
 	}
 
-	switch (padMethod)
+	switch (padMethodA)
 	{
 	case PadMethod::zero:
-		instance->padMethod = zeroPadding<Type>;
+		instance->padMethodA = zeroPadding<Type>;
 		break;
 	case PadMethod::circular:
-		instance->padMethod = circularPadding<Type>;
+		instance->padMethodA = circularPadding<Type>;
 		break;
 	case PadMethod::replicate:
-		instance->padMethod = replicatePadding<Type>;
+		instance->padMethodA = replicatePadding<Type>;
 		break;
 	case PadMethod::symmetric:
-		instance->padMethod = symmetricPadding<Type>;
+		instance->padMethodA = symmetricPadding<Type>;
+		break;
+	default: break;
+	}
+
+	switch (padMethodB)
+	{
+	case PadMethod::zero:
+		instance->padMethodB = zeroPadding<Type>;
+		break;
+	case PadMethod::circular:
+		instance->padMethodB = circularPadding<Type>;
+		break;
+	case PadMethod::replicate:
+		instance->padMethodB = replicatePadding<Type>;
+		break;
+	case PadMethod::symmetric:
+		instance->padMethodB = symmetricPadding<Type>;
 		break;
 	default: break;
 	}
@@ -632,7 +649,7 @@ template
 bool blockMatchAndSortingInitialize<float>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethod,
+	PadMethod padMethodA, PadMethod padMethodB,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -652,7 +669,7 @@ template
 bool blockMatchAndSortingInitialize<double>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethod,
+	PadMethod padMethodA, PadMethod padMethodB,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,

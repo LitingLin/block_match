@@ -4,7 +4,8 @@
 
 #include <boost/test/unit_test.hpp>
 
-void isNormal(float *ptr, int size);
+template <typename Type>
+void isNormal(Type *ptr, int size);
 
 void fillWithSequence(float *ptr, size_t size);
 

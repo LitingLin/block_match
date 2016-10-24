@@ -1,6 +1,99 @@
 #include "common.h"
 #include <string.h>
 
+void recheckDataType(struct BlockMatchMexContext *context)
+{
+	context->sourceType = typeid(double);
+	if (context->intermediateType == typeid(nullptr))
+		context->intermediateType = typeid(double);
+	if (context->resultType == typeid(nullptr))
+		context->resultType = typeid(double);
+}
+
+LibMatchMexError parseIntermediateType(struct BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[7];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 7);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "float", 6) == 0)
+		context->intermediateType = typeid(float);
+	else if (strncmp(buffer, "double", 7) == 0)
+		context->intermediateType = typeid(double);
+	else if (strncmp(buffer, "same", 5) != 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
+LibMatchMexError parseResultDataType(struct BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[7];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 7);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "float", 6) == 0)
+		context->resultType = typeid(float);
+	else if (strncmp(buffer, "double", 7) == 0)
+		context->resultType = typeid(double);
+	else if (strncmp(buffer, "same", 5) != 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
+LibMatchMexError parseSequenceAPaddingMethod(struct BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[10];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 10);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "zero", 5) == 0)
+		context->padMethodA = PadMethod::zero;
+	else if (strncmp(buffer, "circular", 9) == 0)
+		context->padMethodA = PadMethod::circular;
+	else if (strncmp(buffer, "replicate", 10) == 0)
+		context->padMethodA = PadMethod::replicate;
+	else if (strncmp(buffer, "symmetric", 10) == 0)
+		context->padMethodA = PadMethod::symmetric;
+	else
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
+LibMatchMexError parseSequenceBPaddingMethod(struct BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[10];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 10);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "zero", 5) == 0)
+		context->padMethodB = PadMethod::zero;
+	else if (strncmp(buffer, "circular", 9) == 0)
+		context->padMethodB = PadMethod::circular;
+	else if (strncmp(buffer, "replicate", 10) == 0)
+		context->padMethodB = PadMethod::replicate;
+	else if (strncmp(buffer, "symmetric", 10) == 0)
+		context->padMethodB = PadMethod::symmetric;
+	else
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
 LibMatchMexError parseRetain(struct BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -357,9 +450,31 @@ struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *c
 				return generateErrorMessage(error, "Invalid value of argument MeasureMethod\n");
 			}
 		}
-		else if (strncmp(buffer, "SequenceAPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0); // TODO
-		else if (strncmp(buffer, "SequenceBPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "Threshold", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "SequenceAPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSequenceAPaddingMethod(context, prhs[index]);
+			if (error == LibMatchMexError::errorTypeOfArgument)
+			{
+				return generateErrorMessage(error, "Argument SequenceAPaddingMethod must be string\n");
+			}
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+			{
+				return generateErrorMessage(error, "Invalid value of argument SequenceAPaddingMethod\n");
+			}
+		}
+		else if (strncmp(buffer, "SequenceBPaddingMethod", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSequenceBPaddingMethod(context, prhs[index]);
+			if (error == LibMatchMexError::errorTypeOfArgument)
+			{
+				return generateErrorMessage(error, "Argument SequenceBPaddingMethod must be string\n");
+			}
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+			{
+				return generateErrorMessage(error, "Invalid value of argument SequenceBPaddingMethod\n");
+			}
+		}
+		else if (strncmp(buffer, "Threshold", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0); // TODO
 		else if (strncmp(buffer, "Sort", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSort(context, prhs[index]);
@@ -382,8 +497,22 @@ struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *c
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "Value of argument Retain must be 'all' or positive integer\n");
 		}
-		else if (strncmp(buffer, "ResultDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
-		else if (strncmp(buffer, "IntermediateDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "ResultDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseResultDataType(context, prhs[index]);
+			if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument ResultDataType must be string.\n");
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Invalid value of argument ResultDataType.\n");
+		}
+		else if (strncmp(buffer, "IntermediateDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseIntermediateType(context, prhs[index]);
+			if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument IntermediateDataType must be string.\n");
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Invalid value of argument IntermediateDataType.\n");
+		}
 		else if (strncmp(buffer, "Sparse", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
 
 		else
@@ -395,6 +524,8 @@ struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *c
 		}
 		++index;
 	}
+
+	recheckDataType(context);
 
 	LibMatchMexErrorWithMessage error_message = { error = LibMatchMexError::success };
 

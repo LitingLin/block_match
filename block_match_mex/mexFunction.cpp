@@ -1,38 +1,24 @@
 #include "common.h"
+#include "utils.h"
 #include <string.h>
 
-extern "C"
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
-	const mxArray *prhs[])
+
+template <typename IntermidateType, typename ResultType>
+void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 {
-	libMatchMexInitalize();
-	struct BlockMatchMexContext context;
-	struct LibMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
+	int sequenceASize = context->sequenceAMatrixDimensions[0] * context->sequenceAMatrixDimensions[1];
+	int sequenceBSize = context->sequenceBMatrixDimensions[0] * context->sequenceBMatrixDimensions[1];
 
-	if (errorMessage.error != LibMatchMexError::success)
-	{
-		mexErrMsgTxt(errorMessage.message);
-		return;
-	}
-	errorMessage = validateParameter(&context);
+	IntermidateType *sequenceAPointer_converted, *sequenceBPointer_converted;
+	sequenceAPointer_converted = static_cast<IntermidateType*>(malloc(sequenceASize * sizeof(IntermidateType)));
 
-	if (errorMessage.error != LibMatchMexError::success)
-	{
-		mexErrMsgTxt(errorMessage.message);
-		return;
-	}
-
-	int sequenceASize = context.sequenceAMatrixDimensions[0] * context.sequenceAMatrixDimensions[1];
-	int sequenceBSize = context.sequenceBMatrixDimensions[0] * context.sequenceBMatrixDimensions[1];
-
-	float *sequenceAPointer_converted, *sequenceBPointer_converted;
-	sequenceAPointer_converted = static_cast<float*>(malloc(sequenceASize * sizeof(float)));
 	if (!sequenceAPointer_converted) {
 		mexErrMsgTxt("malloc failed\n");
 		return;
 	}
 
-	sequenceBPointer_converted = static_cast<float*>(malloc(sequenceBSize * sizeof(float)));
+	sequenceBPointer_converted = static_cast<IntermidateType*>(malloc(sequenceBSize * sizeof(IntermidateType)));
+
 	if (!sequenceBPointer_converted)
 	{
 		free(sequenceAPointer_converted);
@@ -40,8 +26,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	convertArrayFromDoubleToFloat(context.sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
-	convertArrayFromDoubleToFloat(context.sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
+	convertArrayType(context->sourceType, context->intermediateType, context->sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
+	convertArrayType(context->sourceType, context->intermediateType, context->sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
 
 	char errorStringBuffer[LIB_MATCH_MAX_MESSAGE_LENGTH];
 
@@ -49,17 +35,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	int matrixC_M, matrixC_N, matrixC_O;
 	int matrixA_padded_M, matrixA_padded_N,
 		matrixB_padded_M, matrixB_padded_N;
-	if (!blockMatchAndSortingInitialize<float>(&instance, context.searchType, context.method, PadMethod::symmetric,
-		context.sequenceAMatrixDimensions[1], context.sequenceAMatrixDimensions[0], context.sequenceBMatrixDimensions[1], context.sequenceBMatrixDimensions[0],
-		context.searchRegionWidth, context.searchRegionHeight,
-		context.blockWidth, context.blockHeight,
-		context.sequenceAStrideWidth, context.sequenceAStrideHeight,
-		context.sequenceBStrideWidth, context.sequenceBStrideHeight,
-		context.sequenceAPaddingWidth, context.sequenceAPaddingWidth,
-		context.sequenceAPaddingHeight, context.sequenceAPaddingHeight,
-		context.sequenceBPaddingWidth, context.sequenceBPaddingWidth,
-		context.sequenceBPaddingHeight, context.sequenceBPaddingHeight,
-		context.retain,
+	if (!blockMatchAndSortingInitialize<IntermidateType>(&instance, context->searchType, context->method, context->padMethodA, context->padMethodB,
+		context->sequenceAMatrixDimensions[1], context->sequenceAMatrixDimensions[0], context->sequenceBMatrixDimensions[1], context->sequenceBMatrixDimensions[0],
+		context->searchRegionWidth, context->searchRegionHeight,
+		context->blockWidth, context->blockHeight,
+		context->sequenceAStrideWidth, context->sequenceAStrideHeight,
+		context->sequenceBStrideWidth, context->sequenceBStrideHeight,
+		context->sequenceAPaddingWidth, context->sequenceAPaddingWidth,
+		context->sequenceAPaddingHeight, context->sequenceAPaddingHeight,
+		context->sequenceBPaddingWidth, context->sequenceBPaddingWidth,
+		context->sequenceBPaddingHeight, context->sequenceBPaddingHeight,
+		context->retain,
 		&matrixC_M, &matrixC_N, &matrixC_O,
 		&matrixA_padded_M, &matrixA_padded_N,
 		&matrixB_padded_M, &matrixB_padded_N))
@@ -71,31 +57,31 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 		return;
 	}
-	float *matrixC = (float*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
+	IntermidateType *matrixC = (IntermidateType*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
 	if (!matrixC)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixC");
 		goto matrixC_mallocFailed;
 	}
-	float *matrixA_padded = (float*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(float));
+	IntermidateType *matrixA_padded = (IntermidateType*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(IntermidateType));
 	if (!matrixA_padded)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixA_padded");
 		goto matrixA_padded_mallocFailed;
 	}
-	float *matrixB_padded = (float*)malloc(matrixB_padded_M * matrixB_padded_N * sizeof(float));
+	IntermidateType *matrixB_padded = (IntermidateType*)malloc(matrixB_padded_M * matrixB_padded_N * sizeof(IntermidateType));
 	if (!matrixB_padded)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixB_padded");
 		goto matrixB_padded_mallocFailed;
 	}
-	int *index_x = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
+	int *index_x = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
 	if (!index_x)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for index_x");
 		goto index_x_mallocFailed;
 	}
-	int *index_y = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
+	int *index_y = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
 	if (!index_y)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for index_y");
@@ -104,16 +90,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	if (!blockMatchExecute(instance, sequenceAPointer_converted, sequenceBPointer_converted, matrixC, matrixA_padded, matrixB_padded, index_x, index_y))
 	{
 		libMatchGetLastErrorString(errorStringBuffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		blockMatchFinalize<float>(instance);
+		blockMatchFinalize<IntermidateType>(instance);
 		goto runtime_error;
 	}
 
-	blockMatchFinalize<float>(instance);
+	blockMatchFinalize<IntermidateType>(instance);
 
 	free(sequenceAPointer_converted);
 	free(sequenceBPointer_converted);
 
-	if (!generate_result(&plhs[0], matrixC_N, matrixC_M, index_y, index_x, matrixC, matrixC_O))
+	if (!generate_result<IntermidateType, ResultType>(&plhs[0], matrixC_N, matrixC_M, index_y, index_x, matrixC, matrixC_O))
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc result");
 
@@ -176,4 +162,37 @@ matrixC_mallocFailed:
 	free(sequenceBPointer_converted);
 generateErrorMessageAndExit:
 	mexErrMsgTxt(errorStringBuffer);
+}
+
+extern "C"
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
+	const mxArray *prhs[])
+{
+	libMatchMexInitalize();
+	struct BlockMatchMexContext context;
+	struct LibMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
+
+	if (errorMessage.error != LibMatchMexError::success)
+	{
+		mexErrMsgTxt(errorMessage.message);
+		return;
+	}
+	errorMessage = validateParameter(&context);
+
+	if (errorMessage.error != LibMatchMexError::success)
+	{
+		mexErrMsgTxt(errorMessage.message);
+		return;
+	}
+
+	if (context.intermediateType == typeid(float) && context.resultType == typeid(double))
+		process<float, double>(&context, nlhs, plhs);
+	else if (context.intermediateType == typeid(float) && context.resultType == typeid(float))
+		process<float, float>(&context, nlhs, plhs);
+	else if (context.intermediateType == typeid(double) && context.resultType == typeid(float))
+		process<double, float>(&context, nlhs, plhs);
+	else if (context.intermediateType == typeid(double) && context.resultType == typeid(double))
+		process<double, double>(&context, nlhs, plhs);
+	else
+		abort();
 }

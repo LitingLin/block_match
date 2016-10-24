@@ -58,7 +58,7 @@ template <typename Type>
 bool blockMatchAndSortingInitialize(void **instance,
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethod,
+	PadMethod padMethodA, PadMethod padMethodB,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,

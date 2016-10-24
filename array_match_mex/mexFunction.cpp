@@ -33,8 +33,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 	B = A + totalSize;
-	convertArrayFromDoubleToFloat(context.A, A, totalSize);
-	convertArrayFromDoubleToFloat(context.B, B, totalSize);
+	convertArrayType(context.A, A, totalSize);
+	convertArrayType(context.B, B, totalSize);
 
 	char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH + LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
 
@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 	plhs[0] = mxCreateDoubleMatrix(numberOfArray, 1, mxREAL);
 	double *mxResult = mxGetPr(plhs[0]);
-	convertArrayFromFloatToDouble(result, mxResult, numberOfArray);
+	convertArrayType(result, mxResult, numberOfArray);
 
 	errorCode = arrayMatchFinalize(arrayMatchInstance);
 	if (errorCode != LibMatchErrorCode::success)

@@ -47,8 +47,8 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 		padded_B = instance->optionalBuffer.matrixB_padded_internal;
 	}
 
-	instance->padMethod(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
-	instance->padMethod(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
+	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
 	if (index_x == nullptr)
 	{

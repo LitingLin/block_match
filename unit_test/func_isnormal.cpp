@@ -1,6 +1,7 @@
 #include "test_common.h"
 
-void isNormal(float *ptr, int size)
+template <typename Type>
+void isNormal(Type *ptr, int size)
 {
 	float mean = 0;
 	for (int i = 0; i<size; ++i)
@@ -21,3 +22,8 @@ void isNormal(float *ptr, int size)
 	sd = sqrt(sd);
 	BOOST_CHECK_SMALL(sd - 1, 0.0001f);
 }
+
+template
+void isNormal(float *ptr, int size);
+template
+void isNormal(double *ptr, int size);
