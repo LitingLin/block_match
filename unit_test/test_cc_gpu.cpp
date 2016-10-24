@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(test_cc_gpu_double)
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	cuda_error = block_match_cc(dev_a, dev_b, 1, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	float c;
+	double c;
 	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	BOOST_CHECK_SMALL(c - 1.8453e-04, 0.0001);
