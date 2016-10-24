@@ -51,5 +51,5 @@ template <typename IntermidateType, typename ResultType>
 bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const IntermidateType *value, const int size);
 
-template <typename ResultType>
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const ResultType *data);
+template <typename IntermidateType, typename ResultType>
+bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data);

@@ -1,5 +1,5 @@
 function [Result, SequenceAPadded, SequenceBPadded] = blockMatch(SequenceA, SequenceB, BlockSize, Options)
-%%
+%% Parameter Description
 % Input:
 %  SequenceA:
 %   Sequence A, can be

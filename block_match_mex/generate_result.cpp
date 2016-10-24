@@ -37,8 +37,8 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 	return true;
 }
 
-template <typename ResultType>
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const ResultType *data)
+template <typename IntermidateType, typename ResultType>
+bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data)
 {
 	mxArray *pa = mxCreateNumericMatrix(sequencePaddedHeight, sequencePaddedWidth, getMxClassId(typeid(ResultType)) ,mxREAL);
 	if (!pa)
@@ -65,6 +65,10 @@ template
 bool generate_result<double, double>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const double *value, const int size);
 template
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
+bool generatePaddedMatrix<float,double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
 template
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
+bool generatePaddedMatrix<double, double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
+template
+bool generatePaddedMatrix<float, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
+template
+bool generatePaddedMatrix<double, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
