@@ -102,7 +102,7 @@ int determineNumberOfThreads(bool sort,
 			return 1;
 }
 
-int determineSizeOfMatrixC_O(int numberOfIndexRetain, int group_M, int group_N)
+int determineSizeOfMatrixC_X(int numberOfIndexRetain, int group_M, int group_N)
 {
 	if (numberOfIndexRetain)
 		return numberOfIndexRetain;
@@ -292,6 +292,11 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context)
 		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_N;
 		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M + context->indexA_M_begin;
 		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N + context->indexA_N_begin;
+		/*
+		if (workerContext.beginMatrixAIndex_M[indexOfThread] + strideA_M > context->indexA_M_end)
+			workerContext.beginMatrixAIndex_M[indexOfThread] = context->indexA_M_end - strideA_M;
+		if (workerContext.beginMatrixAIndex_N[indexOfThread] + strideA_N > context->indexA_N_end)
+			workerContext.beginMatrixAIndex_N[indexOfThread] = context->indexA_N_end - strideA_N;*/
 	}
 	workerContext.numberOfIteration[numberOfThreads - 1] += (numberOfTasks - numberOfThreads * numberOfTasksPerWorker_minimum);
 }
@@ -432,7 +437,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 {
 	if (searchType == SearchType::local)
 	{
-		return searchRegion;
+		return (searchRegion + strideB - 1) / strideB;
 	}
 	else
 	{
@@ -495,10 +500,15 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
 	}
 
-	const int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
-	const int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
-	const int matrixC_X = determineSizeOfMatrixC_O(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
+	int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
+	int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
+	const int matrixC_X = determineSizeOfMatrixC_X(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
+	/*
+	if ((indexA_M_end - indexA_M_begin) % strideA_M)
+		++matrixC_M;
 
+	if ((indexA_N_end - indexA_N_begin) % strideA_N)
+		++matrixC_N;*/
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
@@ -512,6 +522,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	instance->indexA_M_end = indexA_M_end;
 	instance->indexA_N_begin = indexA_N_begin;
 	instance->indexA_N_end = indexA_N_end;
+
 	if (sort) {
 		if (searchType == SearchType::local)
 		{
@@ -577,6 +588,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 				abort();
 		}
 	}
+
 	switch (padMethodA)
 	{
 	case PadMethod::zero:

@@ -306,12 +306,18 @@ template <typename Type,
 				numberOfBlockA = 0;
 				numberOfQueuedTasks = 0;
 			}
+			/*
+			if (indexA_N + strideA_N > indexA_N_end)
+				indexA_N = indexA_N_end - strideA_N;*/
 
 			++indexOfIteration;
 
 			if (indexOfIteration == numberOfIteration)
 				goto JumpOut;
 		}
+		/*
+		if (indexA_M + strideA_M > indexA_M_end)
+			indexA_M = indexA_M_end - strideA_M;*/
 	}
 JumpOut:
 	if (numberOfBlockA)
