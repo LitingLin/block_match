@@ -55,10 +55,11 @@ size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int
 
 // SearchRegion size 0 for full search
 template <typename Type>
-bool blockMatchAndSortingInitialize(void **instance,
+bool blockMatchInitialize(void **instance,
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
+	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -69,7 +70,7 @@ bool blockMatchAndSortingInitialize(void **instance,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
 	int numberOfIndexRetain,
-	int *matrixC_M, int *matrixC_N, int *matrixC_O,
+	int *matrixC_M, int *matrixC_N, int *matrixC_X,
 	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
 	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
 

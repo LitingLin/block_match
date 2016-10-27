@@ -65,8 +65,7 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 	}
 	else
 		initializeWorkerInternalBuffer(instance, index_x, InternalBufferType::Index_X_Internal);
-
-
+	
 	if (index_y == nullptr)
 	{
 		if (instance->optionalBuffer.index_y_internal == nullptr)

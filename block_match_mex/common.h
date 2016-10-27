@@ -10,17 +10,18 @@ struct BlockMatchMexContext
 	PadMethod padMethodA;
 	PadMethod padMethodB;
 	
-	std::type_index sourceType = typeid(nullptr);
+	std::type_index sourceAType = typeid(nullptr);
+	std::type_index sourceBType = typeid(nullptr);
 	std::type_index intermediateType = typeid(nullptr);
 	std::type_index resultType = typeid(nullptr);
 
 	int sequenceMatrixNumberOfDimensions;
 
 	int sequenceAMatrixDimensions[4];
-	double *sequenceAMatrixPointer;
+	void *sequenceAMatrixPointer;
 
 	int sequenceBMatrixDimensions[4];
-	double *sequenceBMatrixPointer;
+	void *sequenceBMatrixPointer;
 
 	int blockWidth;
 	int blockHeight;
@@ -48,8 +49,8 @@ struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *c
 struct LibMatchMexErrorWithMessage validateParameter(struct BlockMatchMexContext *context);
 
 template <typename IntermidateType, typename ResultType>
-bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
+bool generate_result(mxArray **pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const IntermidateType *value, const int size);
 
 template <typename IntermidateType, typename ResultType>
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data);
+bool generatePaddedMatrix(mxArray **pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data);

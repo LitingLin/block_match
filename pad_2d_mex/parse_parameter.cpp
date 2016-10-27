@@ -40,7 +40,7 @@ LibMatchMexError parseMethod(struct PaddingMexContext *context,
 LibMatchMexError parseMatrix(struct PaddingMexContext *context,
 	const mxArray *pa)
 {
-	return parse2DMatrixParameter(pa, &context->originImage, &context->image_M, &context->image_N);
+	return parse2DMatrixParameter(pa, reinterpret_cast<void**>(&context->originImage), &context->image_M, &context->image_N);
 }
 
 LibMatchMexError parseOutputArgument(struct PaddingMexContext *context, 

@@ -115,7 +115,22 @@ void dummySort(int *&index_x, int *&index_y, Type *&result,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
+	for (int i = 0; i < numberOfBlockA; ++i)
+	{
+		//memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
+		
+		for (int j = 0; j < retain; ++j)
+		{
+			*result++ = result_buffer[j];
 
+			*index_x++ = index_x_buffer[j];
+			*index_y++ = index_y_buffer[j];
+		}
+
+		index_x_buffer += numberOfBlockBPerBlockA;
+		index_y_buffer += numberOfBlockBPerBlockA;
+		result_buffer += numberOfBlockBPerBlockA;
+	}
 }
 
 typedef void RecordIndex(int*, int*, int, int);

@@ -16,11 +16,11 @@ BOOST_AUTO_TEST_CASE(test_case_3)
 		73,62,26,90,61,17,10,45,40,11 };
 
 	int matM = 10, matN = 10, blockM = 2, blockN = 2, strideM = 1, strideN = 1, searchRegionM = 0, searchRegionN = 0, numberOfResultRetain = 0,
-	matrixPaddingMPre = 2, matrixPaddingMPost = 2, matrixPaddingNPre = 2,matrixPaddingNPost = 2;
+		matrixPaddingMPre = 2, matrixPaddingMPost = 2, matrixPaddingNPre = 2, matrixPaddingNPost = 2;
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BOOST_TEST(blockMatchAndSortingInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero,
+	BOOST_TEST(blockMatchInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, true,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain,

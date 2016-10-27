@@ -124,7 +124,7 @@ struct BlockMatchContext
 	int numberOfBlockBPerBlockA_N;
 	int numberOfBlockBPerBlockA;
 
-	int C_dimensions[4];
+	int C_dimensions[3];
 
 	cudaStream_t *stream;
 

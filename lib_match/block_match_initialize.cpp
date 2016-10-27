@@ -85,13 +85,21 @@ void initializeBasicInstanceInformation(BlockMatchContext<Type> *instance,
 	instance->matrixB_padded_N = matrixB_padded_N;
 }
 
-int determineNumberOfThreads(const int A_M, const int A_N,
+int determineNumberOfThreads(bool sort,
+	const int A_M, const int A_N,
 	const int maxNumberOfThreads)
 {
-	if (A_M * A_N < maxNumberOfThreads)
-		return A_M * A_N;
+	if (sort) {
+		if (A_M * A_N < maxNumberOfThreads)
+			return A_M * A_N;
+		else
+			return maxNumberOfThreads;
+	}
 	else
-		return maxNumberOfThreads;
+		if (2 <= maxNumberOfThreads)
+			return 2;
+		else
+			return 1;
 }
 
 int determineSizeOfMatrixC_O(int numberOfIndexRetain, int group_M, int group_N)
@@ -187,11 +195,11 @@ bool initializeMemoryResources(BlockMatchContext<Type> *instance)
 		bufferSize * 2 * sizeof(int) +
 		numberOfBlockBPerBlockA * (numberOfThreads + 1) * sizeof(int)));
 
-	if (buffer.index_x_sorting_buffer == nullptr)
+	if (buffer.index_x_sorting_buffer == nullptr) {
 		goto release_page_locked_memory;
+	}
 
 	buffer.index_y_sorting_buffer = buffer.index_x_sorting_buffer + bufferSize;
-
 	buffer.common_buffer = buffer.index_y_sorting_buffer + bufferSize;
 	buffer.index_raw_sorting_buffer = buffer.common_buffer + numberOfBlockBPerBlockA;
 
@@ -209,8 +217,8 @@ release_device_memory:
 	cudaFree(buffer.matrixA_deviceBuffer);
 
 release_memory:
+	free(buffer.common_buffer);
 
-	free(buffer.index_x_sorting_buffer);
 release_page_locked_memory:
 
 	cudaFreeHost(buffer.matrixA_buffer);
@@ -415,7 +423,8 @@ template <typename Type>
 BlockMatchContext<Type> * allocateContext(const int numberOfThreads)
 {
 	return static_cast<BlockMatchContext<Type>*>(malloc(sizeof(BlockMatchContext<Type>) +
-		(sizeof(typename BlockMatchContext<Type>::PerThreadBufferPointer) + sizeof(typename BlockMatchContext<Type>::OptionalPerThreadBufferPointer)) * numberOfThreads));
+		(sizeof(typename BlockMatchContext<Type>::PerThreadBufferPointer) +
+			sizeof(typename BlockMatchContext<Type>::OptionalPerThreadBufferPointer)) * numberOfThreads));
 }
 
 int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
@@ -431,11 +440,13 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 	}
 }
 
+
 template <typename Type>
-bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
+bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
+	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -446,7 +457,7 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
 	int numberOfIndexRetain,
-	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
+	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_X),
 	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
 	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N))
 {
@@ -486,10 +497,10 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 
 	const int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
 	const int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
-	const int matrixC_O = determineSizeOfMatrixC_O(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
+	const int matrixC_X = determineSizeOfMatrixC_O(numberOfIndexRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
 
 	// In case number of threads > size of A
-	const int numberOfThreads = determineNumberOfThreads(matrixC_M, matrixC_N, globalContext.numberOfThreads);
+	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
 	BlockMatchContext<Type> * instance = allocateContext<Type>(numberOfThreads);
 	if (!instance) {
@@ -501,34 +512,71 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	instance->indexA_M_end = indexA_M_end;
 	instance->indexA_N_begin = indexA_N_begin;
 	instance->indexA_N_end = indexA_N_end;
-
-	if (searchType == SearchType::local)
-	{
-		if (measureMethod == LibMatchMeasureMethod::mse)
-			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
+	if (sort) {
+		if (searchType == SearchType::local)
+		{
+			if (measureMethod == LibMatchMeasureMethod::mse)
+				if (numberOfIndexRetain)
+					instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+					block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
+				else
+					instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+					block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
+			else if (measureMethod == LibMatchMeasureMethod::cc)
+				if (numberOfIndexRetain)
+					instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+					block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
+				else
+					instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+					block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
+		}
+		else if (searchType == SearchType::global)
+		{
+			if (measureMethod == LibMatchMeasureMethod::mse) {
+				if (numberOfIndexRetain)
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+					block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
+				else
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+					block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
+			}
+			else if (measureMethod == LibMatchMeasureMethod::cc) {
+				if (numberOfIndexRetain)
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+					block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
+				else
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+					block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
+			}
 			else
-				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
-		else if (measureMethod == LibMatchMeasureMethod::cc)
-			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
-			else
-				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
+				abort();
+		}
 	}
-	else if (searchType == SearchType::global)
+	else
 	{
-		if (measureMethod == LibMatchMeasureMethod::mse)
-			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>>;
+		if (searchType == SearchType::local)
+		{
+			if (measureMethod == LibMatchMeasureMethod::mse)
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+				block_match_mse_check_border, dummySort>;
+			else if (measureMethod == LibMatchMeasureMethod::cc)
+				instance->executionMethod = processWorker<Type, determineBlockB_index_local, recordIndex,
+				block_match_cc_check_border, dummySort>;
 			else
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>>;
-		else if (measureMethod == LibMatchMeasureMethod::cc)
-			if (numberOfIndexRetain)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>>;
+				abort();
+		}
+		else if (searchType == SearchType::global)
+		{
+			if (measureMethod == LibMatchMeasureMethod::mse)
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+				block_match_mse_check_border, dummySort>;
+			else if (measureMethod == LibMatchMeasureMethod::cc)
+				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex,
+				block_match_cc_check_border, dummySort>;
 			else
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full, recordIndex, block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>>;
+				abort();
+		}
 	}
-
 	switch (padMethodA)
 	{
 	case PadMethod::zero:
@@ -590,7 +638,7 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 
 	instance->C_dimensions[0] = matrixC_M;
 	instance->C_dimensions[1] = matrixC_N;
-	instance->C_dimensions[2] = matrixC_O;
+	instance->C_dimensions[2] = matrixC_X;
 
 	instance->numberOfSubmitThreadsPerProcessor = numberOfSubmitThreadsPerProcessor;
 	instance->numberOfSubmitProcessors = numberOfSubmitProcessors;
@@ -624,7 +672,7 @@ bool blockMatchAndSortingInitialize(void **LIB_MATCH_OUT(instance),
 	{
 		*LIB_MATCH_OUT(matrixC_M) = matrixC_M;
 		*LIB_MATCH_OUT(matrixC_N) = matrixC_N;
-		*LIB_MATCH_OUT(matrixC_O) = matrixC_O;
+		*LIB_MATCH_OUT(matrixC_X) = matrixC_X;
 	}
 	if (LIB_MATCH_OUT(matrixA_padded_M) != nullptr)
 	{
@@ -646,10 +694,11 @@ Failed:
 
 LIB_MATCH_EXPORT
 template
-bool blockMatchAndSortingInitialize<float>(void **LIB_MATCH_OUT(instance),
+bool blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
+	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
@@ -666,10 +715,11 @@ bool blockMatchAndSortingInitialize<float>(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-bool blockMatchAndSortingInitialize<double>(void **LIB_MATCH_OUT(instance),
+bool blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
+	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,

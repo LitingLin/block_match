@@ -13,7 +13,7 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 	sequenceAPointer_converted = static_cast<IntermidateType*>(malloc(sequenceASize * sizeof(IntermidateType)));
 
 	if (!sequenceAPointer_converted) {
-		mexErrMsgTxt("malloc failed\n");
+		mexErrMsgTxt("Memory allocation failed: in malloc for sequenceAPointer_converted.");
 		return;
 	}
 
@@ -22,12 +22,12 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 	if (!sequenceBPointer_converted)
 	{
 		free(sequenceAPointer_converted);
-		mexErrMsgTxt("malloc failed\n");
+		mexErrMsgTxt("Memory allocation failed: in malloc for sequenceBPointer_converted.");
 		return;
 	}
 
-	convertArrayType(context->sourceType, context->intermediateType, context->sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
-	convertArrayType(context->sourceType, context->intermediateType, context->sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
+	convertArrayType(context->sourceAType, context->intermediateType, context->sequenceAMatrixPointer, sequenceAPointer_converted, sequenceASize);
+	convertArrayType(context->sourceBType, context->intermediateType, context->sequenceBMatrixPointer, sequenceBPointer_converted, sequenceBSize);
 
 	char errorStringBuffer[LIB_MATCH_MAX_MESSAGE_LENGTH];
 
@@ -35,7 +35,8 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 	int matrixC_M, matrixC_N, matrixC_O;
 	int matrixA_padded_M, matrixA_padded_N,
 		matrixB_padded_M, matrixB_padded_N;
-	if (!blockMatchAndSortingInitialize<IntermidateType>(&instance, context->searchType, context->method, context->padMethodA, context->padMethodB,
+	if (!blockMatchInitialize<IntermidateType>(&instance, context->searchType, context->method, context->padMethodA, context->padMethodB,
+		context->sort,
 		context->sequenceAMatrixDimensions[1], context->sequenceAMatrixDimensions[0], context->sequenceBMatrixDimensions[1], context->sequenceBMatrixDimensions[0],
 		context->searchRegionWidth, context->searchRegionHeight,
 		context->blockWidth, context->blockHeight,
@@ -57,31 +58,31 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 
 		return;
 	}
-	IntermidateType *matrixC = (IntermidateType*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
+	IntermidateType *matrixC = static_cast<IntermidateType*>(malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType)));
 	if (!matrixC)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixC");
 		goto matrixC_mallocFailed;
 	}
-	IntermidateType *matrixA_padded = (IntermidateType*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(IntermidateType));
+	IntermidateType *matrixA_padded = static_cast<IntermidateType*>(malloc(matrixA_padded_M * matrixA_padded_N * sizeof(IntermidateType)));
 	if (!matrixA_padded)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixA_padded");
 		goto matrixA_padded_mallocFailed;
 	}
-	IntermidateType *matrixB_padded = (IntermidateType*)malloc(matrixB_padded_M * matrixB_padded_N * sizeof(IntermidateType));
+	IntermidateType *matrixB_padded = static_cast<IntermidateType*>(malloc(matrixB_padded_M * matrixB_padded_N * sizeof(IntermidateType)));
 	if (!matrixB_padded)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for matrixB_padded");
 		goto matrixB_padded_mallocFailed;
 	}
-	int *index_x = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
+	int *index_x = static_cast<int*>(malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType)));
 	if (!index_x)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for index_x");
 		goto index_x_mallocFailed;
 	}
-	int *index_y = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType));
+	int *index_y = static_cast<int*>(malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(IntermidateType)));
 	if (!index_y)
 	{
 		strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc for index_y");
@@ -177,13 +178,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
-	errorMessage = validateParameter(&context);
+
+	/*errorMessage = validateParameter(&context);
 
 	if (errorMessage.error != LibMatchMexError::success)
 	{
 		mexErrMsgTxt(errorMessage.message);
 		return;
-	}
+	}*/
 
 	if (context.intermediateType == typeid(float) && context.resultType == typeid(double))
 		process<float, double>(&context, nlhs, plhs);
@@ -194,5 +196,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	else if (context.intermediateType == typeid(double) && context.resultType == typeid(double))
 		process<double, double>(&context, nlhs, plhs);
 	else
-		abort();
+		mexErrMsgTxt("Processing data type can only be float or double");
 }
