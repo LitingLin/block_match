@@ -42,10 +42,10 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 		context->blockWidth, context->blockHeight,
 		context->sequenceAStrideWidth, context->sequenceAStrideHeight,
 		context->sequenceBStrideWidth, context->sequenceBStrideHeight,
-		context->sequenceAPaddingWidth, context->sequenceAPaddingWidth,
-		context->sequenceAPaddingHeight, context->sequenceAPaddingHeight,
-		context->sequenceBPaddingWidth, context->sequenceBPaddingWidth,
-		context->sequenceBPaddingHeight, context->sequenceBPaddingHeight,
+		context->sequenceAPaddingWidthPre, context->sequenceAPaddingWidthPost,
+		context->sequenceAPaddingHeightPre, context->sequenceAPaddingHeightPost,
+		context->sequenceBPaddingWidthPre, context->sequenceBPaddingWidthPost,
+		context->sequenceBPaddingHeightPre, context->sequenceBPaddingHeightPost,
 		context->retain,
 		&matrixC_M, &matrixC_N, &matrixC_O,
 		&matrixA_padded_M, &matrixA_padded_N,
@@ -178,7 +178,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
-
+	
 	/*errorMessage = validateParameter(&context);
 
 	if (errorMessage.error != LibMatchMexError::success)

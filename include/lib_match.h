@@ -96,6 +96,9 @@ typedef void LibMatchSinkFunction(const char *);
 LIB_MATCH_EXPORT
 void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction);
 
+typedef bool LibMatchInterruptPendingFunction();
+void libMatchRegisterInterruptPeddingFunction(LibMatchInterruptPendingFunction);
+
 template <typename T>
 void zeroPadding(const T *old_ptr, T *new_ptr,
 	size_t old_width, size_t old_height,

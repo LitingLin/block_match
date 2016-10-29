@@ -481,6 +481,18 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 	if (searchType == SearchType::local)
 	{
+		indexA_M_begin = 0;
+		if (matrixA_padded_M > matrixB_padded_M)
+			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - searchRegion_M + 1;
+		else
+			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M) - searchRegion_M + 1;
+		indexA_N_begin = 0;
+		if (matrixA_padded_N > matrixB_padded_N)
+			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - searchRegion_N + 1;
+		else
+			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N) - searchRegion_N + 1;
+
+		/*
 		indexA_M_begin = searchRegion_M / 2;
 		if (matrixA_padded_M > matrixB_padded_M)
 			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
@@ -490,7 +502,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		if (matrixA_padded_N > matrixB_padded_N)
 			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
 		else
-			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
+			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;*/
 	}
 	else
 	{

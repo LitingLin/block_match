@@ -127,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="initialize.cpp" />
+    <ClCompile Include="interrupt_detector.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="parsing.cpp" />
     <ClCompile Include="utils.cpp" />

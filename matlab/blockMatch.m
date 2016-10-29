@@ -64,7 +64,7 @@ SequenceBStride = [1,1];
 
 %% Padding Method
 % Padding size of sequence A, can be
-%  scalar, 1x2 matrix,
+%  scalar, 1x2 matrix, 2x2 matrix,
 %  'same': NOT IMPLEMENTED
 %  'full': NOT IMPLEMENTED
 SequenceAPadding = 0;
@@ -72,7 +72,7 @@ SequenceAPadding = 0;
 %  'zero', 'circular', 'replicate', 'symmetric'
 SequenceAPaddingMethod = 'symmetric';
 % Padding size of sequence B, can be
-%  scalar, 1x2 matrix,
+%  scalar, 1x2 matrix, 2x2 matrix,
 %  'same': NOT IMPLEMENTED
 %  'full': NOT IMPLEMENTED
 SequenceBPadding = 0;

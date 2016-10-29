@@ -87,6 +87,29 @@ LibMatchMexError parse2ElementPositiveIntegerParameter(const mxArray *pa,
 */
 LibMatchMexError parse2ElementNonNegativeIntegerParameter(const mxArray *pa,
 	int *parameterA, int *parameterB);
+
+/*
+* Return:
+*  errorSizeOfArray
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+	int *parameterB1, int *parameterB2);
+
+/*
+* Return:
+*  errorSizeOfArray
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementNonNegativeIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+	int *parameterB1, int *parameterB2);
+
 /* 
 * Return:
 *  errorTypeOfArgument
@@ -97,7 +120,6 @@ LibMatchMexError parse2ElementNonNegativeIntegerParameter(const mxArray *pa,
 LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 	void **pointer,
 	int *size_M, int *size_N);
-
 
 std::type_index getTypeIndex(mxClassID mxTypeId);
 mxClassID getMxClassId(std::type_index type);
@@ -118,3 +140,13 @@ LibMatchMexError getIntegerFromMxArray(const mxArray *pa, int *integer);
 */
 LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 	int *integerA, int *integerB);
+
+/*
+* Return:
+*  success,
+*  errorOverFlow,
+*  errorTypeOfArgument
+*/
+LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
+	int *integerA1, int *integerA2,
+	int *integerB1, int *integerB2);

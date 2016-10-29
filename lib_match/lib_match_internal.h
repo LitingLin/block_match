@@ -312,6 +312,8 @@ bool allocateInternalBuffer(BlockMatchContext<Type> *context, enum class Interna
 template <typename Type>
 void initializeWorkerInternalBuffer(BlockMatchContext<Type> *context, void *buffer, enum class InternalBufferType bufferType);
 
+bool isInterruptPending();
+
 class StackTracker : private StackWalker
 {
 public:

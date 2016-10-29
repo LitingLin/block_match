@@ -8,6 +8,7 @@ void libMatchMexInitalize()
 	if (!isLoaded) {
 		libMatchOnLoad();
 		libMatchRegisterLoggingSinkFunction(logging_function);
+		libMatchRegisterInterruptPeddingFunction(libMatchMexIsInterruptPendingFunction);
 		mexAtExit(libMatchAtExit);
 		isLoaded = true;
 	}

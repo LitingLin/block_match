@@ -17,7 +17,7 @@ LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char me
 template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
 void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
-	for (size_t i = 0; i<n; i++)
+	for (size_t i = 0; i < n; i++)
 	{
 		out[i] = in[i];
 	}
@@ -46,7 +46,6 @@ template
 void convertArrayType(const float*, float *, size_t);
 template
 void convertArrayType(const double*, double *, size_t);
-
 
 std::type_index getTypeIndex(mxClassID mxTypeId)
 {
@@ -132,6 +131,22 @@ LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue
 	return LibMatchMexError::success;
 }
 
+template <typename Type>
+LibMatchMexError typeConvertWithNumericLimitsCheck(const Type *sourceArray, const size_t size, int *...)
+{
+	va_list args;
+	va_start(args, size);
+	for (size_t i = 0; i < size; ++i)
+	{
+		int *destinationPointer = va_arg(args, int*);
+		LibMatchMexError error = typeConvertWithNumericLimitsCheck(sourceArray + i, destinationPointer);
+		if (error != LibMatchMexError::success)
+			return error;
+	}
+	va_end(args);
+	return LibMatchMexError::success;
+}
+
 /*
 * Return:
 *  success,
@@ -182,90 +197,68 @@ LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 	LibMatchMexError error;
 	switch (classId)
 	{
-	case mxLOGICAL_CLASS: {
-		mxLogical* dataWithType = static_cast<mxLogical*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
+	case mxLOGICAL_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<mxLogical*>(data), 2, integerA, integerB);
+	case mxCHAR_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<mxChar*>(data), 2, integerA, integerB);
+	case mxDOUBLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<double*>(data), 2, integerA, integerB);
+	case mxSINGLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<float*>(data), 2, integerA, integerB);
+	case mxINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int8_t*>(data), 2, integerA, integerB);
+	case mxUINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint8_t*>(data), 2, integerA, integerB);
+	case mxINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int16_t*>(data), 2, integerA, integerB);
+	case mxUINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint16_t*>(data), 2, integerA, integerB);
+	case mxINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int32_t*>(data), 2, integerA, integerB);
+	case mxUINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint32_t*>(data), 2, integerA, integerB);
+	case mxINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int64_t*>(data), 2, integerA, integerB);
+	case mxUINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint64_t*>(data), 2, integerA, integerB);
+	default:
+		return LibMatchMexError::errorTypeOfArgument;
 	}
-	case mxCHAR_CLASS: {
-		mxChar* dataWithType = static_cast<mxChar*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxDOUBLE_CLASS: {
-		double* dataWithType = static_cast<double*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxSINGLE_CLASS: {
-		float* dataWithType = static_cast<float*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxINT8_CLASS: {
-		int8_t* dataWithType = static_cast<int8_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxUINT8_CLASS: {
-		uint8_t* dataWithType = static_cast<uint8_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxINT16_CLASS: {
-		int16_t* dataWithType = static_cast<int16_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxUINT16_CLASS: {
-		uint16_t* dataWithType = static_cast<uint16_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxINT32_CLASS: {
-		int32_t* dataWithType = static_cast<int32_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxUINT32_CLASS: {
-		uint32_t* dataWithType = static_cast<uint32_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxINT64_CLASS: {
-		int64_t* dataWithType = static_cast<int64_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
-	case mxUINT64_CLASS: {
-		uint64_t* dataWithType = static_cast<uint64_t*>(data);
-		error = typeConvertWithNumericLimitsCheck(dataWithType, integerA);
-		if (error != LibMatchMexError::success)
-			return error;
-		return typeConvertWithNumericLimitsCheck(dataWithType + 1, integerB);
-	}
+}
+
+LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
+	int *integerA1, int *integerA2,
+	int *integerB1, int *integerB2)
+{
+	mxClassID classId = mxGetClassID(pa);
+	void *data = mxGetData(pa);
+	LibMatchMexError error;
+	switch (classId)
+	{
+	case mxLOGICAL_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<mxLogical*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxCHAR_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<mxChar*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxDOUBLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<double*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxSINGLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<float*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int8_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxUINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint8_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int16_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxUINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint16_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int32_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxUINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint32_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<int64_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
+	case mxUINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<uint64_t*>(data), 4, integerA1, integerA2, integerB1, integerB2);
 	default:
 		return LibMatchMexError::errorTypeOfArgument;
 	}

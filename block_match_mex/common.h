@@ -33,10 +33,14 @@ struct BlockMatchMexContext
 	int sequenceBStrideWidth;
 	int sequenceBStrideHeight;
 
-	int sequenceAPaddingWidth;
-	int sequenceAPaddingHeight;
-	int sequenceBPaddingWidth;
-	int sequenceBPaddingHeight;
+	int sequenceAPaddingWidthPre;
+	int sequenceAPaddingWidthPost;
+	int sequenceAPaddingHeightPre;
+	int sequenceAPaddingHeightPost;
+	int sequenceBPaddingWidthPre;
+	int sequenceBPaddingWidthPost;
+	int sequenceBPaddingHeightPre;
+	int sequenceBPaddingHeightPost;
 
 	bool sort;
 	int retain;

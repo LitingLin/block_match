@@ -79,6 +79,52 @@ LibMatchMexError parse2ElementNonNegativeIntegerParameter(const mxArray *pa,
 
 	return LibMatchMexError::success;
 }
+/*
+* Return:
+*  errorSizeOfArray
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+		int *parameterB1, int *parameterB2)
+{
+	LibMatchMexError error;
+	size_t numberOfElement = mxGetNumberOfElements(pa);
+	if (numberOfElement == 1 || numberOfElement == 2)
+	{
+		error = parse2ElementIntegerParameter(pa, parameterA1, parameterB1);
+		*parameterA2 = *parameterA1;
+		*parameterB2 = *parameterB1;
+		return error;
+	}
+	else if (numberOfElement == 4)
+	{
+		return parse4ElementIntegerParameter(pa, parameterA1, parameterA2, parameterB1, parameterB2);
+	}
+	else
+		return LibMatchMexError::errorSizeOfArray;
+}
+/*
+* Return:
+*  errorSizeOfArray
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementNonNegativeIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+	int *parameterB1, int *parameterB2)
+{
+	LibMatchMexError error = parse4ElementIntegerParameter(pa, parameterA1, parameterA2, parameterB1, parameterB2);
+	if (error != LibMatchMexError::success)
+		return error;
+	if (*parameterA1 < 0 || *parameterA2 < 0 || *parameterB1 < 0 || *parameterB2 < 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
 
 // Update: won't fix
 // TODO: int to size_t

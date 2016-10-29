@@ -73,6 +73,9 @@
     <ClCompile Include="stack_trace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="interrupt_handler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="thread_pool.h">

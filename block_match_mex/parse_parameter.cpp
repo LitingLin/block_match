@@ -27,6 +27,33 @@ void recheckDataType(BlockMatchMexContext *context)
 		context->resultType = sourceType;
 }
 
+void recheckSequenceBPadding(BlockMatchMexContext *context)
+{
+	if (context->searchType == SearchType::global)
+	{
+		if (context->sequenceBPaddingHeightPre == -1 || context->sequenceBPaddingHeightPre == -2)
+		{
+			context->sequenceBPaddingHeightPre = context->sequenceBPaddingHeightPost
+				= context->sequenceBPaddingWidthPre = context->sequenceBPaddingWidthPost = 0;
+		}
+	}
+	else
+	{
+		if (context->sequenceBPaddingHeightPre == -1)
+		{
+			context->sequenceBPaddingHeightPre = context->searchRegionHeight / 2;
+			context->sequenceBPaddingHeightPost = context->searchRegionHeight - context->searchRegionHeight / 2;
+			context->sequenceBPaddingWidthPre = context->searchRegionWidth / 2;
+			context->sequenceBPaddingWidthPost = context->searchRegionWidth - context->searchRegionWidth / 2;
+		}
+		else if (context->sequenceBPaddingHeightPre == -2)
+		{
+			context->sequenceBPaddingHeightPre = context->sequenceBPaddingHeightPost = context->searchRegionHeight;
+			context->sequenceBPaddingWidthPre = context->sequenceBPaddingWidthPost = context->searchRegionWidth;
+		}
+	}
+}
+
 LibMatchMexError recheckSortingParameter(BlockMatchMexContext *context)
 {
 	if (!context->sort && context->retain)
@@ -178,13 +205,34 @@ LibMatchMexError parseSort(BlockMatchMexContext *context,
 LibMatchMexError parseSequenceAPaddingSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementNonNegativeIntegerParameter(pa, &context->sequenceAPaddingHeight, &context->sequenceAPaddingWidth);
+	return parse4ElementNonNegativeIntegerParameter(pa,
+		&context->sequenceAPaddingHeightPre, &context->sequenceAPaddingHeightPost,
+		&context->sequenceAPaddingWidthPre, &context->sequenceAPaddingWidthPost);
 }
 
 LibMatchMexError parseSequenceBPaddingSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementNonNegativeIntegerParameter(pa, &context->sequenceBPaddingHeight, &context->sequenceBPaddingWidth);
+	if (mxGetClassID(pa) == mxCHAR_CLASS)
+	{
+		char buffer[5];
+		LibMatchMexError error = getStringFromMxArray(pa, buffer, 5);
+		if (error != LibMatchMexError::success)
+			return error;
+
+		if (strncmp(buffer, "same", 5) == 0)
+			context->sequenceBPaddingHeightPre = -1;
+		else if (strncmp(buffer, "full", 5) == 0)
+			context->sequenceBPaddingHeightPre = -2;
+		else
+			return LibMatchMexError::errorInvalidValue;
+
+		return LibMatchMexError::success;
+	}
+	else
+		return parse4ElementNonNegativeIntegerParameter(pa,
+			&context->sequenceBPaddingHeightPre, &context->sequenceBPaddingHeightPost,
+			&context->sequenceBPaddingWidthPre, &context->sequenceBPaddingWidthPost);
 }
 
 LibMatchMexError parseSequenceAStrideSize(BlockMatchMexContext *context,
@@ -404,7 +452,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return generateErrorMessage(error, "Value of SearchRegion overflowed.");
 			else if (error == LibMatchMexError::errorTypeOfArgument)
 				return generateErrorMessage(error, "SearchRegion must be numeric array");
-			else if (error !=LibMatchMexError::success)
+			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}
 
@@ -557,6 +605,8 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	error = recheckSearchRegion(context);
 	if (error == LibMatchMexError::errorSizeOfArray)
 		return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
+
+	recheckSequenceBPadding(context);
 
 	LibMatchMexErrorWithMessage error_message = { error = LibMatchMexError::success };
 
