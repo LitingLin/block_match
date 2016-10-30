@@ -36,12 +36,12 @@ LibMatchMexError parse2ElementIntegerParameter(const mxArray *pa,
 		return getTwoIntegerFromMxArray(pa, parameterA, parameterB);
 	}
 	else
-		return LibMatchMexError::errorSizeOfArray;
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 }
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  errorTypeOfArgument
@@ -62,7 +62,7 @@ LibMatchMexError parse2ElementPositiveIntegerParameter(const mxArray *pa,
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  success
@@ -81,7 +81,7 @@ LibMatchMexError parse2ElementNonNegativeIntegerParameter(const mxArray *pa,
 }
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  success
@@ -101,14 +101,14 @@ LibMatchMexError parse4ElementIntegerParameter(const mxArray *pa,
 	}
 	else if (numberOfElement == 4)
 	{
-		return parse4ElementIntegerParameter(pa, parameterA1, parameterA2, parameterB1, parameterB2);
+		return getFourIntegerFromMxArray(pa, parameterA1, parameterA2, parameterB1, parameterB2);
 	}
 	else
-		return LibMatchMexError::errorSizeOfArray;
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 }
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  success

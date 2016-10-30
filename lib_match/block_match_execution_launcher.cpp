@@ -46,9 +46,9 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 
 		padded_B = instance->optionalBuffer.matrixB_padded_internal;
 	}
-
-	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
-	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+	// TODO: Fix
+	instance->padMethodA(A, padded_A, A_N, A_M, A_N_padPre, A_N_padPost, A_M_padPre, A_M_padPost);
+	instance->padMethodB(B, padded_B, B_N, B_M, B_N_padPre, B_N_padPost, B_M_padPre, B_M_padPost);
 
 	if (index_x == nullptr)
 	{
@@ -65,7 +65,7 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 	}
 	else
 		initializeWorkerInternalBuffer(instance, index_x, InternalBufferType::Index_X_Internal);
-	
+
 	if (index_y == nullptr)
 	{
 		if (instance->optionalBuffer.index_y_internal == nullptr)

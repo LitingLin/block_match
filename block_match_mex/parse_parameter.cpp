@@ -286,7 +286,7 @@ LibMatchMexError parseSearchRegion(BlockMatchMexContext *context,
 	else
 	{
 		context->searchType = SearchType::local;
-		return parse2ElementPositiveIntegerParameter(pa, &context->searchRegionWidth, &context->searchRegionHeight);
+		return parse2ElementPositiveIntegerParameter(pa, &context->searchRegionHeight, &context->searchRegionWidth);
 	}
 }
 
@@ -294,20 +294,9 @@ LibMatchMexError parseBlockSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	int blockWidth, blockHeight;
-	if (mxGetNumberOfElements(pa) == 1)
-	{
-		blockWidth = blockHeight = mxGetScalar(pa);
-	}
-	else if (mxGetNumberOfElements(pa) == 2)
-	{
-		const double *pr = static_cast<const double *>(mxGetData(pa));
-		blockHeight = pr[0];
-		blockWidth = pr[1];
-	}
-	else
-	{
-		return LibMatchMexError::errorNumberOfMatrixDimension;
-	}
+	LibMatchMexError error = parse2ElementPositiveIntegerParameter(pa, &blockHeight, &blockWidth);
+	if (error != LibMatchMexError::success)
+		return error;
 
 	if (context->sequenceAMatrixDimensions[0] < blockWidth || context->sequenceAMatrixDimensions[1] < blockHeight)
 	{
@@ -431,13 +420,17 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 
 	error = parseBlockSize(context, prhs[index]);
 	if (error == LibMatchMexError::errorNumberOfMatrixDimension)
-	{
-		return generateErrorMessage(error, "Number of dimension of BlockSize must be 1 or 2\n");
-	}
+		return generateErrorMessage(error, "Number of dimension of BlockSize must be 1 or 2.");
+	else if (error == LibMatchMexError::errorInvalidValue)
+		return generateErrorMessage(error, "BlockSize must be positive.");
+	else if (error == LibMatchMexError::errorOverFlow)
+		return generateErrorMessage(error, "Value of BlockSize overflowed.");
+	else if (error == LibMatchMexError::errorTypeOfArgument)
+		return generateErrorMessage(error, "BlockSize must be numeric array");
 	else if (error == LibMatchMexError::errorSizeOfArray)
-	{
 		return generateErrorMessage(error, "BlockSize cannot be smaller then Matrix A\n");
-	}
+	else if (error != LibMatchMexError::success)
+		return unknownParsingError("BlockSize");
 
 	++index;
 
@@ -463,7 +456,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		if (strncmp(buffer, "SearchRegion", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSearchRegion(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray)
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Number of dimension of SearchRegion must be 1 or 2 for numeric array.");
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "SearchReion must be 'full' or positive integer.");
@@ -478,7 +471,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		else if (strncmp(buffer, "SequenceAStride", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAStrideSize(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray)
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Number of dimension of SequenceAStride must be 1 or 2.");
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "SequenceAStride must be positive.");
@@ -492,7 +485,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		else if (strncmp(buffer, "SequenceBStride", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceBStrideSize(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray)
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Number of dimension of SequenceBStride must be 1 or 2.");
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "SequenceBStride must be positive.");
@@ -506,7 +499,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		else if (strncmp(buffer, "SequenceAPadding", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAPaddingSize(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray)
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Number of dimension of SequenceAPadding must be 1 or 2.");
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "SequenceAPadding must be non-negative.");
@@ -520,7 +513,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		else if (strncmp(buffer, "SequenceBPadding", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceBPaddingSize(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray)
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Number of dimension of SequenceBPadding must be 1 or 2.");
 			else if (error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "SequenceBPadding must be non-negative.");
@@ -546,7 +539,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 			error = parseSequenceAPaddingMethod(context, prhs[index]);
 			if (error == LibMatchMexError::errorTypeOfArgument)
 				return generateErrorMessage(error, "Argument SequenceAPaddingMethod must be string.");
-			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray || error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Invalid value of argument SequenceAPaddingMethod.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
@@ -556,7 +549,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 			error = parseSequenceBPaddingMethod(context, prhs[index]);
 			if (error == LibMatchMexError::errorTypeOfArgument)
 				return generateErrorMessage(error, "Argument SequenceBPaddingMethod must be string.");
-			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray || error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Invalid value of argument SequenceBPaddingMethod.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);

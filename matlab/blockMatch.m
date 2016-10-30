@@ -62,20 +62,26 @@ SequenceAStride = [1,1];
 %  scalar, 1x2 matrix
 SequenceBStride = [1,1];
 
+%% Border
+
+% Blocks in the borders 
+%  can be
+%  'normal'
+%  'includeLastBlock'
+SequenceABorder = 'includeLastBlock';
+
 %% Padding Method
 % Padding size of sequence A, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
-%  'same': NOT IMPLEMENTED
-%  'full': NOT IMPLEMENTED
+%  'same', 'full'
 SequenceAPadding = 0;
 % Padding of sequence A, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
 SequenceAPaddingMethod = 'symmetric';
 % Padding size of sequence B, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
-%  'same': NOT IMPLEMENTED
-%  'full': NOT IMPLEMENTED
-SequenceBPadding = 0;
+%  'same', 'full'
+SequenceBPadding = 'same';
 % Padding of sequence B, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
 SequenceBPaddingMethod = 'symmetric';
@@ -157,6 +163,9 @@ if nargin == 4
     if isfield(Options, 'Sparse')
         Sparse = Options.Sparse;
     end
+    if isfield(Options, 'SequenceABorder')
+        SequenceABorder = Options.SequenceABorder;
+    end
 end
 
 %% Call mex
@@ -166,6 +175,7 @@ if ~exist('SearchRegion', 'var') ...
     'SearchRegion', SearchRegion, ...
     'SequenceAStride', SequenceAStride, ...
     'SequenceBStride', SequenceBStride, ...
+    'SequenceABorder', SequenceABorder, ...
     'MeasureMethod', MeasureMethod, ...
     'SequenceAPadding', SequenceAPadding, ...
     'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
@@ -180,6 +190,7 @@ else
     'SearchRegion', SearchRegion, ...
     'SequenceAStride', SequenceAStride, ...
     'SequenceBStride', SequenceBStride, ...
+    'SequenceABorder', SequenceABorder, ...
     'MeasureMethod', MeasureMethod, ...
     'SequenceAPadding', SequenceAPadding, ...
     'SequenceAPaddingMethod', SequenceAPaddingMethod, ...

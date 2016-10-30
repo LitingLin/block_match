@@ -58,7 +58,7 @@ LibMatchMexError getStringFromMxArray(const mxArray *pa, char *buffer, int buffe
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorTypeOfArgument
 *  success
@@ -68,7 +68,7 @@ LibMatchMexError parse2ElementIntegerParameter(const mxArray *pa,
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  errorTypeOfArgument
@@ -79,7 +79,7 @@ LibMatchMexError parse2ElementPositiveIntegerParameter(const mxArray *pa,
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  errorTypeOfArgument
@@ -90,7 +90,7 @@ LibMatchMexError parse2ElementNonNegativeIntegerParameter(const mxArray *pa,
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  success
@@ -101,7 +101,7 @@ LibMatchMexError parse4ElementIntegerParameter(const mxArray *pa,
 
 /*
 * Return:
-*  errorSizeOfArray
+*  errorNumberOfMatrixDimension
 *  errorOverFlow
 *  errorInvalidValue
 *  success

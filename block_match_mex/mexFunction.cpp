@@ -119,7 +119,7 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 
 	if (nlhs > 1)
 	{
-		if (!generatePaddedMatrix<IntermidateType,ResultType>(&plhs[1], matrixA_padded_N, matrixA_padded_N, matrixA_padded))
+		if (!generatePaddedMatrix<IntermidateType,ResultType>(&plhs[1], matrixA_padded_N, matrixA_padded_M, matrixA_padded))
 		{
 			strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc matrixAPadded");
 			free(matrixB_padded);
@@ -132,7 +132,7 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 
 	if (nlhs > 2)
 	{
-		if (!generatePaddedMatrix<IntermidateType, ResultType>(&plhs[2], matrixB_padded_N, matrixB_padded_N, matrixB_padded))
+		if (!generatePaddedMatrix<IntermidateType, ResultType>(&plhs[2], matrixB_padded_N, matrixB_padded_M, matrixB_padded))
 		{
 			strcpy_s(errorStringBuffer, "Memory allocation failed: in malloc matrixBPadded");
 			free(matrixB_padded);
