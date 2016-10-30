@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(test_case_3)
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BOOST_TEST(blockMatchInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, true,
+	BOOST_TEST(blockMatchInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::normal,true,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain,

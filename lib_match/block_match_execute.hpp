@@ -188,12 +188,27 @@ bool checkIsInterruptPending()
 	return false;
 }
 
+inline void tryToIncludeLastBlock(int *indexA, int strideA, int indexA_end)
+{
+	if (*indexA + 1 == indexA_end)
+		return;
+	if (*indexA + strideA >= indexA_end)
+		*indexA = indexA_end - strideA - 1;
+}
+
+inline void dummyCheckIsLastBlock(int *indexA, int strideA, int indexA_end)
+{
+	
+}
+
+typedef void(CheckIsLastBlock)(int*, int, int);
+
 // TODO: Fix busy waiting gpu tasks
 template <typename Type,
 	DetermineBlockBIndex determineBlockB_index,
-	RecordIndex recordIndexMethod,
 	ProcessFunction<Type> processFunction,
-	SortMethod<Type> sortMethod>
+	SortMethod<Type> sortMethod,
+	CheckIsLastBlock checkIsLastBlock>
 	unsigned processWorker(ExecutionContext<Type> *executionContext)
 {
 	Type *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
@@ -268,7 +283,7 @@ template <typename Type,
 					copyBlock(c_bufferB, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
-					recordIndexMethod(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
+					recordIndex(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 					c_bufferB += blockSize;
 
 #ifndef NDEBUG
@@ -322,18 +337,15 @@ template <typename Type,
 				numberOfBlockA = 0;
 				numberOfQueuedTasks = 0;
 			}
-			/*
-			if (indexA_N + strideA_N > indexA_N_end)
-				indexA_N = indexA_N_end - strideA_N;*/
+			checkIsLastBlock(&indexA_N, strideA_N, indexA_N_end);
 
 			++indexOfIteration;
 
 			if (indexOfIteration == numberOfIteration)
 				goto JumpOut;
 		}
-		/*
-		if (indexA_M + strideA_M > indexA_M_end)
-			indexA_M = indexA_M_end - strideA_M;*/
+
+		checkIsLastBlock(&indexA_M, strideA_M, indexA_M_end);
 	}
 JumpOut:
 	if (numberOfBlockA)

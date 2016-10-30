@@ -28,6 +28,12 @@ enum class PadMethod
 	symmetric
 };
 
+enum class BorderType
+{
+	normal,
+	includeLastBlock
+};
+
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArray, int lengthOfArray);
@@ -59,6 +65,7 @@ bool blockMatchInitialize(void **instance,
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
+	BorderType sequenceABorderType,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,

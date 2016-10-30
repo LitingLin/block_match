@@ -35,7 +35,7 @@ void process(BlockMatchMexContext *context,int nlhs, mxArray *plhs[])
 	int matrixC_M, matrixC_N, matrixC_O;
 	int matrixA_padded_M, matrixA_padded_N,
 		matrixB_padded_M, matrixB_padded_N;
-	if (!blockMatchInitialize<IntermidateType>(&instance, context->searchType, context->method, context->padMethodA, context->padMethodB,
+	if (!blockMatchInitialize<IntermidateType>(&instance, context->searchType, context->method, context->padMethodA, context->padMethodB, context->sequenceABorderType,
 		context->sort,
 		context->sequenceAMatrixDimensions[1], context->sequenceAMatrixDimensions[0], context->sequenceBMatrixDimensions[1], context->sequenceBMatrixDimensions[0],
 		context->searchRegionWidth, context->searchRegionHeight,

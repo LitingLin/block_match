@@ -131,8 +131,9 @@ LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue
 	return LibMatchMexError::success;
 }
 
+// Assuming int*
 template <typename Type>
-LibMatchMexError typeConvertWithNumericLimitsCheck(const Type *sourceArray, const size_t size, int *...)
+LibMatchMexError typeConvertWithNumericLimitsCheck(const Type *sourceArray, const size_t size, ...)
 {
 	va_list args;
 	va_start(args, size);

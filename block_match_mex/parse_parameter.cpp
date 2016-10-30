@@ -64,6 +64,25 @@ LibMatchMexError recheckSortingParameter(BlockMatchMexContext *context)
 	return LibMatchMexError::success;
 }
 
+LibMatchMexError parseSequenceABorderType(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[17];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 17);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "includeLastBlock", 17) == 0)
+		context->sequenceABorderType = BorderType::includeLastBlock;
+	else if (strncmp(buffer, "normal", 7) == 0)
+		context->sequenceABorderType = BorderType::normal;
+	else
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
 LibMatchMexError parseIntermediateType(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -586,6 +605,17 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return unknownParsingError(buffer);
 		}
 		else if (strncmp(buffer, "Sparse", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0);
+		else if (strncmp(buffer, "SequenceABorder", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSequenceABorderType(context, prhs[index]);
+
+			if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument SequenceABorder must be string.");
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Invalid value of argument SequenceABorder.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
 
 		else
 		{

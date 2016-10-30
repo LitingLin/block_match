@@ -8,14 +8,20 @@ void logging_sink(const char *msg)
 	puts(msg);
 }
 
-class obj
+bool dummyIsInterruptPending()
+{
+	return false;
+}
+
+class GlobalContextInitializer
 {
 public:
-	obj()
+	GlobalContextInitializer()
 	{
-		libMatchRegisterLoggingSinkFunction(logging_sink);		
+		libMatchRegisterLoggingSinkFunction(logging_sink);
+		libMatchRegisterInterruptPeddingFunction(dummyIsInterruptPending);
 	}
-}_obj;
+}initializer;
 
 char *getLastErrorString()
 {
