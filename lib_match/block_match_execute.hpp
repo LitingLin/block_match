@@ -177,6 +177,17 @@ bool indexA_M_outOfIndexError()
 	return false;
 }
 
+inline
+bool checkIsInterruptPending()
+{
+	if (isInterruptPending())
+	{
+		setLastErrorString("Cancelled by user");
+		return true;
+	}
+	return false;
+}
+
 // TODO: Fix busy waiting gpu tasks
 template <typename Type,
 	DetermineBlockBIndex determineBlockB_index,
@@ -279,6 +290,9 @@ template <typename Type,
 
 			if (numberOfQueuedTasks == lengthOfGpuTaskQueue)
 			{
+				if (checkIsInterruptPending())
+					return false;
+
 				cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
 					matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
@@ -324,6 +338,9 @@ template <typename Type,
 JumpOut:
 	if (numberOfBlockA)
 	{
+		if (checkIsInterruptPending())
+			return false;
+
 		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 
 		cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer,

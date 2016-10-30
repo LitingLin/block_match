@@ -6,6 +6,7 @@ bool isLoaded = false;
 void libMatchMexInitalize()
 {
 	if (!isLoaded) {
+		disableInterruptHandle();
 		libMatchOnLoad();
 		libMatchRegisterLoggingSinkFunction(logging_function);
 		libMatchRegisterInterruptPeddingFunction(libMatchMexIsInterruptPendingFunction);
