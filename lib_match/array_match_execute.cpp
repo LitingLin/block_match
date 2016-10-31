@@ -31,7 +31,7 @@ cudaError_t submitGpuTask(float *A, float *B, float *C,
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	cudaError = cudaMemcpy(C,deviceBufferC ,dataSizeC, cudaMemcpyDeviceToHost);
+	cudaError = cudaMemcpy(C, deviceBufferC, dataSizeC, cudaMemcpyDeviceToHost);
 	return cudaError;
 }
 
@@ -39,36 +39,23 @@ template <ProcessFunction processFunction>
 unsigned arrayMatchWorker(float *A, float *B, float *C,
 	float *deviceBufferA, float *deviceBufferB, float *deviceBufferC,
 	int numberOfArray, int lengthOfArray,
+	int startIndexA, int numberOfIteration,
 	int numberOfGPUDeviceMultiProcessor, int numberOfGPUProcessorThread)
 {
-	int perIterationNumberOfArray = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread; 
+	int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
 	int indexOfArray = 0;
-	
+
 	cudaError_t cudaError;
 
-	for (; indexOfArray < numberOfArray; indexOfArray += perIterationNumberOfArray)
+	float *c_A = A + startIndexA * lengthOfArray;
+	float *c_B = B;
+	float *c_deviceBufferA = deviceBufferA, *c_deviceBufferB = deviceBufferB, *c_deviceBufferC = deviceBufferC;
+
+	for (int indexOfIteration = 0; indexOfIteration < numberOfIteration;)
 	{
-		if (indexOfArray + perIterationNumberOfArray >= numberOfArray) {
-			perIterationNumberOfArray = numberOfArray - indexOfArray;
-			numberOfGPUDeviceMultiProcessor = (perIterationNumberOfArray + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread;
-		}
 
-		cudaError = submitGpuTask<processFunction>(A, B, C, 
-			deviceBufferA, deviceBufferB, deviceBufferC,
-			perIterationNumberOfArray, lengthOfArray,
-			numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
-
-		if (cudaError != cudaSuccess)
-			return 1;
-		
-		size_t offsetA, offsetB;
-		offsetA = offsetB = perIterationNumberOfArray * lengthOfArray;
-		size_t offsetC = perIterationNumberOfArray;
-
-		A += offsetA;
-		B += offsetB;
-		C += offsetC;
 	}
+
 	return 0;
 }
 
