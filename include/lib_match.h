@@ -36,7 +36,7 @@ enum class BorderType
 
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchInitialize(void **instance,
-	int numberOfArray, int lengthOfArray);
+	int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
 
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatchMeasureMethod method,
@@ -51,13 +51,13 @@ LIB_MATCH_EXPORT
 void libMatchGetLastErrorString(char *buffer, size_t size);
 
 LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumMemoryAllocationSize(int numberOfArray, int lengthOfArray);
+size_t arrayMatchGetMaximumMemoryAllocationSize();
 
 LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int numberOfArray, int lengthOfArray);
+size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray);
 
 LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArray, int lengthOfArray);
+size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
 
 // SearchRegion size 0 for full search
 template <typename Type>

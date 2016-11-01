@@ -5,7 +5,8 @@
 struct ArrayMatchMexContext
 {
 	LibMatchMeasureMethod method;
-	int numberOfArray;
+	int numberOfArrayA; 
+	int numberOfArrayB;
 	int lengthOfArray;
 
 	double *A;
@@ -16,4 +17,4 @@ struct LibMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *c
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[]);
 
-size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray);
+size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArrayA, int numberOfArrayB);

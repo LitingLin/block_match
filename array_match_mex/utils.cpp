@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArray)
+size_t getMaximumMemoryAllocationSize(int lengthOfArray, int numberOfArrayA, int numberOfArrayB)
 {
-	return (lengthOfArray * numberOfArray * 2 + numberOfArray) * sizeof(float);
+	return lengthOfArray * (numberOfArrayA + numberOfArrayB) * sizeof(float);
 }

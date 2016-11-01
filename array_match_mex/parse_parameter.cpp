@@ -26,8 +26,10 @@ LibMatchMexError parseB(ArrayMatchMexContext *context,
 {
 	int lengthOfArrayB, numberOfArrayB;
 	LibMatchMexError error = parse2DMatrixParameter(pa, (void**)&context->B, &lengthOfArrayB, &numberOfArrayB);
+	context->numberOfArrayB = numberOfArrayB;
+
 	if (error == LibMatchMexError::success)
-		if (context->lengthOfArray != lengthOfArrayB || context->numberOfArray != numberOfArrayB)
+		if (context->lengthOfArray != lengthOfArrayB)
 			return LibMatchMexError::errorSizeOfMatrixMismatch;
 
 	return error;
@@ -36,9 +38,9 @@ LibMatchMexError parseB(ArrayMatchMexContext *context,
 LibMatchMexError parseA(ArrayMatchMexContext *context,
 	const mxArray *pa)
 {
-	LibMatchMexError error = parse2DMatrixParameter(pa, (void**)&context->A, &context->lengthOfArray, &context->numberOfArray);
+	LibMatchMexError error = parse2DMatrixParameter(pa, (void**)&context->A, &context->lengthOfArray, &context->numberOfArrayA);
 	if (error == LibMatchMexError::success)
-		if (context->lengthOfArray * context->numberOfArray > INT_MAX)
+		if (context->lengthOfArray * context->numberOfArrayA > INT_MAX)
 			return LibMatchMexError::errorOverFlow;
 
 	return error;

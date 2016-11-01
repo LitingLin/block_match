@@ -186,19 +186,40 @@ struct BlockMatchContext
 	} *perThreadBufferPointer;
 };
 
-struct ArrayMatchContext
+struct ArrayMatchExecutionContext
 {
+	float *A;
+	float *B; float *C;
+	float *bufferA;
+	float *deviceBufferA;
+	float *deviceBufferB;
+	float *deviceBufferC;
 	int numberOfArray;
 	int lengthOfArray;
+	int startIndexA;
+	int numberOfIteration;
+	int numberOfGPUDeviceMultiProcessor;
+	int numberOfGPUProcessorThread;
+};
+
+struct ArrayMatchContext
+{
+	int numberOfArrayA;
+	int numberOfArrayB;
+	int lengthOfArray;
 	float *result;
+
+	float *bufferA;
 
 	float *deviceBufferA;
 	float *deviceBufferB;
 	float *deviceBufferC;
 
 	int numberOfThreads;
-};
 
+	ArrayMatchExecutionContext *executionContext;
+	void **taskHandle;
+};
 
 namespace lib_match_internal {
 	template<typename R, template<typename...> class Params, typename... Args, std::size_t... I>
