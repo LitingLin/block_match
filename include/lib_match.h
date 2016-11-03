@@ -57,7 +57,7 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray);
 
 LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
+size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
 
 // SearchRegion size 0 for full search
 template <typename Type>

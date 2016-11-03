@@ -30,7 +30,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		snprintf(errorWithMessage.message, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, 
 			"Malloc failed, need %zd bytes for normal memory allocation, %zd bytes for page locked memory allocation.\n",
 			getMaximumMemoryAllocationSize(lengthOfArray, numberOfArrayA, numberOfArrayB) + arrayMatchGetMaximumMemoryAllocationSize(),
-			arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayA, lengthOfArray));
+			arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayA, lengthOfArray,2));
 		mexErrMsgTxt(errorWithMessage.message);
 		return;
 	}
@@ -41,7 +41,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH + LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
 
 	void *arrayMatchInstance;
-	LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance, numberOfArrayA, numberOfArrayB, lengthOfArray);
+	LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance,numberOfArrayB,  numberOfArrayA, lengthOfArray);
 	if (errorCode != LibMatchErrorCode::success)
 	{		
 		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
 				"Memory allocation failed, need %zd bytes for normal memory allocation, %zd bytes for page locked memory allocation.\n",
 				buffer, getMaximumMemoryAllocationSize(lengthOfArray, numberOfArrayA, numberOfArrayB) + arrayMatchGetMaximumMemoryAllocationSize(),
-				arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA,numberOfArrayB, lengthOfArray));
+				arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA,numberOfArrayB, lengthOfArray, 2));
 		else if (errorCode == LibMatchErrorCode::errorGpuMemoryAllocation)
 			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
 				"Gpu Memory allocation failed, need %zd bytes.\n",
@@ -62,7 +62,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	}
 	
 	float *result;
-	errorCode = arrayMatchExecute(arrayMatchInstance, A, B, context.method, &result);
+	errorCode = arrayMatchExecute(arrayMatchInstance, B, A, context.method, &result);
 	if (errorCode != LibMatchErrorCode::success)
 	{
 		arrayMatchFinalize(arrayMatchInstance);
@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 	free(A);
 	
-	plhs[0] = mxCreateDoubleMatrix(numberOfArrayA * numberOfArrayB, 1, mxREAL);
+	plhs[0] = mxCreateDoubleMatrix(numberOfArrayA , numberOfArrayB, mxREAL);
 	double *mxResult = mxGetPr(plhs[0]);
 	convertArrayType(result, mxResult, numberOfArrayA * numberOfArrayB);
 

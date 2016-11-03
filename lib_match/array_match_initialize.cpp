@@ -20,14 +20,14 @@ size_t getArrayCLength(int numberOfArrayA, int numberOfArrayB)
 	return numberOfArrayA * numberOfArrayB;
 }
 
-size_t getPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray)
+size_t getPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads)
 {
 	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
-	const int numberOfThreads = globalContext.numberOfThreads;
 
 	return getArrayCLength(numberOfArrayA, numberOfArrayB) * sizeof(float) +
-		arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
+		arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads +
+		arrayMatchPerThreadDeviceBufferBSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads;
 }
 
 LibMatchErrorCode arrayMatchInitialize(void **instance,
@@ -37,7 +37,7 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 		return LibMatchErrorCode::errorCuda;
 
 #ifndef NDEBUG
-	const int numberOfThreads = 1;
+	const int numberOfThreads = 2;
 #else
 	const int numberOfThreads = 2; // enough
 #endif
@@ -57,10 +57,28 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	context->executionContext = reinterpret_cast<ArrayMatchExecutionContext*>(reinterpret_cast<char*>(context) + sizeof(ArrayMatchContext));
 	context->taskHandle = reinterpret_cast<void**>(reinterpret_cast<char*>(context->executionContext) + sizeof(ArrayMatchExecutionContext) * numberOfThreads);
+	
+	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+	float *deviceBufferA, *deviceBufferB, *deviceBufferC;
+
+	size_t deviceBufferASize = arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
+	size_t deviceBufferBSize = deviceBufferASize;
+	size_t deviceBufferCSize = arrayMatchPerThreadDeviceBufferCSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread) * numberOfThreads;
+
+	cudaError_t cudaError = cudaMalloc(&deviceBufferA, (deviceBufferASize + deviceBufferBSize + deviceBufferCSize) * sizeof(float));
+	if (cudaError != cudaSuccess) {
+		errorCode = LibMatchErrorCode::errorGpuMemoryAllocation;
+
+		setCudaLastErrorString(cudaError, "Error in gpu memory allocation.\n");
+
+		goto GpuMemoryAllocationFailed;
+	}
 
 	float *result;
 
-	cudaError_t cudaError = cudaMallocHost(&result, getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray));
+	cudaError = cudaMallocHost(&result, getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray, numberOfThreads));
 	if (cudaError != cudaSuccess) {
 		errorCode = LibMatchErrorCode::errorPageLockedMemoryAllocation;
 
@@ -70,24 +88,7 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 	}
 
 	float *bufferA = result + getArrayCLength(numberOfArrayA, numberOfArrayB);
-
-	float *deviceBufferA, *deviceBufferB, *deviceBufferC;
-
-	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	size_t deviceBufferASize = arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
-	size_t deviceBufferBSize = deviceBufferASize;
-	size_t deviceBufferCSize = arrayMatchPerThreadDeviceBufferCSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread) * numberOfThreads;
-
-	cudaError = cudaMalloc(&deviceBufferA, (deviceBufferASize + deviceBufferBSize + deviceBufferCSize) * sizeof(float));
-	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorCode::errorGpuMemoryAllocation;
-
-		setCudaLastErrorString(cudaError, "Error in gpu memory allocation.\n");
-
-		goto GpuMemoryAllocationFailed;
-	}
+	float *bufferB = bufferA + arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
 
 	deviceBufferB = deviceBufferA + deviceBufferASize;
 	deviceBufferC = deviceBufferB + deviceBufferBSize;
@@ -96,6 +97,7 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 	context->deviceBufferB = deviceBufferB;
 	context->deviceBufferC = deviceBufferC;
 	context->bufferA = bufferA;
+	context->bufferB = bufferB;
 	context->lengthOfArray = lengthOfArray;
 	context->numberOfArrayA = numberOfArrayA;
 	context->numberOfArrayB = numberOfArrayB;
@@ -107,11 +109,11 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	return errorCode;
 
-GpuMemoryAllocationFailed:
 
 PageLockedMemoryAllocationFailed:
 	cudaFreeHost(result);
-MemoryAllocationFailed:
+
+GpuMemoryAllocationFailed:
 	free(context);
 ContextAllocationFailed:
 	return errorCode;
@@ -127,7 +129,7 @@ size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray)
 	return getGpuMemoryAllocationSize(lengthOfArray);
 }
 
-size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray)
+size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads)
 {
-	return getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray);
+	return getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray, numberOfThreads);
 }

@@ -189,12 +189,15 @@ struct BlockMatchContext
 struct ArrayMatchExecutionContext
 {
 	float *A;
-	float *B; float *C;
+	float *B;
+	float *C;
 	float *bufferA;
+	float *bufferB;
 	float *deviceBufferA;
 	float *deviceBufferB;
 	float *deviceBufferC;
-	int numberOfArray;
+	int numberOfArrayA;
+	int numberOfArrayB;	
 	int lengthOfArray;
 	int startIndexA;
 	int numberOfIteration;
@@ -210,6 +213,7 @@ struct ArrayMatchContext
 	float *result;
 
 	float *bufferA;
+	float *bufferB;
 
 	float *deviceBufferA;
 	float *deviceBufferB;
