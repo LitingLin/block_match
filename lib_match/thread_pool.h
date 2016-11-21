@@ -25,7 +25,7 @@ public:
 private:
 	struct _task;
 public:
-	ThreadPool(unsigned int num);
+	ThreadPool(unsigned num);
 
 	ThreadPool(const ThreadPool&) = delete;
 
