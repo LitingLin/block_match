@@ -86,7 +86,7 @@ struct LibMatchMexErrorWithMessage parseParameter(ArrayMatchMexContext *context,
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 		return generateErrorMessage(error, "Number of dimensions of A must be 2.");
 	else if (error == LibMatchMexError::errorSizeOfMatrixMismatch)
-		return generateErrorMessage(error, "Dimensions of A and B mismatch.");
+		return generateErrorMessage(error, "Number of rows of A and B mismatch.");
 	else if (error != LibMatchMexError::success)
 		return internalErrorMessage();
 

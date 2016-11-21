@@ -39,8 +39,11 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 #ifndef NDEBUG
 	const int numberOfThreads = 2;
 #else
-	const int numberOfThreads = 2; // enough
+	int numberOfThreads = 2; // enough
 #endif
+
+	if (numberOfArrayA == 1)
+		numberOfThreads = 1;
 
 	LibMatchErrorCode errorCode;
 
