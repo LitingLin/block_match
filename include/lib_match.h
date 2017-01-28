@@ -34,6 +34,12 @@ enum class BorderType
 	includeLastBlock
 };
 
+enum class SearchFrom
+{
+	topLeft,
+	center
+};
+
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
@@ -66,6 +72,7 @@ bool blockMatchInitialize(void **instance,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
+	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,

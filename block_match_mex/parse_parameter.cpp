@@ -144,6 +144,25 @@ LibMatchMexError parseSequenceAPaddingMethod(BlockMatchMexContext *context,
 	return LibMatchMexError::success;
 }
 
+LibMatchMexError parseSearchFrom(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[8];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 8);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "topLeft", 8) == 0)
+		context->searchFrom = SearchFrom::topLeft;
+	else if (strncmp(buffer, "center", 7) == 0)
+		context->searchFrom = SearchFrom::center;
+	else
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
 LibMatchMexError parseSequenceBPaddingMethod(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -609,7 +628,17 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}
+		else if (strncmp(buffer, "SearchFrom", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseSearchFrom(context, prhs[index]);
 
+			if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument SearchFrom must be string.");
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray || error == LibMatchMexError::errorNumberOfMatrixDimension)
+				return generateErrorMessage(error, "Invalid value of argument SearchFrom.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
 		else
 		{
 		NotImplemented:
