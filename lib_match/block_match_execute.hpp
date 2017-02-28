@@ -154,8 +154,14 @@ inline
 void determineBlockB_index_local(int *indexB_begin, int *indexB_end, int matB, int block,
 	int neighbour, int index_A)
 {
-	/**indexB_begin = index_A - neighbour / 2;
-	*indexB_end = index_A - neighbour / 2 + neighbour;*/
+	*indexB_begin = index_A - neighbour / 2;
+	*indexB_end = index_A - neighbour / 2 + neighbour;
+}
+
+inline
+void determineBlockB_index_local_topLeft(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A)
+{
 	*indexB_begin = index_A;
 	*indexB_end = index_A + neighbour;
 }

@@ -454,6 +454,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
+	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
@@ -484,28 +485,38 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 	if (searchType == SearchType::local)
 	{
-		indexA_M_begin = 0;
-		if (matrixA_padded_M > (matrixB_padded_M - searchRegion_M + 1))
-			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - searchRegion_M + 1;
-		else
-			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
-		indexA_N_begin = 0;
-		if (matrixA_padded_N > (matrixB_padded_N - searchRegion_N + 1))
-			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - searchRegion_N + 1;
-		else
-			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+		if (searchFrom == SearchFrom::topLeft)
+		{
+			indexA_M_begin = 0;
+			if (matrixA_padded_M > (matrixB_padded_M - searchRegion_M + 1))
+				indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - searchRegion_M + 1;
+			else
+				indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+			indexA_N_begin = 0;
+			if (matrixA_padded_N > (matrixB_padded_N - searchRegion_N + 1))
+				indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - searchRegion_N + 1;
+			else
+				indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+		}
+		else if (searchFrom == SearchFrom::center)
+		{
+			indexA_M_begin = searchRegion_M / 2;
+			// TODO: Border check
+			if (matrixA_padded_M > matrixB_padded_M - (searchRegion_M - searchRegion_M / 2) + 1)
+				indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
+			else
+				indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
 
-		/*
-		indexA_M_begin = searchRegion_M / 2;
-		if (matrixA_padded_M > matrixB_padded_M)
-			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
+			indexA_N_begin = searchRegion_N / 2;
+			if (matrixA_padded_N > matrixB_padded_N - (searchRegion_N - searchRegion_N / 2) + 1)
+				indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
+			else
+				indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+		}
 		else
-			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
-		indexA_N_begin = searchRegion_N / 2;
-		if (matrixA_padded_N > matrixB_padded_N)
-			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
-		else
-			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;*/
+		{
+			return false;
+		}
 	}
 	else
 	{
@@ -514,6 +525,9 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		indexA_N_begin = 0;
 		indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
 	}
+
+	if (indexA_M_end <= indexA_M_begin || indexA_N_end <= indexA_N_begin)
+		return false;
 
 	int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
 	int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
@@ -545,33 +559,65 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+						if (searchFrom == SearchFrom::topLeft)
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+						else
+							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 		}
 		else if (searchType == SearchType::global)
 		{
@@ -624,8 +670,8 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_local,
-				block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
 					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
@@ -636,15 +682,15 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		{
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full,
-				block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
 					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
-				instance->executionMethod = processWorker<Type, determineBlockB_index_full,
-				block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
 					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
@@ -775,6 +821,7 @@ bool blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
+	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
@@ -797,6 +844,7 @@ bool blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
+	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int searchRegion_M, int searchRegion_N,
