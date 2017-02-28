@@ -5,7 +5,7 @@
 #include <Windows.h>
 #include <process.h>
 
-struct ThreadPool::_task
+struct multi_task_service::_task
 {
 	std::atomic<task_state> state;
 	unsigned int(*func)(void *);
@@ -14,7 +14,7 @@ struct ThreadPool::_task
 	std::atomic<HANDLE> hEvent;
 };
 
-ThreadPool::ThreadPool(unsigned num)
+multi_task_service::multi_task_service(unsigned num)
 	: m_exit_flag(false), m_max_task_id(0), m_size(num)
 {
 	m_hThreads = new HANDLE[m_size];
@@ -28,13 +28,13 @@ ThreadPool::ThreadPool(unsigned num)
 	}
 }
 
-ThreadPool::~ThreadPool()
+multi_task_service::~multi_task_service()
 {
 	if (!m_exit_flag)
 		shutdown();
 }
 
-void ThreadPool::shutdown()
+void multi_task_service::shutdown()
 {
 	m_exit_flag = true;
 
@@ -58,7 +58,7 @@ void ThreadPool::shutdown()
 	delete[]m_wait_event;
 }
 
-void* ThreadPool::submit(unsigned int(*func)(void *), void* para)
+void* multi_task_service::submit(unsigned int(*func)(void *), void* para)
 {
 	_task *task_entity = new _task;
 	task_entity->func = func;
@@ -75,7 +75,7 @@ void* ThreadPool::submit(unsigned int(*func)(void *), void* para)
 	return task_entity;
 }
 
-void ThreadPool::join(void* task_handle) const
+void multi_task_service::join(void* task_handle) const
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 
@@ -98,12 +98,12 @@ void ThreadPool::join(void* task_handle) const
 	WaitForSingleObjectEx(task_entity->hEvent, INFINITE, FALSE);
 }
 
-ThreadPool::task_state ThreadPool::query(void* task_handle) const
+multi_task_service::task_state multi_task_service::query(void* task_handle) const
 {
 	return static_cast<_task*>(task_handle)->state;
 }
 
-void ThreadPool::release(void* task_handle) const
+void multi_task_service::release(void* task_handle) const
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 	HANDLE hEvent = task_entity->hEvent;
@@ -113,14 +113,14 @@ void ThreadPool::release(void* task_handle) const
 	delete task_handle;
 }
 
-unsigned ThreadPool::get_rc(void* task_handle)
+unsigned multi_task_service::get_rc(void* task_handle)
 {
 	return static_cast<_task*>(task_handle)->rc;
 }
 
-unsigned ThreadPool::start_routine(void* para)
+unsigned multi_task_service::start_routine(void* para)
 {
-	ThreadPool *this_class = static_cast<ThreadPool*>(para);
+	multi_task_service *this_class = static_cast<multi_task_service*>(para);
 	Concurrency::concurrent_queue<_task*> &task_queue = this_class->m_task_queue;
 	Concurrency::concurrent_queue<unsigned int> &free_thread_queue = this_class->m_free_thread_queue;
 	std::atomic<bool> &exit_flag = this_class->m_exit_flag;
@@ -161,7 +161,7 @@ unsigned ThreadPool::start_routine(void* para)
 	return 0;
 }
 
-unsigned ThreadPool::new_tid()
+unsigned multi_task_service::new_tid()
 {
 	unsigned int task_id = m_max_task_id.fetch_add(1);
 

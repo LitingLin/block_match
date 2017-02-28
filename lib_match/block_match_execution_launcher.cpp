@@ -82,7 +82,7 @@ bool blockMatchExecute(void *_instance, Type *A, Type *B,
 	else
 		initializeWorkerInternalBuffer(instance, index_y, InternalBufferType::Index_Y_Internal);
 
-	ThreadPool &pool = globalContext.pool;
+	multi_task_service &pool = globalContext.pool;
 	void **taskHandle = instance->threadPoolTaskHandle;
 
 	for (unsigned i = 0; i < numberOfThreads; ++i)

@@ -157,8 +157,8 @@ LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatch
 	if (numberOfArrayA == 1)
 		numberOfThreads = 1;
 
-	ThreadPool &pool = globalContext.pool;
-		
+	multi_task_service &pool = globalContext.pool;
+
 	int perThreadNumberOfArrayA = numberOfArrayA / numberOfThreads;
 
 	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;

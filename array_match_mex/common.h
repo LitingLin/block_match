@@ -11,6 +11,8 @@ struct ArrayMatchMexContext
 
 	double *A;
 	double *B;
+
+	bool debug;
 };
 
 struct LibMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *context,

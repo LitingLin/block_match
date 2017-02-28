@@ -13,7 +13,7 @@
 #endif
 
 typedef void* HANDLE;
-class ThreadPool
+class multi_task_service
 {
 public:
 	enum class task_state
@@ -25,11 +25,11 @@ public:
 private:
 	struct _task;
 public:
-	ThreadPool(unsigned num);
+	multi_task_service(unsigned num);
 
-	ThreadPool(const ThreadPool&) = delete;
+	multi_task_service(const multi_task_service&) = delete;
 
-	~ThreadPool();
+	~multi_task_service();
 
 	void shutdown();
 

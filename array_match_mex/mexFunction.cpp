@@ -1,12 +1,14 @@
 #include "common.h"
 
+#include <memory.h>
+
 extern "C"
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
 	libMatchMexInitalize();
 
-	struct ArrayMatchMexContext context;
+	struct ArrayMatchMexContext context; memset(&context, 0, sizeof(context));
 
 	struct LibMatchMexErrorWithMessage errorWithMessage = parseParameter(&context,
 		nlhs, plhs,

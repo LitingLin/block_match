@@ -46,6 +46,20 @@ LibMatchMexError parseA(ArrayMatchMexContext *context,
 	return error;
 }
 
+LibMatchMexError parseDebug(ArrayMatchMexContext *context,
+	const mxArray *pa)
+{
+	if (!mxIsLogical(pa))
+		return LibMatchMexError::errorTypeOfArgument;
+
+	if (!mxIsScalar(pa))
+		return LibMatchMexError::errorSizeOfArray;
+
+	context->debug = mxGetLogicals(pa)[0];
+
+	return LibMatchMexError::success;
+}
+
 LibMatchMexError parseOutputArgument(ArrayMatchMexContext *context,
 	int nlhs, mxArray *plhs[])
 {
@@ -63,7 +77,7 @@ struct LibMatchMexErrorWithMessage parseParameter(ArrayMatchMexContext *context,
 	if (error == LibMatchMexError::errorNumberOfArguments)
 		return generateErrorMessage(error, "Too many output arguments.");
 
-	if (nrhs != 3)
+	if (!(nrhs == 3 || nrhs == 4))
 		return generateErrorMessage(LibMatchMexError::errorNumberOfArguments, "Too few input arguments.");
 
 	int index = 0;
@@ -98,6 +112,15 @@ struct LibMatchMexErrorWithMessage parseParameter(ArrayMatchMexContext *context,
 		return generateErrorMessage(error, "MeasureMethod must be 'mse'(Mean Square Error) or 'cc'(Correlation Coefficient).");
 	else if (error != LibMatchMexError::success)
 		return internalErrorMessage();
+
+	if (nrhs == 4) {
+		++index;
+		error = parseDebug(context, prhs[index]);
+		if (error == LibMatchMexError::errorSizeOfArray)
+			return generateErrorMessage(error, "Parameter IsDebug must be scalar");
+		else if (error == LibMatchMexError::errorTypeOfArgument)
+			return generateErrorMessage(error, "Parameter IsDebug must be logical");
+	}
 
 	return generateErrorMessage(LibMatchMexError::success, "");
 }
