@@ -43,12 +43,15 @@ void multi_task_service::shutdown()
 
 	if (m_size > MAXIMUM_WAIT_OBJECTS)
 	{
-		for (unsigned int i = 0; i != m_size; i++)
-			WaitForSingleObjectEx(m_hThreads[i], INFINITE, FALSE);
+		unsigned int i = 0;
+		for (; i <= m_size - MAXIMUM_WAIT_OBJECTS; i += MAXIMUM_WAIT_OBJECTS)
+			WaitForMultipleObjectsEx(MAXIMUM_WAIT_OBJECTS, m_hThreads + i, TRUE, INFINITE, FALSE);
+		if (i != m_size)
+			WaitForMultipleObjectsEx(m_size - i, m_hThreads + i, TRUE, INFINITE, FALSE);
 	}
 	else
 	{
-		unsigned long rc = WaitForMultipleObjectsEx(m_size, m_hThreads, TRUE, INFINITE, FALSE);
+		WaitForMultipleObjectsEx(m_size, m_hThreads, TRUE, INFINITE, FALSE);
 	}
 
 	for (unsigned int i = 0; i != m_size; i++)
@@ -75,12 +78,12 @@ void* multi_task_service::submit(unsigned int(*func)(void *), void* para)
 	return task_entity;
 }
 
-void multi_task_service::join(void* task_handle) const
+bool multi_task_service::join(void* task_handle, uint32_t timeout) const
 {
 	_task *task_entity = static_cast<_task*>(task_handle);
 
 	if (task_entity->state == task_state::DONE)
-		return;
+		return true;
 
 	if (!task_entity->hEvent)
 	{
@@ -91,11 +94,14 @@ void multi_task_service::join(void* task_handle) const
 			CloseHandle(hEvent);
 			if (task_entity->state == task_state::DONE)
 				task_entity->hEvent = nullptr;
-			return;
+			return true;
 		}
 	}
 
-	WaitForSingleObjectEx(task_entity->hEvent, INFINITE, FALSE);
+	if (WaitForSingleObjectEx(task_entity->hEvent, timeout, FALSE) == WAIT_TIMEOUT)
+		return false;
+	else
+		return true;
 }
 
 multi_task_service::task_state multi_task_service::query(void* task_handle) const
@@ -111,6 +117,11 @@ void multi_task_service::release(void* task_handle) const
 		CloseHandle(hEvent);
 
 	delete task_handle;
+}
+
+void multi_task_service::kill(void* task_handle)
+{
+
 }
 
 unsigned multi_task_service::get_rc(void* task_handle)
@@ -147,8 +158,7 @@ unsigned multi_task_service::start_routine(void* para)
 		}
 
 		task_entity->state = task_state::PROCESSING;
-		unsigned int rc = task_entity->func(task_entity->para);
-		task_entity->rc = rc;
+		task_entity->rc = task_entity->func(task_entity->para);
 		task_entity->state = task_state::DONE;
 
 		HANDLE waiting_thread_handle = task_entity->hEvent;

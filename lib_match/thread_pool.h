@@ -35,11 +35,13 @@ public:
 
 	void* submit(unsigned int(*func)(void *), void* para);
 
-	void join(void* task_handle) const;
+	bool join(void* task_handle, uint32_t timeout) const;
 
 	task_state query(void* task_handle) const;
 
 	void release(void* task_handle) const;
+
+	void kill(void* task_handle);
 
 	unsigned int get_rc(void* task_handle);
 private:
