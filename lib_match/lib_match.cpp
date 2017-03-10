@@ -13,5 +13,4 @@ void libMatchOnLoad(void)
 
 void libMatchAtExit(void)
 {
-	globalContext.pool.shutdown();
 }

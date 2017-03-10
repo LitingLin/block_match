@@ -1,2 +1,2 @@
-LIBRARY "padding2DMex.mexw64"
+LIBRARY "pad2DMex.mexw64"
 EXPORTS mexFunction

@@ -25,7 +25,7 @@ struct GlobalContext
 	bool initialize();
 
 	unsigned numberOfThreads;
-	multi_task_service pool;
+	execution_service pool;
 	int numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread;
 	bool hasGPU;
@@ -238,7 +238,7 @@ namespace lib_match_internal {
 		return thread_pool_base_function_helper(function, params, std::index_sequence_for<Args...>{});
 	}
 	template <typename FunctionType, FunctionType function, template<typename...> class Params, typename... Args>
-	void* thread_pool_launcher_helper(multi_task_service &pool, Params<Args...> & params)
+	void* thread_pool_launcher_helper(execution_service &pool, Params<Args...> & params)
 	{
 		return pool.submit(thread_pool_base_function< FunctionType, function, Params, Args... >, &params);
 	}

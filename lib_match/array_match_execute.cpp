@@ -157,7 +157,7 @@ LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatch
 	if (numberOfArrayA == 1)
 		numberOfThreads = 1;
 
-	multi_task_service &pool = globalContext.pool;
+	execution_service &pool = globalContext.pool;
 
 	int perThreadNumberOfArrayA = numberOfArrayA / numberOfThreads;
 

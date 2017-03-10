@@ -1,19 +1,12 @@
 #pragma once
 
-/*
- * Author: Liting Lin
- */
-
-#include <atomic>
-#ifdef _MSC_VER
-#include <concurrent_queue.h>
-#else
+#ifdef __unix__
 #include <pthread.h>
+#include <semaphore.h>
 #include <tbb/concurrent_queue.h>
 #endif
 
-typedef void* HANDLE;
-class multi_task_service
+class execution_service
 {
 public:
 	enum class task_state
@@ -22,49 +15,33 @@ public:
 		PROCESSING,
 		DONE
 	};
-private:
-	struct _task;
-public:
-	multi_task_service(unsigned num);
 
-	multi_task_service(const multi_task_service&) = delete;
+	execution_service(unsigned num = 4);
 
-	~multi_task_service();
+	execution_service(const execution_service&) = delete;
 
-	void shutdown();
-
+	~execution_service();
+	
 	void* submit(unsigned int(*func)(void *), void* para);
 
-	bool join(void* task_handle, uint32_t timeout) const;
+	void join(void* task_handle) const;
 
 	task_state query(void* task_handle) const;
 
 	void release(void* task_handle) const;
 
-	void kill(void* task_handle);
-
-	unsigned int get_rc(void* task_handle);
+	unsigned int get_rc(void* task_handle) const;
 private:
 #ifdef _MSC_VER
-	unsigned static int __stdcall start_routine(void* para);
-#else
-    static void *start_routine(void *para);
-#endif
-
-	unsigned int new_tid();
-	std::atomic<bool> m_exit_flag;
-#ifdef _MSC_VER
-	Concurrency::concurrent_queue<_task*> m_task_queue;
-	Concurrency::concurrent_queue<unsigned int> m_free_thread_queue;
-	HANDLE *m_wait_event;
-	HANDLE *m_hThreads;
-#else
-    tbb::concurrent_queue<_task*> m_task_queue;
-    tbb::concurrent_queue<unsigned int> m_free_thread_queue;
-    pthread_cond_t *m_condition_variables;
-    pthread_t *m_threads;
-    pthread_mutex_t *m_mutexes;
-#endif
-	std::atomic<unsigned int> m_max_task_id;
+	void *pool;
+#elif defined __unix__
+	static void *start_routine(void *para);
 	unsigned int m_size;
+	std::atomic<bool> m_exit_flag;
+	struct _task;
+	tbb::concurrent_queue<_task*> m_task_queue;
+	tbb::concurrent_queue<unsigned int> m_free_thread_queue;
+	pthread_t *m_threads;
+	sem_t *m_sems;
+#endif
 };
