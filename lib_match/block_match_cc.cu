@@ -19,7 +19,7 @@ standardize_block_kernel(Type *data, int blockSize)
 	Type sd = 0;
 	for (int i = 0; i < blockSize; ++i)
 	{
-		float d = c_data[i] -= mean;
+		Type d = c_data[i] -= mean;
 		sd += d*d;
 	}
 
@@ -53,7 +53,7 @@ standardize_block_kernel(Type *data, int blockSize, int n)
 	Type sd = 0;
 	for (int i = 0; i < blockSize; ++i)
 	{
-		float d = c_data[i] -= mean;
+		Type d = c_data[i] -= mean;
 		sd += d*d;
 	}
 
@@ -84,18 +84,19 @@ vector_multiply_add(Type *block_A, Type *block_B, int blockSize, Type *result)
 	result[tid] = temp;
 }
 
+template <typename Type>
 __global__ void
-array_vector_multiply_add(float *block_A, float *block_B, int blockSize, float *result, int n)
+array_vector_multiply_add(Type *block_A, Type *block_B, int blockSize, Type *result, int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (tid >= n)
 		return;
 
-	const float *c_block_A = block_A + tid * blockSize;
-	const float *c_block_B = block_B + tid * blockSize;
+	const Type *c_block_A = block_A + tid * blockSize;
+	const Type *c_block_B = block_B + tid * blockSize;
 
-	float temp = 0;
+	Type temp = 0;
 	for (int i = 0; i < blockSize; ++i)
 	{
 		temp += c_block_A[i] * c_block_B[i];
@@ -205,16 +206,17 @@ cudaError_t standardize(Type *sequence, int numberOfBlocks, int size, int numThr
 	return cuda_error;
 }
 
-cudaError_t arrayMatchCc(float *A, float *B, float *C,
+template <typename Type>
+cudaError_t arrayMatchCc(Type *A, Type *B, Type *C,
 	int lengthOfArray, int numberOfArray,
 	int numberOfProcessors, int numberOfThreads)
 {
-	cudaError_t cudaError = standardize<float>(A, numberOfArray, lengthOfArray, numberOfThreads);
+	cudaError_t cudaError = standardize<Type>(A, numberOfArray, lengthOfArray, numberOfThreads);
 
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	cudaError = standardize<float>(B, numberOfArray, lengthOfArray, numberOfThreads);
+	cudaError = standardize<Type>(B, numberOfArray, lengthOfArray, numberOfThreads);
 
 	if (cudaError != cudaSuccess)
 		return cudaError;
@@ -285,3 +287,11 @@ cudaError_t block_match_cc_check_border(float *blocks_A, float *blocks_B, int nu
 template
 cudaError_t block_match_cc_check_border(double *blocks_A, double *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, double *result, int numProcessors, int numThreads, cudaStream_t stream);
+template
+cudaError_t arrayMatchCc(float *A, float *B, float *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);
+template
+cudaError_t arrayMatchCc(double *A, double *B, double *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);

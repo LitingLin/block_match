@@ -128,6 +128,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="block_copying.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="block_padding.cpp" />
+    <ClCompile Include="memory_allocation_counter.cpp" />
     <ClCompile Include="stack_trace.cpp" />
     <ClCompile Include="stack_vector.hpp" />
     <ClCompile Include="thread_pool.cpp" />

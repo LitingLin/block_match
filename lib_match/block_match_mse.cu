@@ -1,15 +1,16 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
+template <typename Type>
 __global__ void
-array_match_mse_kernel(const float *block_A, const float *block_B, int blockSize, float *result)
+array_match_mse_kernel(const Type *block_A, const Type *block_B, int blockSize, float *result)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
-	const float *c_block_A = block_A + tid * blockSize;
-	const float *c_block_B = block_B + tid * blockSize;
+	const Type *c_block_A = block_A + tid * blockSize;
+	const Type *c_block_B = block_B + tid * blockSize;
 
-	float temp = 0;
+	Type temp = 0;
 	for (int i = 0;i<blockSize;++i)
 	{
 		temp += (c_block_A[i] - c_block_B[i]) * (c_block_A[i] - c_block_B[i]);
@@ -18,18 +19,19 @@ array_match_mse_kernel(const float *block_A, const float *block_B, int blockSize
 	result[tid] = temp;
 }
 
+template <typename Type>
 __global__ void
-array_match_mse_kernel(const float *block_A, const float *block_B, int blockSize, float *result, int n)
+array_match_mse_kernel(const Type *block_A, const Type *block_B, int blockSize, Type *result, int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (tid >= n)
 		return;
 	
-	const float *c_block_A = block_A + tid * blockSize;
-	const float *c_block_B = block_B + tid * blockSize;
+	const Type *c_block_A = block_A + tid * blockSize;
+	const Type *c_block_B = block_B + tid * blockSize;
 
-	float temp = 0;
+	Type temp = 0;
 	for (int i = 0; i<blockSize; ++i)
 	{
 		temp += (c_block_A[i] - c_block_B[i]) * (c_block_A[i] - c_block_B[i]);
@@ -104,7 +106,8 @@ block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int blo
 	resultsBuffer[tid] = temp;
 }
 
-cudaError_t arrayMatchMse(float *A, float *B, float *C,
+template <typename Type>
+cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
 	int lengthOfArray,
 	int numberOfProcessors, int numberOfThreads)
 {
@@ -112,7 +115,8 @@ cudaError_t arrayMatchMse(float *A, float *B, float *C,
 	return cudaGetLastError();
 }
 
-cudaError_t arrayMatchMse(float *A, float *B, float *C,
+template <typename Type>
+cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
 	int lengthOfArray, int numberOfArray,
 	int numberOfProcessors, int numberOfThreads)
 {
@@ -148,3 +152,19 @@ cudaError_t block_match_mse_check_border(float *blocks_A, float *blocks_B, int n
 template
 cudaError_t block_match_mse_check_border(double *blocks_A, double *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, double *result, int numProcessors, int numThreads, cudaStream_t stream);
+template
+cudaError_t arrayMatchMse(float *A, float *B, float *C,
+	int lengthOfArray,
+	int numberOfProcessors, int numberOfThreads);
+template
+cudaError_t arrayMatchMse(double *A, double *B, double *C,
+	int lengthOfArray,
+	int numberOfProcessors, int numberOfThreads);
+template
+cudaError_t arrayMatchMse(float *A, float *B, float *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);
+template
+cudaError_t arrayMatchMse(double *A, double *B, double *C,
+	int lengthOfArray, int numberOfArray,
+	int numberOfProcessors, int numberOfThreads);
