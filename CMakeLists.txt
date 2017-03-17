@@ -1,0 +1,3 @@
+add_subdirectory(lib_match)
+add_subdirectory(lib_match_mex)
+add_subdirectory(block_match_mex)
