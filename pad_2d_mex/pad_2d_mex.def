@@ -1,2 +1,0 @@
-LIBRARY "pad2DMex.mexw64"
-EXPORTS mexFunction

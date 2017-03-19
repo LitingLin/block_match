@@ -1,5 +1,15 @@
 #pragma once
 
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef __GNUC__
+#define DLL_EXPORT_SYM __attribute__ ((dllexport))
+#else
+#define DLL_EXPORT_SYM __declspec(dllexport)
+#endif
+#else
+#define DLL_EXPORT_SYM __attribute__ ((visibility ("default")))
+#endif
+
 #include <mex.h>
 
 #include <lib_match.h>
