@@ -1,6 +1,11 @@
 project(array_match_mex)
 
-set(SRC_LIST mexFunction.cpp parse_parameter.cpp utils.cpp)
+file(GLOB SRC_LIST
+        "*.h"
+        "*.cpp"
+        )
+
+include_directories(../include ../spdlog/include)
 
 add_library(array_match_mex SHARED ${SRC_LIST})
 set_target_properties(array_match_mex PROPERTIES SUFFIX ${Matlab_MEX_EXTENSION})
