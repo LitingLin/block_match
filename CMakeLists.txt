@@ -8,7 +8,7 @@ add_subdirectory(lib_match)
 if(Matlab_FOUND)
     add_subdirectory(lib_match_mex)
     add_subdirectory(block_match_mex)
-        add_subdirectory(array_match_mex)
+    add_subdirectory(array_match_mex)
     add_subdirectory(pad_2d_mex)
 endif()
 
