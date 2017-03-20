@@ -247,3 +247,6 @@ ModelManifest.xml
 # Intel
 *.amplxeproj
 *Amplifier*
+
+.idea
+cmake-build-*

@@ -3,7 +3,7 @@
 
 template <typename Type>
 __global__ void
-array_match_mse_kernel(const Type *block_A, const Type *block_B, int blockSize, float *result)
+array_match_mse_kernel(const Type *block_A, const Type *block_B, int blockSize, Type *result)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
