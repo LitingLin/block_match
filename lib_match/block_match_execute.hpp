@@ -19,30 +19,16 @@ cudaError_t submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type
 {
 	int numberOfBlockB = numberOfBlockA * numberOfBlockBPerBlockA;
 
-	cudaError_t cuda_error = cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream);
-	if (cuda_error != cudaSuccess) {
-		CUDA_ERROR_CHECK_POINT(cuda_error);
-		return cuda_error;
-	}
+	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream));
 
-	cuda_error = cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream);
-	if (cuda_error != cudaSuccess) {
-		CUDA_ERROR_CHECK_POINT(cuda_error);
-		return cuda_error;
-	}
+	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream));
 
-	cuda_error = processFunction(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockB, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
-		numberOfGpuProcessors, numberOfGpuThreads, stream);
-	if (cuda_error != cudaSuccess) {
-		CUDA_ERROR_CHECK_POINT(cuda_error);
-		return cuda_error;
-	}
+	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockB, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
+		numberOfGpuProcessors, numberOfGpuThreads, stream));
 
-	cuda_error = cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream);
-	if (cuda_error != cudaSuccess)
-		CUDA_ERROR_CHECK_POINT(cuda_error);
+	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream));
 
-	return cuda_error;
+	return cudaSuccess;
 }
 
 template <typename Type>
@@ -180,17 +166,6 @@ bool indexA_M_outOfIndexError()
 #ifndef NDEBUG
 	logger.critical("Internal logical error: indexA_M out of index");
 #endif
-	return false;
-}
-
-inline
-bool checkIsInterruptPending()
-{
-	if (isInterruptPending())
-	{
-		setLastErrorString("Cancelled by user");
-		return true;
-	}
 	return false;
 }
 

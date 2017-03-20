@@ -1,7 +1,6 @@
 #include <spdlog/logger.h>
 
 #include "lib_match_internal.h"
-#include "stack_trace.h"
 
 LibMatchSinkFunction *sinkFunction = nullptr;
 
@@ -30,16 +29,42 @@ void custom_sink::_sink_it(const spdlog::details::log_msg& msg)
 
 spdlog::logger logger("logging", std::make_shared<custom_sink>());
 
-char buffer[20000];
+const char *get_base_file_name(const char *file_name)
+{
+	const char *base_file_name = file_name;
+	while (*file_name != '\0') {
+		if (*file_name == '\\' || *file_name == '/')
+			base_file_name = file_name + 1;
+		file_name++;
+	}
 
-char *StackTracker::getStackTraceMessage()
-{
-	buffer[0] = '\0';
-	ShowCallstack();
-	return buffer;
+	return base_file_name;
 }
-void StackTracker::OnOutput(LPCSTR szText)
+
+fatal_error_logging::fatal_error_logging(const char* file, int line, const char* function)
 {
-	strncat_s(buffer, szText, _TRUNCATE);
-	//StackWalker::OnOutput(szText);
+	str_stream << '[' << get_base_file_name(file) << ':' << line << ' ' << function << "] ";
+}
+
+fatal_error_logging::fatal_error_logging(const char* file, int line, const char* function, const char* exp): fatal_error_logging(file, line, function)
+{
+	str_stream << "Check failed: " << exp << ' ';
+}
+
+fatal_error_logging::fatal_error_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2): fatal_error_logging(file, line, function)
+{
+	str_stream << "Check failed: " << exp1 << ' ' << op << ' ' << exp2 << ' ';
+}
+
+fatal_error_logging::~fatal_error_logging() noexcept(false)
+{
+	str_stream << std::endl
+		<< "*** Check failure stack trace: ***" << std::endl
+		<< getStackTrace();
+	throw std::runtime_error(str_stream.str());
+}
+
+std::ostringstream& fatal_error_logging::stream()
+{
+	return str_stream;
 }

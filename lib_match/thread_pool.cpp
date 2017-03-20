@@ -33,6 +33,7 @@ struct work_context
 	unsigned(*func)(void*);
 	void *para;
 	unsigned int rc;
+	std::string message;
 	execution_service::task_state state;
 };
 
@@ -44,7 +45,12 @@ void __stdcall start_routine(
 {
 	work_context *work_context = static_cast<struct work_context*>(Context);
 	work_context->state = execution_service::task_state::PROCESSING;
-	work_context->rc = work_context->func(work_context->para);
+	try {
+		work_context->rc = work_context->func(work_context->para);
+	}
+	catch (std::exception &exp){
+		work_context->message = exp.what();
+	}
 	work_context->state = execution_service::task_state::DONE;
 }
 
@@ -82,6 +88,12 @@ unsigned execution_service::get_rc(void* task_handle) const
 	return work_context->rc;
 }
 
+std::string& execution_service::get_exp_what(void* task_handle) const
+{
+	struct work_context * work_context = static_cast<struct work_context *>(task_handle);
+	return work_context->message;
+}
+
 #elif defined __unix__
 
 #ifndef NDEBUG
@@ -102,6 +114,7 @@ struct execution_service::_task
 	unsigned int(*func)(void *);
 	void *para;
 	unsigned int rc;
+	std::string message;
 	std::atomic<sem_t *> sem;
 };
 
@@ -234,8 +247,13 @@ void *execution_service::start_routine(void *para)
 		}
 
 		task_entity->state = task_state::PROCESSING;
-		unsigned int rc = task_entity->func(task_entity->para);
-		task_entity->rc = rc;
+
+		try {
+			task_entity->rc = task_entity->func(task_entity->para);
+		}
+		catch (std::exception &exp) {
+			task_entity->message = exp.what();
+		}
 
 		sem_t *task_sem = task_entity->sem;
 		if (!task_entity->sem.compare_exchange_strong(task_sem, (sem_t*)1))
@@ -249,6 +267,12 @@ void *execution_service::start_routine(void *para)
 	}
 
 	return 0;
+}
+
+std::string& execution_service::get_exp_what(void* task_handle) const
+{
+	_task *task_entity = static_cast<_task*>(task_handle);
+	return task_entity->message;
 }
 
 #endif

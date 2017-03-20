@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <tbb/concurrent_queue.h>
 #endif
+#include <string>
 
 class execution_service
 {
@@ -16,7 +17,7 @@ public:
 		DONE
 	};
 
-	execution_service(unsigned num = 4);
+	execution_service(unsigned n_threads = 4);
 
 	execution_service(const execution_service&) = delete;
 
@@ -31,6 +32,8 @@ public:
 	void release(void* task_handle) const;
 
 	unsigned int get_rc(void* task_handle) const;
+
+	std::string &get_exp_what(void* task_handle) const;
 private:
 #ifdef _MSC_VER
 	void *pool;

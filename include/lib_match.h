@@ -51,11 +51,6 @@ LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatch
 LIB_MATCH_EXPORT
 LibMatchErrorCode arrayMatchFinalize(void *instance);
 
-#define LIB_MATCH_MAX_MESSAGE_LENGTH 32768
-
-LIB_MATCH_EXPORT
-void libMatchGetLastErrorString(char *buffer, size_t size);
-
 LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumMemoryAllocationSize();
 

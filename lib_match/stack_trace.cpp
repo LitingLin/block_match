@@ -1,3 +1,5 @@
+#ifdef _MSC_VER
+
 #define VC_EXTRALEAN
 #define NOMINMAX
 #include <windows.h>
@@ -5,7 +7,6 @@
 #include <string>
 #include <limits>
 #include <mutex>
-#include <iostream>
 
 std::mutex stack_trace_locker;
 HANDLE hProcess = GetCurrentProcess();
@@ -33,10 +34,11 @@ std::string getStackTrace()
 	void *stacks[max_frames];
 	
 	unsigned short frames = CaptureStackBackTrace(1, max_frames, stacks, nullptr);
+	const unsigned address_buffer_length = sizeof(ptrdiff_t) * 2 + 1;
+	char buffer[address_buffer_length];
+
 	for (unsigned short i = 0;i<frames;++i)
 	{
-		const unsigned address_buffer_length = sizeof(ptrdiff_t) * 2 + 1;
-		char buffer[address_buffer_length];
 		if (!SymFromAddr(hProcess, (DWORD64)stacks[i], 0, symbol))
 		{
 			message += "Warning! SymFromAddr() failed.\n"
@@ -52,55 +54,70 @@ std::string getStackTrace()
 	return message;
 }
 
-
-int main()
-{
-	std::cout << getStackTrace();
-	system("pause");
-}
+#elif __unix__
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
-#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <stdint.h>
 
-// Call this function to get a backtrace.
-void backtrace() {
+#define MAX_SYM_NAME 2000
+
+std::string getStackTrace()
+{
+	std::string message;
 	unw_cursor_t cursor;
 	unw_context_t context;
 
+	int rc;
 	// Initialize cursor to current frame for local unwinding.
-	unw_getcontext(&context);
-	unw_init_local(&cursor, &context);
+	rc = unw_getcontext(&context);
+	if (rc!=0)
+	{
+		message += "Warning! unw_getcontext() failed. rc: " + std::to_string(rc) + ", expected: 0.\n";
+		return message;
+	}
+	rc = unw_init_local(&cursor, &context);
+	if (rc != 0)
+	{
+		message += "Warning! unw_init_local() failed. rc: " + std::to_string(rc) + ", expected: 0.\n";
+		return message;
+	}
+
+	const unsigned address_buffer_length = sizeof(ptrdiff_t) * 2 + 1;
+	char buffer[address_buffer_length];
+
+	char sym_name[MAX_SYM_NAME];
+
+	uint32_t stack_index = 0;
+	if (unw_step(&cursor) <= 0)
+		return message;
 
 	// Unwind frames one by one, going up the frame stack.
 	while (unw_step(&cursor) > 0) {
 		unw_word_t offset, pc;
-		unw_get_reg(&cursor, UNW_REG_IP, &pc);
-		if (pc == 0) {
+
+		rc = unw_get_reg(&cursor, UNW_REG_IP, &pc);
+
+		if (rc != 0)
+		{
+			message += "Warning! unw_get_reg() failed. rc: " + std::to_string(rc) + ", expected: 0.\n";
+			return message;
+		}
+
+		if (pc == 0)
 			break;
-		}
-		printf("0x%lx:", pc);
 
-		char sym[256];
-		if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
-			printf(" (%s+0x%lx)\n", sym, offset);
-		}
-		else {
-			printf(" -- error: unable to obtain symbol name for this frame\n");
-		}
+		snprintf(buffer, address_buffer_length, "%llx", pc);
+
+		rc = unw_get_proc_name(&cursor, sym_name, MAX_SYM_NAME, &offset);
+
+		message += std::to_string(stack_index) + "\t0x" + buffer + "\t" + (rc ? "(unknown)" : sym_name) + "\n";
+		++stack_index;
 	}
+
+	return message;
 }
 
-void foo() {
-	backtrace(); // <-------- backtrace here!
-}
-
-void bar() {
-	foo();
-}
-
-int main(int argc, char **argv) {
-	bar();
-
-	return 0;
-}
+#endif

@@ -40,38 +40,6 @@ void type_convert(TypeA *a, TypeB *b, size_t n)
 		a[i] = b[i];
 }
 
-char errorStringBuffer[LIB_MATCH_MAX_MESSAGE_LENGTH];
-
-void libMatchGetLastErrorString(char *buffer, size_t size)
-{
-	strncpy_s(buffer, size, errorStringBuffer, _TRUNCATE);
-}
-
-void setLastErrorString(const char *string, ...)
-{
-	va_list args;
-	va_start(args, string);
-	vsprintf_s(errorStringBuffer, LIB_MATCH_MAX_MESSAGE_LENGTH, string, args);
-	va_end(args);
-}
-
-void appendLastErrorString(const char *string, ...)
-{
-	static char internalBuffer[LIB_MATCH_MAX_MESSAGE_LENGTH];
-	va_list args;
-	va_start(args, string);
-	vsprintf_s(internalBuffer, string, args);
-	va_end(args);
-	strcat_s(errorStringBuffer, internalBuffer);
-}
-
-void setCudaLastErrorString(cudaError_t cudaError, char *message)
-{
-	setLastErrorString("%s"
-		"Cuda Error Code: %d, Message: %s",
-		message, cudaError, cudaGetErrorString(cudaError));
-}
-
 size_t arrayMatchPerThreadASize(const int numberOfGpuDeviceMultiProcessor,
 	const int numberOfGpuProcessorThread,
 	const int lengthOfArray)

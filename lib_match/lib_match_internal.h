@@ -3,7 +3,10 @@
 #include "lib_match.h"
 
 #include <spdlog/spdlog.h>
-#include "stack_trace.h"
+
+namespace std {
+	class type_index;
+}
 
 extern spdlog::logger logger;
 
@@ -292,9 +295,6 @@ void block_sort_partial_descend(int *index, Type *value, int size, int retain);
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations);
 
-void setLastErrorString(const char *string, ...);
-void setCudaLastErrorString(cudaError_t cudaError, char *message);
-
 template <typename Type>
 cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
 	int lengthOfArray,
@@ -323,8 +323,6 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
 
-void appendLastErrorString(const char *string, ...);
-
 template <typename Type>
 BlockMatchContext<Type> * allocateContext(const int numberOfThreads);
 enum class InternalBufferType
@@ -342,39 +340,12 @@ void initializeWorkerInternalBuffer(BlockMatchContext<Type> *context, void *buff
 
 bool isInterruptPending();
 
-class StackTracker : private StackWalker
-{
-public:
-	char *getStackTraceMessage();
-protected:
-	enum { STACKTRACER_MESSAGE_MAX_LENGTH = 4096 };
-private:
-	virtual void OnOutput(LPCSTR szText) override;
-};
-
-__forceinline__
-void traceStackToLastErrorString()
-{
-	StackTracker stackTracker;
-	appendLastErrorString(stackTracker.getStackTraceMessage());
-}
-
 #ifndef DEBUG
 #define CALL_DBG __debugbreak();
 #else
 #define CALL_DBG
 #endif
 
-enum { ERROR_MESSAGE_LENGTH = 8192 };
-
-#define ERROR_CHECK_POINT(message, ...) \
-{CALL_DBG \
-setLastErrorString("Check point failed in file %s(%d) in function %s\n", __FILE__, __LINE__, __func__); \
-appendLastErrorString(message, __VA_ARGS__); \
-traceStackToLastErrorString();}
-
-#define CUDA_ERROR_CHECK_POINT(cudaError) \
-ERROR_CHECK_POINT("Cuda Error Code: %d, Message: %s", cudaError, cudaGetErrorString(cudaError))
 
 enum class memory_allocation_type
 {
@@ -559,3 +530,57 @@ Type* gpu_memory_allocator<Type>::get()
 {
 	return ptr;
 }
+
+std::string getStackTrace();
+
+#include <sstream>
+
+class fatal_error_logging
+{
+public:
+	fatal_error_logging(const char* file, int line, const char* function);
+
+	fatal_error_logging(const char* file, int line, const char* function, const char* exp);
+
+	fatal_error_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
+
+	~fatal_error_logging() noexcept(false);
+
+	std::ostringstream& stream();
+private:
+	std::ostringstream str_stream;
+};
+
+template <typename T1, typename T2, typename Op>
+std::unique_ptr<std::pair<T1,T2>> check_impl(const T1 &a, const T2 &b, Op op) {
+	if (op(a, b))
+		return nullptr;
+	else
+		return std::make_unique<std::pair<T1, T2>>(a, b);
+}
+
+#define CHECK_POINT(val) \
+	if (!(val)) \
+fatal_error_logging(__FILE__, __LINE__, __func__, #val).stream()
+
+#define CHECK_POINT_OP(exp1, exp2, op, functional_op)  \
+	if (auto _rc = check_impl((exp1), (exp2), functional_op)) \
+fatal_error_logging(__FILE__, __LINE__, __func__, #exp1, #op, #exp2).stream() << '(' << _rc->first << " vs. " << _rc->second << ") "
+
+#define CHECK_POINT_EQ(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, ==, std::equal_to<>())
+#define CHECK_POINT_NE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, !=, std::not_equal_to<>())
+#define CHECK_POINT_LE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, <=, std::less_equal<>())
+#define CHECK_POINT_LT(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, <, std::less<>())
+#define CHECK_POINT_GE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, >=, std::greater_equal<>())
+#define CHECK_POINT_GT(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, >, std::greater<>())
+
+#define CUDA_CHECK_POINT(cudaExp) \
+	CHECK_POINT_EQ(cudaExp, cudaSuccess) << "CUDA Error message: " << cudaGetErrorString(_rc->first)
+
+void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
