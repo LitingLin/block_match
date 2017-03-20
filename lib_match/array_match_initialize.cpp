@@ -30,6 +30,7 @@ size_t getPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB,
 		arrayMatchPerThreadDeviceBufferBSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads;
 }
 
+template <typename Type>
 LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArrayA, int numberOfArrayB, int lengthOfArray)
 {
@@ -47,9 +48,10 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	LibMatchErrorCode errorCode;
 
-	ArrayMatchContext *context = static_cast<ArrayMatchContext *>(malloc(sizeof(ArrayMatchContext) +
-		sizeof(ArrayMatchExecutionContext) * numberOfThreads +
+	ArrayMatchContext<Type> *context = static_cast<ArrayMatchContext<Type> *>(malloc(sizeof(ArrayMatchContext<Type>) +
+		sizeof(ArrayMatchExecutionContext<Type>) * numberOfThreads +
 		sizeof(void*) * numberOfThreads));
+
 	if (context == nullptr) {
 		errorCode = LibMatchErrorCode::errorMemoryAllocation;
 
@@ -58,8 +60,8 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 		goto ContextAllocationFailed;
 	}
 
-	context->executionContext = reinterpret_cast<ArrayMatchExecutionContext*>(reinterpret_cast<char*>(context) + sizeof(ArrayMatchContext));
-	context->taskHandle = reinterpret_cast<void**>(reinterpret_cast<char*>(context->executionContext) + sizeof(ArrayMatchExecutionContext) * numberOfThreads);
+	context->executionContext = reinterpret_cast<ArrayMatchExecutionContext<Type>*>(reinterpret_cast<char*>(context) + sizeof(ArrayMatchContext<Type>));
+	context->taskHandle = reinterpret_cast<void**>(reinterpret_cast<char*>(context->executionContext) + sizeof(ArrayMatchExecutionContext<Type>) * numberOfThreads);
 	
 	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
@@ -124,7 +126,7 @@ ContextAllocationFailed:
 
 size_t arrayMatchGetMaximumMemoryAllocationSize()
 {
-	return sizeof(ArrayMatchContext);
+	return sizeof(ArrayMatchContext<Type>);
 }
 
 size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray)

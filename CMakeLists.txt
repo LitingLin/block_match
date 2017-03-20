@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
+if (MSVC)
+    set(APPEND CMAKE_CXX_FLAGS /Zc:throwingNew /MP)
+    set(APPEND CMAKE_C_FLAGS /MP)
+endif()
+
 find_package(CUDA REQUIRED)
 
 find_package(Matlab COMPONENTS MX_LIBRARY)

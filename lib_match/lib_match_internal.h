@@ -189,16 +189,17 @@ struct BlockMatchContext
 	} *perThreadBufferPointer;
 };
 
+template <typename Type>
 struct ArrayMatchExecutionContext
 {
-	float *A;
-	float *B;
-	float *C;
-	float *bufferA;
-	float *bufferB;
-	float *deviceBufferA;
-	float *deviceBufferB;
-	float *deviceBufferC;
+	Type *A;
+	Type *B;
+	Type *C;
+	Type *bufferA;
+	Type *bufferB;
+	Type *deviceBufferA;
+	Type *deviceBufferB;
+	Type *deviceBufferC;
 	int numberOfArrayA;
 	int numberOfArrayB;	
 	int lengthOfArray;
@@ -208,23 +209,24 @@ struct ArrayMatchExecutionContext
 	int numberOfGPUProcessorThread;
 };
 
+template <typename Type>
 struct ArrayMatchContext
 {
 	int numberOfArrayA;
 	int numberOfArrayB;
 	int lengthOfArray;
-	float *result;
+	Type *result;
 
-	float *bufferA;
-	float *bufferB;
+	Type *bufferA;
+	Type *bufferB;
 
-	float *deviceBufferA;
-	float *deviceBufferB;
-	float *deviceBufferC;
+	Type *deviceBufferA;
+	Type *deviceBufferB;
+	Type *deviceBufferC;
 
 	int numberOfThreads;
 
-	ArrayMatchExecutionContext *executionContext;
+	ArrayMatchExecutionContext<Type> *executionContext;
 	void **taskHandle;
 };
 
