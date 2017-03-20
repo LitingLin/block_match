@@ -108,7 +108,6 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
   <ItemGroup>
     <ClInclude Include="..\include\lib_match.h" />
     <ClInclude Include="lib_match_internal.h" />
-    <ClInclude Include="stack_trace.h" />
     <ClInclude Include="thread_pool.h" />
   </ItemGroup>
   <ItemGroup>
@@ -129,8 +128,6 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="block_padding.cpp" />
     <ClCompile Include="memory_allocation_counter.cpp" />
-    <ClCompile Include="stack_trace.cpp" />
-    <ClCompile Include="stack_vector.hpp" />
     <ClCompile Include="thread_pool.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>

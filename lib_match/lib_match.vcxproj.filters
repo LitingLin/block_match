@@ -28,9 +28,6 @@
     <ClCompile Include="thread_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stack_vector.hpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
     <ClCompile Include="block_match_finalize.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,9 +67,6 @@
     <ClCompile Include="block_padding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stack_trace.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="interrupt_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,9 +82,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib_match_internal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stack_trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="block_match_execute.hpp">
