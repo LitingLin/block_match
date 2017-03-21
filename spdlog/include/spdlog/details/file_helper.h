@@ -31,9 +31,8 @@ public:
     const int open_tries = 5;
     const int open_interval = 10;
 
-    explicit file_helper(bool force_flush) :
-        _fd(nullptr),
-        _force_flush(force_flush)
+    explicit file_helper() :
+        _fd(nullptr)
     {}
 
     file_helper(const file_helper&) = delete;
@@ -91,16 +90,13 @@ public:
         auto data = msg.formatted.data();
         if (std::fwrite(data, 1, msg_size, _fd) != msg_size)
             throw spdlog_ex("Failed writing to file " + os::filename_to_str(_filename), errno);
-
-        if (_force_flush)
-            std::fflush(_fd);
     }
 
     size_t size()
     {
         if (!_fd)
             throw spdlog_ex("Cannot use size() on closed file " + os::filename_to_str(_filename));
-		return os::filesize(_fd); 
+        return os::filesize(_fd);
     }
 
     const filename_t& filename() const
@@ -117,7 +113,6 @@ public:
 private:
     FILE* _fd;
     filename_t _filename;
-    bool _force_flush;
 };
 }
 }

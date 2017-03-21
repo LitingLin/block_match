@@ -5,7 +5,7 @@
 
 #pragma once
 
-// Thread safe logger
+// Thread safe logger (except for set_pattern(..), set_formatter(..) and set_error_handler())
 // Has name, log level, vector of std::shared sink pointers and formatter
 // Upon each log write the logger:
 // 1. Checks if its log level is enough to log the message
@@ -14,11 +14,11 @@
 
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/common.h>
+#include <spdlog/stream.h>
 
 #include <vector>
 #include <memory>
 #include <string>
-
 
 namespace spdlog
 {
@@ -53,6 +53,13 @@ public:
     template <typename T> void error(const T&);
     template <typename T> void critical(const T&);
 
+    ostream log(level::level_enum lvl);
+    ostream trace();
+    ostream debug();
+    ostream info();
+    ostream warn();
+    ostream error();
+    ostream critical();
 
     bool should_log(level::level_enum) const;
     void set_level(level::level_enum);
@@ -61,23 +68,40 @@ public:
     void set_pattern(const std::string&);
     void set_formatter(formatter_ptr);
 
+    // error handler
+    void set_error_handler(log_err_handler);
+    log_err_handler error_handler();
+
     // automatically call flush() if message level >= log_level
     void flush_on(level::level_enum log_level);
+
     virtual void flush();
 
+    const std::vector<sink_ptr>& sinks() const;
+
 protected:
+    template <class CharT, class Traits>
+    friend class basic_streambuf;
+
     virtual void _sink_it(details::log_msg&);
     virtual void _set_pattern(const std::string&);
     virtual void _set_formatter(formatter_ptr);
+
+    // default error handler: print the error to stderr with the max rate of 1 message/minute
+    virtual void _default_err_handler(const std::string &msg);
+
+    // return true if the given message level should trigger a flush
+    bool _should_flush_on(const details::log_msg&);
 
     const std::string _name;
     std::vector<sink_ptr> _sinks;
     formatter_ptr _formatter;
     spdlog::level_t _level;
     spdlog::level_t _flush_level;
+    log_err_handler _err_handler;
+    std::atomic<time_t> _last_err_time;
 };
 }
 
 #include <spdlog/details/logger_impl.h>
-
-
+#include <spdlog/details/stream_impl.h>

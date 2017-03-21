@@ -2,11 +2,12 @@
 // Copyright(c) 2015 Gabi Melman.
 // Distributed under the MIT License (http://opensource.org/licenses/MIT)
 //
-
 // spdlog main header file.
 // see example.cpp for usage example
 
 #pragma once
+
+#define SPDLOG_VERSION "0.12.0"
 
 #include <spdlog/tweakme.h>
 #include <spdlog/common.h>
@@ -20,14 +21,12 @@
 namespace spdlog
 {
 
-// Return an existing logger or nullptr if a logger with such name doesn't exist.
-// Examples:
 //
-// spdlog::get("mylog")->info("Hello");
-// auto logger = spdlog::get("mylog");
-// logger.info("This is another message" , x, y, z);
-// logger.info() << "This is another message" << x << y << z;
+// Return an existing logger or nullptr if a logger with such name doesn't exist.
+// example: spdlog::get("my_logger")->info("hello {}", "world");
+//
 std::shared_ptr<logger> get(const std::string& name);
+
 
 //
 // Set global formatting
@@ -40,6 +39,11 @@ void set_formatter(formatter_ptr f);
 // Set global logging level for
 //
 void set_level(level::level_enum log_level);
+
+//
+// Set global error handler
+//
+void set_error_handler(log_err_handler);
 
 //
 // Turn on async mode (off by default) and set the queue size for each async_logger.
@@ -64,39 +68,50 @@ void set_sync_mode();
 
 
 //
-// Create and register multi/single basic file logger
+// Create and register multi/single threaded basic file logger.
+// Basic logger simply writes to given file without any limitatons or rotations.
 //
-std::shared_ptr<logger> basic_logger_mt(const std::string& logger_name, const filename_t& filename,bool force_flush = false);
-std::shared_ptr<logger> basic_logger_st(const std::string& logger_name, const filename_t& filename, bool force_flush = false);
+std::shared_ptr<logger> basic_logger_mt(const std::string& logger_name, const filename_t& filename, bool truncate = false);
+std::shared_ptr<logger> basic_logger_st(const std::string& logger_name, const filename_t& filename, bool truncate = false);
 
 //
 // Create and register multi/single threaded rotating file logger
 //
-std::shared_ptr<logger> rotating_logger_mt(const std::string& logger_name, const filename_t& filename, size_t max_file_size, size_t max_files, bool force_flush = false);
-std::shared_ptr<logger> rotating_logger_st(const std::string& logger_name, const filename_t& filename, size_t max_file_size, size_t max_files, bool force_flush = false);
+std::shared_ptr<logger> rotating_logger_mt(const std::string& logger_name, const filename_t& filename, size_t max_file_size, size_t max_files);
+std::shared_ptr<logger> rotating_logger_st(const std::string& logger_name, const filename_t& filename, size_t max_file_size, size_t max_files);
 
 //
 // Create file logger which creates new file on the given time (default in  midnight):
 //
-std::shared_ptr<logger> daily_logger_mt(const std::string& logger_name, const filename_t& filename, int hour=0, int minute=0, bool force_flush = false);
-std::shared_ptr<logger> daily_logger_st(const std::string& logger_name, const filename_t& filename, int hour=0, int minute=0, bool force_flush = false);
+std::shared_ptr<logger> daily_logger_mt(const std::string& logger_name, const filename_t& filename, int hour=0, int minute=0);
+std::shared_ptr<logger> daily_logger_st(const std::string& logger_name, const filename_t& filename, int hour=0, int minute=0);
 
 //
 // Create and register stdout/stderr loggers
 //
-std::shared_ptr<logger> stdout_logger_mt(const std::string& logger_name, bool color = false);
-std::shared_ptr<logger> stdout_logger_st(const std::string& logger_name, bool color = false);
-std::shared_ptr<logger> stderr_logger_mt(const std::string& logger_name, bool color = false);
-std::shared_ptr<logger> stderr_logger_st(const std::string& logger_name, bool color = false);
+std::shared_ptr<logger> stdout_logger_mt(const std::string& logger_name);
+std::shared_ptr<logger> stdout_logger_st(const std::string& logger_name);
+std::shared_ptr<logger> stderr_logger_mt(const std::string& logger_name);
+std::shared_ptr<logger> stderr_logger_st(const std::string& logger_name);
+//
+// Create and register colored stdout/stderr loggers
+//
+std::shared_ptr<logger> stdout_color_mt(const std::string& logger_name);
+std::shared_ptr<logger> stdout_color_st(const std::string& logger_name);
+std::shared_ptr<logger> stderr_color_mt(const std::string& logger_name);
+std::shared_ptr<logger> stderr_color_st(const std::string& logger_name);
 
 
 //
 // Create and register a syslog logger
 //
-#if defined(__linux__) || defined(__APPLE__)
+#ifdef SPDLOG_ENABLE_SYSLOG
 std::shared_ptr<logger> syslog_logger(const std::string& logger_name, const std::string& ident = "", int syslog_option = 0);
 #endif
 
+#if defined(__ANDROID__)
+std::shared_ptr<logger> android_logger(const std::string& logger_name, const std::string& tag = "spdlog");
+#endif
 
 // Create and register a logger a single sink
 std::shared_ptr<logger> create(const std::string& logger_name, const sink_ptr& sink);
@@ -108,7 +123,8 @@ std::shared_ptr<logger> create(const std::string& logger_name, const It& sinks_b
 
 
 // Create and register a logger with templated sink type
-// Example: spdlog::create<daily_file_sink_st>("mylog", "dailylog_filename", "txt");
+// Example:
+// spdlog::create<daily_file_sink_st>("mylog", "dailylog_filename", "txt");
 template <typename Sink, typename... Args>
 std::shared_ptr<spdlog::logger> create(const std::string& logger_name, Args...);
 
@@ -116,10 +132,15 @@ std::shared_ptr<spdlog::logger> create(const std::string& logger_name, Args...);
 // Register the given logger with the given name
 void register_logger(std::shared_ptr<logger> logger);
 
+// Apply a user defined function on all registered loggers
+// Example:
+// spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l) {l->flush();});
+void apply_all(std::function<void(std::shared_ptr<logger>)> fun);
+
 // Drop the reference to the given logger
 void drop(const std::string &name);
 
-// Drop all references
+// Drop all references from the registry
 void drop_all();
 
 

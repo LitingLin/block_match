@@ -136,6 +136,7 @@ struct BlockMatchContext
 	void **threadPoolTaskHandle;
 
 	struct Buffer {
+
 		Type *matrixA_buffer;
 		Type *matrixB_buffer;
 		Type *matrixC_buffer;
@@ -547,6 +548,22 @@ public:
 	fatal_error_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
 
 	~fatal_error_logging() noexcept(false);
+
+	std::ostringstream& stream();
+private:
+	std::ostringstream str_stream;
+};
+
+class warning_logging
+{
+public:
+	warning_logging(const char* file, int line, const char* function);
+
+	warning_logging(const char* file, int line, const char* function, const char* exp);
+
+	warning_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
+
+	~warning_logging() noexcept(false);
 
 	std::ostringstream& stream();
 private:

@@ -6,35 +6,42 @@
 #pragma once
 
 #include <spdlog/logger.h>
+#include <spdlog/sinks/stdout_sinks.h>
 
 #include <memory>
 #include <string>
 
+
 // create logger with given name, sinks and the default pattern formatter
 // all other ctors will call this one
 template<class It>
-inline spdlog::logger::logger(const std::string& logger_name, const It& begin, const It& end) :
+inline spdlog::logger::logger(const std::string& logger_name, const It& begin, const It& end):
     _name(logger_name),
     _sinks(begin, end),
     _formatter(std::make_shared<pattern_formatter>("%+"))
 {
-
-    // no support under vs2013 for member initialization for std::atomic
     _level = level::info;
     _flush_level = level::off;
+    _last_err_time = 0;
+    _err_handler = [this](const std::string &msg)
+    {
+        this->_default_err_handler(msg);
+    };
 }
 
 // ctor with sinks as init list
-inline spdlog::logger::logger(const std::string& logger_name, sinks_init_list sinks_list) :
-    logger(logger_name, sinks_list.begin(), sinks_list.end()) {}
+inline spdlog::logger::logger(const std::string& logger_name, sinks_init_list sinks_list):
+    logger(logger_name, sinks_list.begin(), sinks_list.end())
+{}
 
 
 // ctor with single sink
-inline spdlog::logger::logger(const std::string& logger_name, spdlog::sink_ptr single_sink) :
+inline spdlog::logger::logger(const std::string& logger_name, spdlog::sink_ptr single_sink):
     logger(logger_name,
 {
     single_sink
-}) {}
+})
+{}
 
 
 inline spdlog::logger::~logger() = default;
@@ -56,28 +63,40 @@ inline void spdlog::logger::log(level::level_enum lvl, const char* fmt, const Ar
 {
     if (!should_log(lvl)) return;
 
-    details::log_msg log_msg(&_name, lvl);
     try
     {
+        details::log_msg log_msg(&_name, lvl);
         log_msg.raw.write(fmt, args...);
+        _sink_it(log_msg);
     }
-    catch (fmt::FormatError &ex)
+    catch (const std::exception &ex)
     {
-        throw spdlog::spdlog_ex(std::string("format error in \"") + fmt + "\": " + ex.what());
+        _err_handler(ex.what());
     }
-
-    _sink_it(log_msg);
-
+    catch (...)
+    {
+        _err_handler("Unknown exception");
+    }
 }
 
 template <typename... Args>
 inline void spdlog::logger::log(level::level_enum lvl, const char* msg)
 {
     if (!should_log(lvl)) return;
-
-    details::log_msg log_msg(&_name, lvl);
-    log_msg.raw << msg;
-    _sink_it(log_msg);
+    try
+    {
+        details::log_msg log_msg(&_name, lvl);
+        log_msg.raw << msg;
+        _sink_it(log_msg);
+    }
+    catch (const std::exception &ex)
+    {
+        _err_handler(ex.what());
+    }
+    catch (...)
+    {
+        _err_handler("Unknown exception");
+    }
 
 }
 
@@ -85,11 +104,20 @@ template<typename T>
 inline void spdlog::logger::log(level::level_enum lvl, const T& msg)
 {
     if (!should_log(lvl)) return;
-
-    details::log_msg log_msg(&_name, lvl);
-    log_msg.raw << msg;
-    _sink_it(log_msg);
-
+    try
+    {
+        details::log_msg log_msg(&_name, lvl);
+        log_msg.raw << msg;
+        _sink_it(log_msg);
+    }
+    catch (const std::exception &ex)
+    {
+        _err_handler(ex.what());
+    }
+    catch (...)
+    {
+        _err_handler("Unknown exception");
+    }
 }
 
 
@@ -169,8 +197,43 @@ inline void spdlog::logger::critical(const T& msg)
     log(level::critical, msg);
 }
 
+inline spdlog::ostream spdlog::logger::log(level::level_enum lvl)
+{
+    if (!should_log(lvl))
+        return ostream();
 
+    return ostream(this, lvl);
+}
 
+inline spdlog::ostream spdlog::logger::trace()
+{
+   return log(level::trace);
+}
+
+inline spdlog::ostream spdlog::logger::debug()
+{
+   return log(level::debug);
+}
+
+inline spdlog::ostream spdlog::logger::info()
+{
+   return log(level::info);
+}
+
+inline spdlog::ostream spdlog::logger::warn()
+{
+   return log(level::warn);
+}
+
+inline spdlog::ostream spdlog::logger::error()
+{
+   return log(level::err);
+}
+
+inline spdlog::ostream spdlog::logger::critical()
+{
+   return log(level::critical);
+}
 
 //
 // name and level
@@ -184,6 +247,25 @@ inline void spdlog::logger::set_level(spdlog::level::level_enum log_level)
 {
     _level.store(log_level);
 }
+
+inline void spdlog::logger::set_error_handler(spdlog::log_err_handler err_handler)
+{
+    if (!err_handler)
+    {
+        _err_handler = [this](const std::string &msg)
+        {
+            this->_default_err_handler(msg);
+        };
+    }
+    else    
+        _err_handler = err_handler;
+}
+
+inline spdlog::log_err_handler spdlog::logger::error_handler()
+{
+    return _err_handler;
+}
+
 
 inline void spdlog::logger::flush_on(level::level_enum log_level)
 {
@@ -207,10 +289,14 @@ inline void spdlog::logger::_sink_it(details::log_msg& msg)
 {
     _formatter->format(msg);
     for (auto &sink : _sinks)
-        sink->log(msg);
+    {
+        if( sink->should_log( msg.level))
+        {
+            sink->log(msg);
+        }
+    }
 
-    const auto flush_level = _flush_level.load(std::memory_order_relaxed);
-    if (msg.level >= flush_level)
+    if(_should_flush_on(msg))
         flush();
 }
 
@@ -227,4 +313,29 @@ inline void spdlog::logger::flush()
 {
     for (auto& sink : _sinks)
         sink->flush();
+}
+
+inline void spdlog::logger::_default_err_handler(const std::string &msg)
+{
+    auto now = time(nullptr);
+    if (now - _last_err_time < 60)
+        return;
+    auto tm_time = details::os::localtime(now);
+    char date_buf[100];
+    std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S", &tm_time);
+    details::log_msg  err_msg;
+    err_msg.formatted.write("[*** LOG ERROR ***] [{}] [{}] [{}]{}", name(), msg, date_buf, details::os::eol);
+    sinks::stderr_sink_mt::instance()->log(err_msg);
+    _last_err_time = now;
+}
+
+inline bool spdlog::logger::_should_flush_on(const details::log_msg &msg)
+{
+    const auto flush_level = _flush_level.load(std::memory_order_relaxed);
+    return (msg.level >= flush_level) && (msg.level != level::off);
+}
+
+inline const std::vector<spdlog::sink_ptr>& spdlog::logger::sinks() const
+{
+    return _sinks;
 }

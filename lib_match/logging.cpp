@@ -68,3 +68,31 @@ std::ostringstream& fatal_error_logging::stream()
 {
 	return str_stream;
 }
+
+warning_logging::warning_logging(const char* file, int line, const char* function)
+{
+	str_stream << '[' << get_base_file_name(file) << ':' << line << ' ' << function << "] ";
+}
+
+warning_logging::warning_logging(const char* file, int line, const char* function, const char* exp) : warning_logging(file, line, function)
+{
+	str_stream << "Check failed: " << exp << ' ';
+}
+
+warning_logging::warning_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2) : warning_logging(file, line, function)
+{
+	str_stream << "Check failed: " << exp1 << ' ' << op << ' ' << exp2 << ' ';
+}
+
+warning_logging::~warning_logging() noexcept(false)
+{
+	str_stream << std::endl
+		<< "*** Check failure stack trace: ***" << std::endl
+		<< getStackTrace();
+	logger.warn(str_stream);
+}
+
+std::ostringstream& warning_logging::stream()
+{
+	return str_stream;
+}

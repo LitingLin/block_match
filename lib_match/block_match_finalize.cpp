@@ -24,7 +24,7 @@ void blockMatchFinalize(void *_instance)
 	free(instance->workerContext.numberOfIteration);
 	free(instance->stream);
 	free(instance->buffer.index_x_sorting_buffer);
-		
+
 	free(instance);
 }
 

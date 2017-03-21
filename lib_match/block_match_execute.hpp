@@ -11,7 +11,7 @@ typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N
  * All false are cuda error
  */
 template <typename Type, ProcessFunction<Type> processFunction>
-cudaError_t submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
+void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
 	int blockSize,
 	int numberOfBlockA, int numberOfBlockBPerBlockA,
 	int numberOfGpuProcessors, int numberOfGpuThreads,
@@ -27,8 +27,6 @@ cudaError_t submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type
 		numberOfGpuProcessors, numberOfGpuThreads, stream));
 
 	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream));
-
-	return cudaSuccess;
 }
 
 template <typename Type>
@@ -233,9 +231,7 @@ template <typename Type,
 
 	int numberOfQueuedTasks = 0, indexOfIteration = 0;
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
-
-	cudaError_t cuda_error;
-
+	
 	goto JumpIn;
 
 	for (indexA_M = indexA_M_begin; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
@@ -289,17 +285,12 @@ template <typename Type,
 				if (checkIsInterruptPending())
 					return false;
 
-				cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
+				submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
 					matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, streamA);
-
-				if (cuda_error != cudaSuccess)
-					goto CudaError;
-
-				cuda_error = cudaStreamSynchronize(streamA);
-				if (cuda_error != cudaSuccess)
-					goto CudaError;
+				
+				CUDA_CHECK_POINT(cudaStreamSynchronize(streamA));
 
 				//std::swap(streamA, streamB);
 
@@ -336,29 +327,20 @@ JumpOut:
 
 		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 
-		cuda_error = submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer,
+		submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer,
 			matrixC_buffer,
 			matrixA_deviceBuffer, matrixB_deviceBuffer,
 			matrixC_deviceBuffer,
 			blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 			(remainBlocks + maxNumberOfThreadsPerProcessor - 1) / maxNumberOfThreadsPerProcessor,
 			maxNumberOfThreadsPerProcessor, streamA);
-
-		if (cuda_error != cudaSuccess)
-			goto CudaError;
-
-		cuda_error = cudaStreamSynchronize(streamA);
-		if (cuda_error != cudaSuccess)
-			goto CudaError;
+		
+		CUDA_CHECK_POINT(cudaStreamSynchronize(streamA));
 
 		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
 			rawIndexTemplate, rawIndexBuffer);
 	}
 
-	return true;
-
-CudaError:
-	setLastErrorString("Error occured in worker execution, cudaError code: %d, error string: %s", cuda_error, cudaGetErrorString(cuda_error));
-	return false;
+	return 0;
 }
