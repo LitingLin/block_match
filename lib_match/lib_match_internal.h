@@ -36,6 +36,189 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
+enum class memory_allocation_type
+{
+	memory,
+	page_locked,
+	gpu
+};
+
+class memory_allocation_counter
+{
+public:
+	memory_allocation_counter();
+	void register_allocator(size_t size, memory_allocation_type type);
+	void allocated(size_t size, memory_allocation_type type);
+	void released(size_t size, memory_allocation_type type);
+	void trigger_error(size_t size, memory_allocation_type type) const;
+private:
+	size_t max_memory_size;
+	size_t max_page_locked_memory_size;
+	size_t max_gpu_memory_size;
+	size_t current_memory_size;
+	size_t current_page_locked_memory_size;
+	size_t current_gpu_memory_size;
+} extern g_memory_allocator;
+
+template <typename Type>
+class system_memory_allocator
+{
+public:
+	system_memory_allocator(size_t elem_size, bool is_temp = false);
+	~system_memory_allocator();
+	Type *alloc();
+	void release();
+	Type *get();
+private:
+	void *ptr;
+	size_t size;
+};
+
+template <typename Type>
+system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
+	: ptr(nullptr), size(elem_size * sizeof(Type))
+{
+	if (!is_temp)
+		g_memory_allocator.register_allocator(size, memory_allocation_type::memory);
+}
+
+template <typename Type>
+system_memory_allocator<Type>::~system_memory_allocator()
+{
+	if (ptr)
+		release();
+}
+
+template <typename Type>
+Type* system_memory_allocator<Type>::alloc()
+{
+	ptr = malloc(size);
+	if (ptr)
+		g_memory_allocator.allocated(size, memory_allocation_type::memory);
+	else
+		g_memory_allocator.trigger_error(size, memory_allocation_type::memory);
+	return static_cast<Type*>(ptr);
+}
+
+template <typename Type>
+void system_memory_allocator<Type>::release()
+{
+	free(ptr);
+	g_memory_allocator.released(size, memory_allocation_type::memory);
+	ptr = nullptr;
+}
+
+template <typename Type>
+Type* system_memory_allocator<Type>::get()
+{
+	return ptr;
+}
+
+template <typename Type>
+class page_locked_memory_allocator
+{
+public:
+	page_locked_memory_allocator(size_t elem_size, bool is_temp = false);
+	~page_locked_memory_allocator();
+	Type *alloc();
+	void release();
+	Type *get();
+private:
+	void *ptr;
+	size_t size;
+};
+
+template <typename Type>
+page_locked_memory_allocator<Type>::page_locked_memory_allocator(size_t elem_size, bool is_temp)
+	: ptr(nullptr), size(elem_size * sizeof(Type))
+{
+	if (!is_temp)
+		g_memory_allocator.register_allocator(size, memory_allocation_type::page_locked);
+}
+
+template <typename Type>
+page_locked_memory_allocator<Type>::~page_locked_memory_allocator()
+{
+	if (ptr)
+		release();
+}
+
+template <typename Type>
+Type* page_locked_memory_allocator<Type>::alloc()
+{
+	if (cudaMallocHost(&ptr, size) == cudaSuccess)
+		g_memory_allocator.allocated(size, memory_allocation_type::page_locked);
+	else
+		g_memory_allocator.trigger_error(size, memory_allocation_type::page_locked);
+	return static_cast<Type*>(ptr);
+}
+
+template <typename Type>
+void page_locked_memory_allocator<Type>::release()
+{
+	cudaFreeHost(ptr);
+	g_memory_allocator.released(size, memory_allocation_type::page_locked);
+	ptr = nullptr;
+}
+
+template <typename Type>
+Type* page_locked_memory_allocator<Type>::get()
+{
+	return ptr;
+}
+
+template <typename Type>
+class gpu_memory_allocator
+{
+public:
+	gpu_memory_allocator(size_t elem_size, bool is_temp = false);
+	~gpu_memory_allocator();
+	Type *alloc();
+	void release();
+	Type *get();
+private:
+	void *ptr;
+	size_t size;
+};
+
+template <typename Type>
+gpu_memory_allocator<Type>::gpu_memory_allocator(size_t elem_size, bool is_temp)
+	: ptr(nullptr), size(elem_size * sizeof(Type))
+{
+	if (!is_temp)
+		g_memory_allocator.register_allocator(size, memory_allocation_type::gpu);
+}
+
+template <typename Type>
+gpu_memory_allocator<Type>::~gpu_memory_allocator()
+{
+	if (ptr)
+		release();
+}
+
+template <typename Type>
+Type* gpu_memory_allocator<Type>::alloc()
+{
+	if (cudaMalloc(&ptr, size) == cudaSuccess)
+		g_memory_allocator.allocated(size, memory_allocation_type::gpu);
+	else
+		g_memory_allocator.trigger_error(size, memory_allocation_type::gpu);
+	return static_cast<Type*>(ptr);
+}
+
+template <typename Type>
+void gpu_memory_allocator<Type>::release()
+{
+	cudaFree(ptr);
+	g_memory_allocator.released(size, memory_allocation_type::gpu);
+	ptr = nullptr;
+}
+
+template <typename Type>
+Type* gpu_memory_allocator<Type>::get()
+{
+	return ptr;
+}
 
 /*
  * M means the first dimension, N means the second dimension
@@ -75,6 +258,16 @@ using PadFunction = void(const Type *old_ptr, Type *new_ptr,
 
 template <typename Type>
 using ExecutionFunction = unsigned(ExecutionContext<Type> *);
+
+class cudaStreamWarper
+{
+public:
+	cudaStreamWarper();
+	~cudaStreamWarper();
+	operator cudaStream_t();
+private:
+	cudaStream_t stream;
+};
 
 // TODO support int64
 template <typename Type>
@@ -129,65 +322,53 @@ struct BlockMatchContext
 
 	int C_dimensions[3];
 
-	cudaStream_t *stream;
+	std::vector<cudaStreamWarper> streams;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
-	void **threadPoolTaskHandle;
+	std::vector<void *>threadPoolTaskHandle;
 
-	struct Buffer {
-
-		Type *matrixA_buffer;
-		Type *matrixB_buffer;
-		Type *matrixC_buffer;
-		Type *matrixA_deviceBuffer;
-		Type *matrixB_deviceBuffer;
-		Type *matrixC_deviceBuffer;
-
-		int *index_x_sorting_buffer;
-		int *index_y_sorting_buffer;
-
-		int *common_buffer; // index template
-		int *index_raw_sorting_buffer;
-	} buffer;
-
+	system_memory_allocator<int> common_buffer; // index template
+	
 	struct WorkerContext
 	{
-		int *numberOfIteration;
-		int *rawMatrixCIndex_begin;
-		int *beginMatrixAIndex_M;
-		int *beginMatrixAIndex_N;
-		ExecutionContext<Type> *executionContext;
-	} workerContext;
+		int numberOfIteration;
+		int rawMatrixCIndex_begin;
+		int beginMatrixAIndex_M;
+		int beginMatrixAIndex_N;
+		ExecutionContext<Type> executionContext;
+	};
+	std::vector<WorkerContext> workerContext;
 
-	struct OptionalPerThreadBufferPointer
+	struct OptionalPerThreadBuffer
 	{
-		int *index_x_internal;
-		int *index_y_internal;
-	} *optionalPerThreadBufferPointer;
+		system_memory_allocator<int> index_x_internal;
+		system_memory_allocator<int> index_y_internal;
+	};
+	std::vector<OptionalPerThreadBuffer> optionalPerThreadBuffer;
 
 	struct OptionalBuffer
 	{
-		Type *matrixA_padded_internal;
-		Type *matrixB_padded_internal;
-		int *index_x_internal;
-		int *index_y_internal;
-	} optionalBuffer;
+		system_memory_allocator<Type> matrixA_padded_internal;
+		system_memory_allocator<Type> matrixB_padded_internal;
+	};
+	std::vector<OptionalBuffer> optionalBuffer;
 
-	struct PerThreadBufferPointer
+	struct PerThreadBuffer
 	{
-		Type *matrixA_buffer;
-		Type *matrixB_buffer;
-		Type *matrixC_buffer;
-		Type *matrixA_deviceBuffer;
-		Type *matrixB_deviceBuffer;
-		Type *matrixC_deviceBuffer;
+		page_locked_memory_allocator<Type> matrixA_buffer;
+		page_locked_memory_allocator<Type> matrixB_buffer;
+		page_locked_memory_allocator<Type> matrixC_buffer;
+		gpu_memory_allocator<Type> matrixA_deviceBuffer;
+		gpu_memory_allocator<Type> matrixB_deviceBuffer;
+		gpu_memory_allocator<Type> matrixC_deviceBuffer;
 
-		int *index_x_sorting_buffer;
-		int *index_y_sorting_buffer;
+		system_memory_allocator<int> index_x_sorting_buffer;
+		system_memory_allocator<int> index_y_sorting_buffer;
 
-		int *index_raw_sorting_buffer;
-	} *perThreadBufferPointer;
+		system_memory_allocator<int> index_raw_sorting_buffer;
+	};
+	std::vector<PerThreadBuffer> perThreadBuffer;
 };
 
 template <typename Type>
@@ -348,191 +529,6 @@ bool isInterruptPending();
 #else
 #define CALL_DBG
 #endif
-
-
-enum class memory_allocation_type
-{
-	memory,
-	page_locked,
-	gpu
-};
-
-class memory_allocation_counter
-{
-public:
-	memory_allocation_counter();
-	void register_allocator(size_t size, memory_allocation_type type);
-	void allocated(size_t size, memory_allocation_type type);
-	void released(size_t size, memory_allocation_type type);
-	void trigger_error(size_t size, memory_allocation_type type) const;
-private:
-	size_t max_memory_size;
-	size_t max_page_locked_memory_size;
-	size_t max_gpu_memory_size;
-	size_t current_memory_size;
-	size_t current_page_locked_memory_size;
-	size_t current_gpu_memory_size;
-} extern g_memory_allocator;
-
-template <typename Type>
-class system_memory_allocator
-{
-public:
-	system_memory_allocator(size_t elem_size, bool is_temp = false);
-	~system_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, memory_allocation_type::memory);
-}
-
-template <typename Type>
-system_memory_allocator<Type>::~system_memory_allocator()
-{
-	if (ptr)
-		release();
-}
-
-template <typename Type>
-Type* system_memory_allocator<Type>::alloc()
-{
-	ptr = malloc(size);
-	if (ptr)
-		g_memory_allocator.allocated(size, memory_allocation_type::memory);
-	else
-		g_memory_allocator.trigger_error(size, memory_allocation_type::memory);
-	return ptr;
-}
-
-template <typename Type>
-void system_memory_allocator<Type>::release()
-{
-	free(ptr);
-	g_memory_allocator.released(size, memory_allocation_type::memory);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* system_memory_allocator<Type>::get()
-{
-	return ptr;
-}
-
-template <typename Type>
-class page_locked_memory_allocator
-{
-public:
-	page_locked_memory_allocator(size_t elem_size, bool is_temp = false);
-	~page_locked_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-page_locked_memory_allocator<Type>::page_locked_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, memory_allocation_type::page_locked);
-}
-
-template <typename Type>
-page_locked_memory_allocator<Type>::~page_locked_memory_allocator()
-{
-	if (ptr)
-		release();
-}
-
-template <typename Type>
-Type* page_locked_memory_allocator<Type>::alloc()
-{
-	if (cudaMallocHost(&ptr, size) == cudaSuccess)
-		g_memory_allocator.allocated(size, memory_allocation_type::page_locked);
-	else
-		g_memory_allocator.trigger_error(size, memory_allocation_type::page_locked);
-	return ptr;
-}
-
-template <typename Type>
-void page_locked_memory_allocator<Type>::release()
-{
-	cudaFreeHost(ptr);
-	g_memory_allocator.released(size, memory_allocation_type::page_locked);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* page_locked_memory_allocator<Type>::get()
-{
-	return ptr;
-}
-
-template <typename Type>
-class gpu_memory_allocator
-{
-public:
-	gpu_memory_allocator(size_t elem_size, bool is_temp = false);
-	~gpu_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-gpu_memory_allocator<Type>::gpu_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, memory_allocation_type::gpu);
-}
-
-template <typename Type>
-gpu_memory_allocator<Type>::~gpu_memory_allocator()
-{
-	if (ptr)
-		release();
-}
-
-template <typename Type>
-Type* gpu_memory_allocator<Type>::alloc()
-{
-	if (cudaMalloc(&ptr, size) == cudaSuccess)
-		g_memory_allocator.allocated(size, memory_allocation_type::gpu);
-	else
-		g_memory_allocator.trigger_error(size, memory_allocation_type::gpu);
-	return ptr;
-}
-
-template <typename Type>
-void gpu_memory_allocator<Type>::release()
-{
-	cudaFree(ptr);
-	g_memory_allocator.released(size, memory_allocation_type::gpu);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* gpu_memory_allocator<Type>::get()
-{
-	return ptr;
-}
 
 std::string getStackTrace();
 

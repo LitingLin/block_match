@@ -92,4 +92,3 @@ void memory_allocation_counter::trigger_error(size_t size, memory_allocation_typ
 		current_gpu_memory_size, max_gpu_memory_size
 	));
 }
-

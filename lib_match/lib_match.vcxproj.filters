@@ -79,6 +79,9 @@
     <ClCompile Include="type_convert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="object_warper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="thread_pool.h">

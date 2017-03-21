@@ -144,41 +144,25 @@ bool initializeMemoryResources(BlockMatchContext<Type> *instance)
 	const int bufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA * numberOfThreads;
 	const int matBufferSize = bufferSize * block_M * block_N;
 
-	typename BlockMatchContext<Type>::WorkerContext &workerContext = instance->workerContext;
-	workerContext.numberOfIteration = static_cast<int*>(malloc(numberOfThreads * sizeof(int) * sizeof(BlockMatchContext<Type>::WorkerContext) / sizeof(int*)
-		+ numberOfThreads * sizeof(void*)
-		+ numberOfThreads * sizeof(ExecutionContext<Type>)));
-	if (workerContext.numberOfIteration == nullptr)
-		goto failed;
+	instance->workerContext.reserve(numberOfThreads);
+	instance->threadPoolTaskHandle.reserve(numberOfThreads);
 
-	workerContext.rawMatrixCIndex_begin = workerContext.numberOfIteration + numberOfThreads;
-	workerContext.beginMatrixAIndex_M = workerContext.rawMatrixCIndex_begin + numberOfThreads;
-	workerContext.beginMatrixAIndex_N = workerContext.beginMatrixAIndex_M + numberOfThreads;
-	instance->threadPoolTaskHandle = reinterpret_cast<void**>(workerContext.beginMatrixAIndex_N + numberOfThreads);
-	workerContext.executionContext = reinterpret_cast<ExecutionContext<Type>*>(instance->threadPoolTaskHandle + numberOfThreads);
+	instance->streams.resize(numberOfThreads);
 
-	typename BlockMatchContext<Type>::Buffer &buffer = instance->buffer;
+	instance->perThreadBuffer.reserve(numberOfThreads);
 
-	cudaError_t cuda_error;
+	const int perThreadMatrixCBufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA;
+	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
 
-	instance->stream = static_cast<cudaStream_t*>(malloc(numberOfThreads * 2 * sizeof(cudaStream_t)));
-	if (!instance->stream) {
-		goto release_worker_context;
-	}
-
-	for (int i = 0; i < numberOfThreads * 2; ++i)
+	for (unsigned i=0;i<numberOfThreads;++i)
 	{
-		cuda_error = cudaStreamCreate(&instance->stream[i]);
-		if (cuda_error != cudaSuccess)
-		{
-			for (int j = i - 1; j >= 0; j--)
-			{
-				cudaStreamDestroy(instance->stream[j]);
-			}
-			free(instance->stream);
-			goto release_worker_context;
-		}
+		instance->perThreadBuffer.emplace_back({ perThreadMatrixABufferSize , perThreadMatrixABufferSize , perThreadMatrixCBufferSize,
+		perThreadMatrixABufferSize, perThreadMatrixABufferSize, perThreadMatrixCBufferSize,
+			perThreadMatrixCBufferSize, perThreadMatrixCBufferSize,numberOfBlockBPerBlockA
+		});
 	}
+
+	instance->common_buffer
 
 	// Remember to * sizeof(type)
 	cuda_error = cudaMallocHost(&buffer.matrixA_buffer,
@@ -542,11 +526,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
-	BlockMatchContext<Type> * instance = allocateContext<Type>(numberOfThreads);
-	if (!instance) {
-		setLastErrorString("Error: memory allocation failed");
-		return false;
-	}
+	BlockMatchContext<Type> * instance = new BlockMatchContext<Type>;
 
 	instance->indexA_M_begin = indexA_M_begin;
 	instance->indexA_M_end = indexA_M_end;
@@ -773,7 +753,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 	{
-		setLastErrorString("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
+		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 		goto Failed;
 	}
 

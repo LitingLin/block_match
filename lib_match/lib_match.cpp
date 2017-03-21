@@ -9,6 +9,7 @@ bool libMatchReset()
 
 void libMatchOnLoad(void)
 {
+	globalContext.initialize();
 }
 
 void libMatchAtExit(void)
