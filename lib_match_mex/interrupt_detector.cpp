@@ -1,3 +1,4 @@
+/*
 #ifdef _MSC_VER
 #pragma comment(lib, "libut.lib")
 #endif
@@ -14,4 +15,13 @@ bool libMatchMexIsInterruptPendingFunction()
 {
 	utSetInterruptHandled(true);
 	return utIsInterruptPending();
+}*/
+
+void disableInterruptHandle()
+{
+}
+
+bool libMatchMexIsInterruptPendingFunction()
+{
+	return false;
 }

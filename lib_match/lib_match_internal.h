@@ -36,84 +36,6 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
-enum class memory_allocation_type
-{
-	memory,
-	page_locked,
-	gpu
-};
-
-class memory_allocation_counter
-{
-public:
-	memory_allocation_counter();
-	void register_allocator(size_t size, memory_allocation_type type);
-	void allocated(size_t size, memory_allocation_type type);
-	void released(size_t size, memory_allocation_type type);
-	void trigger_error(size_t size, memory_allocation_type type) const;
-private:
-	size_t max_memory_size;
-	size_t max_page_locked_memory_size;
-	size_t max_gpu_memory_size;
-	size_t current_memory_size;
-	size_t current_page_locked_memory_size;
-	size_t current_gpu_memory_size;
-} extern g_memory_allocator;
-
-template <typename Type>
-class system_memory_allocator
-{
-public:
-	system_memory_allocator(size_t elem_size, bool is_temp = false);
-	~system_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, memory_allocation_type::memory);
-}
-
-template <typename Type>
-system_memory_allocator<Type>::~system_memory_allocator()
-{
-	if (ptr)
-		release();
-}
-
-template <typename Type>
-Type* system_memory_allocator<Type>::alloc()
-{
-	ptr = malloc(size);
-	if (ptr)
-		g_memory_allocator.allocated(size, memory_allocation_type::memory);
-	else
-		g_memory_allocator.trigger_error(size, memory_allocation_type::memory);
-	return static_cast<Type*>(ptr);
-}
-
-template <typename Type>
-void system_memory_allocator<Type>::release()
-{
-	free(ptr);
-	g_memory_allocator.released(size, memory_allocation_type::memory);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* system_memory_allocator<Type>::get()
-{
-	return ptr;
-}
-
 template <typename Type>
 class page_locked_memory_allocator
 {
@@ -164,7 +86,7 @@ void page_locked_memory_allocator<Type>::release()
 template <typename Type>
 Type* page_locked_memory_allocator<Type>::get()
 {
-	return ptr;
+	return static_cast<Type*>(ptr);
 }
 
 template <typename Type>
@@ -217,7 +139,7 @@ void gpu_memory_allocator<Type>::release()
 template <typename Type>
 Type* gpu_memory_allocator<Type>::get()
 {
-	return ptr;
+	return static_cast<Type*>(ptr);
 }
 
 /*
@@ -246,7 +168,7 @@ struct ExecutionContext
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
 	
 	/* Gpu Stuff */
-	cudaStream_t streamA, streamB; // TODO: Double buffering
+	cudaStream_t stream; // TODO: Double buffering
 	int maxNumberOfThreadsPerProcessor,
 		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
 };
@@ -336,7 +258,7 @@ struct BlockMatchContext
 		int rawMatrixCIndex_begin;
 		int beginMatrixAIndex_M;
 		int beginMatrixAIndex_N;
-		ExecutionContext<Type> executionContext;
+		std::unique_ptr<ExecutionContext<Type>> executionContext;
 	};
 	std::vector<WorkerContext> workerContext;
 
@@ -597,5 +519,8 @@ fatal_error_logging(__FILE__, __LINE__, __func__, #exp1, #op, #exp2).stream() <<
 
 #define CUDA_CHECK_POINT(cudaExp) \
 	CHECK_POINT_EQ(cudaExp, cudaSuccess) << "CUDA Error message: " << cudaGetErrorString(_rc->first)
+
+#define NOT_IMPLEMENTED_ERROR \
+	fatal_error_logging(__FILE__, __LINE__, __func__).stream() << "Unknown internal error. "
 
 void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);

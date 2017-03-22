@@ -212,7 +212,7 @@ template <typename Type,
 		startIndexOfMatrixA_M = executionContext->startIndexOfMatrixA_M, startIndexOfMatrixA_N = executionContext->startIndexOfMatrixA_N,
 		numberOfIteration = executionContext->numberOfIteration;
 
-	cudaStream_t streamA = executionContext->streamA, streamB = executionContext->streamB; // TODO: Double buffering
+	cudaStream_t stream = executionContext->stream; // TODO: Double buffering
 	int maxNumberOfThreadsPerProcessor = executionContext->maxNumberOfThreadsPerProcessor,
 		numberOfSubmitThreadsPerProcessor = executionContext->numberOfSubmitThreadsPerProcessor,
 		numberOfSubmitProcessors = executionContext->numberOfSubmitProcessors,
@@ -281,16 +281,16 @@ template <typename Type,
 			c_bufferA += blockSize;
 
 			if (numberOfQueuedTasks == lengthOfGpuTaskQueue)
-			{
+			{/*
 				if (checkIsInterruptPending())
-					return false;
+					return 2;*/
 
 				submitGpuTask<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
 					matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 					blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
-					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, streamA);
+					numberOfSubmitProcessors, numberOfSubmitThreadsPerProcessor, stream);
 				
-				CUDA_CHECK_POINT(cudaStreamSynchronize(streamA));
+				CUDA_CHECK_POINT(cudaStreamSynchronize(stream));
 
 				//std::swap(streamA, streamB);
 
@@ -321,9 +321,9 @@ template <typename Type,
 	}
 JumpOut:
 	if (numberOfBlockA)
-	{
+	{/*
 		if (checkIsInterruptPending())
-			return false;
+			return 2;*/
 
 		int remainBlocks = numberOfBlockA * numberOfBlockBPerBlockA;
 
@@ -333,9 +333,9 @@ JumpOut:
 			matrixC_deviceBuffer,
 			blockSize, numberOfBlockA, numberOfBlockBPerBlockA,
 			(remainBlocks + maxNumberOfThreadsPerProcessor - 1) / maxNumberOfThreadsPerProcessor,
-			maxNumberOfThreadsPerProcessor, streamA);
+			maxNumberOfThreadsPerProcessor, stream);
 		
-		CUDA_CHECK_POINT(cudaStreamSynchronize(streamA));
+		CUDA_CHECK_POINT(cudaStreamSynchronize(stream));
 
 		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,

@@ -30,9 +30,6 @@
     <ClCompile Include="interrupt_detector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cpp_mexapi_version.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib_match_mex_internal.h">

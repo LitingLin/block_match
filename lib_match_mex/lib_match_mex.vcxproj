@@ -128,7 +128,6 @@
     <ClInclude Include="lib_match_mex_internal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cpp_mexapi_version.cpp" />
     <ClCompile Include="initialize.cpp" />
     <ClCompile Include="interrupt_detector.cpp" />
     <ClCompile Include="logging.cpp" />

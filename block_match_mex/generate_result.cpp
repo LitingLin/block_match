@@ -3,7 +3,7 @@
 #include "utils.h"
 
 template <typename IntermidateType, typename ResultType>
-bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y, 
+void generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y, 
 	const IntermidateType *value, const int size)
 {
 	const int *c_index_x = index_x;
@@ -11,15 +11,11 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 	const IntermidateType *c_value = value;
 
 	mxArray *pa = mxCreateCellMatrix(sequenceAHeight, sequenceAWidth);
-	if (!pa)
-		return false;
 
 	for (int i = 0; i<sequenceAHeight; i++)
 		for (int j = 0; j < sequenceAWidth; j++)
 		{
 			mxArray *mat = mxCreateNumericMatrix(size, 3, getMxClassId(typeid(ResultType)), mxREAL);
-			if (!mat)
-				return false;
 
 			ResultType *mat_ptr = static_cast<ResultType*>(mxGetData(mat));
 			convertArrayTypeAndPlusOne(c_index_x, mat_ptr, size);
@@ -33,42 +29,36 @@ bool generate_result(mxArray **_pa, const int sequenceAHeight, const int sequenc
 		}
 
 	*_pa = pa;
-
-	return true;
 }
 
 template <typename IntermidateType, typename ResultType>
-bool generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data)
+void generatePaddedMatrix(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data)
 {
 	mxArray *pa = mxCreateNumericMatrix(sequencePaddedHeight, sequencePaddedWidth, getMxClassId(typeid(ResultType)) ,mxREAL);
-	if (!pa)
-		return false;
 
 	ResultType *matPointer = static_cast<ResultType*>(mxGetData(pa));
 	convertArrayType(data, matPointer, sequencePaddedHeight * sequencePaddedWidth);
 
 	*_pa = pa;
-
-	return true;
 }
 
 template 
-bool generate_result<float,double>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
+void generate_result<float,double>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const float *value, const int size);
 template
-bool generate_result<double, float>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
+void generate_result<double, float>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const double *value, const int size);
 template
-bool generate_result<float, float>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
+void generate_result<float, float>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const float *value, const int size);
 template
-bool generate_result<double, double>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
+void generate_result<double, double>(mxArray **_pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
 	const double *value, const int size);
 template
-bool generatePaddedMatrix<float,double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
+void generatePaddedMatrix<float,double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
 template
-bool generatePaddedMatrix<double, double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
+void generatePaddedMatrix<double, double>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
 template
-bool generatePaddedMatrix<float, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
+void generatePaddedMatrix<float, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const float *data);
 template
-bool generatePaddedMatrix<double, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);
+void generatePaddedMatrix<double, float>(mxArray **_pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const double *data);

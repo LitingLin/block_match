@@ -45,6 +45,7 @@ void __stdcall start_routine(
 {
 	work_context *work_context = static_cast<struct work_context*>(Context);
 	work_context->state = execution_service::task_state::PROCESSING;
+	work_context->rc = 1;
 	try {
 		work_context->rc = work_context->func(work_context->para);
 	}

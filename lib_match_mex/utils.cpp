@@ -19,7 +19,7 @@ void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
 	for (size_t i = 0; i < n; i++)
 	{
-		out[i] = in[i];
+		out[i] = static_cast<Type2>(in[i]);
 	}
 }
 
@@ -126,7 +126,7 @@ LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue
 	if (value > std::numeric_limits<DestinationType>::max())
 		return LibMatchMexError::errorOverFlow;
 
-	*destinationValue = value;
+	*destinationValue = static_cast<DestinationType>(value);
 
 	return LibMatchMexError::success;
 }
@@ -195,7 +195,6 @@ LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 {
 	mxClassID classId = mxGetClassID(pa);
 	void *data = mxGetData(pa);
-	LibMatchMexError error;
 	switch (classId)
 	{
 	case mxLOGICAL_CLASS:
@@ -233,7 +232,6 @@ LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
 {
 	mxClassID classId = mxGetClassID(pa);
 	void *data = mxGetData(pa);
-	LibMatchMexError error;
 	switch (classId)
 	{
 	case mxLOGICAL_CLASS:

@@ -137,7 +137,10 @@ LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 		return LibMatchMexError::errorTypeOfArgument;
 	}
 
-	int numberOfDimensions = mxGetNumberOfDimensions(pa);
+	if (mxGetNumberOfDimensions(pa) > INT_MAX)
+		return LibMatchMexError::errorOverFlow;
+
+	int numberOfDimensions = static_cast<int>(mxGetNumberOfDimensions(pa));
 	if (numberOfDimensions != 2)
 	{
 		return LibMatchMexError::errorNumberOfMatrixDimension;

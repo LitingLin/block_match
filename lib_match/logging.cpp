@@ -89,7 +89,7 @@ warning_logging::~warning_logging() noexcept(false)
 	str_stream << std::endl
 		<< "*** Check failure stack trace: ***" << std::endl
 		<< getStackTrace();
-	logger.warn(str_stream);
+	logger.warn(str_stream.str());
 }
 
 std::ostringstream& warning_logging::stream()

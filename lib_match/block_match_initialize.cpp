@@ -29,7 +29,7 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 		else
 		{
 			*numberOfSubmitThreadsPerProcessor = maxNumberOfGpuThreads;
-			*numberOfSubmitProcessors = std::ceil(numberOfProcessorPerBlockA);
+			*numberOfSubmitProcessors = (int)std::ceil(numberOfProcessorPerBlockA);
 			*numberOfIterations = 1;
 		}
 	}
@@ -130,6 +130,7 @@ int determineSizeOfMatrixC_X(int numberOfIndexRetain, int group_M, int group_N)
  *  matrixB_deviceBuffer
  *  matrixC_deviceBuffer
  */
+/*
 template <typename Type>
 bool initializeMemoryResources(BlockMatchContext<Type> *instance)
 {
@@ -154,7 +155,7 @@ bool initializeMemoryResources(BlockMatchContext<Type> *instance)
 	const int perThreadMatrixCBufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA;
 	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
 
-	for (unsigned i=0;i<numberOfThreads;++i)
+	for (unsigned i = 0; i < numberOfThreads; ++i)
 	{
 		instance->perThreadBuffer.emplace_back({ perThreadMatrixABufferSize , perThreadMatrixABufferSize , perThreadMatrixCBufferSize,
 		perThreadMatrixABufferSize, perThreadMatrixABufferSize, perThreadMatrixCBufferSize,
@@ -162,7 +163,7 @@ bool initializeMemoryResources(BlockMatchContext<Type> *instance)
 		});
 	}
 
-	instance->common_buffer
+	instance->common_buffer;
 
 	// Remember to * sizeof(type)
 	cuda_error = cudaMallocHost(&buffer.matrixA_buffer,
@@ -220,21 +221,15 @@ release_worker_context:
 failed:
 	return false;
 }
-
+*/
 template <typename Type>
 void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 	BorderType sequenceABorderType)
 {
 	const int numberOfThreads = context->numberOfThreads;
-	context->perThreadBufferPointer =
-		reinterpret_cast<typename BlockMatchContext<Type>::PerThreadBufferPointer*>(reinterpret_cast<char*>(context) + sizeof(BlockMatchContext<Type>));
-	context->optionalPerThreadBufferPointer =
-		reinterpret_cast<typename BlockMatchContext<Type>::OptionalPerThreadBufferPointer*>
-		(reinterpret_cast<char*>(context) + sizeof(BlockMatchContext<Type>) + sizeof(typename BlockMatchContext<Type>::PerThreadBufferPointer) * numberOfThreads);
 
-	typename BlockMatchContext<Type>::PerThreadBufferPointer* &perThreadBufferPointer = context->perThreadBufferPointer;
-	typename BlockMatchContext<Type>::WorkerContext &workerContext = context->workerContext;
-
+	std::vector<typename BlockMatchContext<Type>::WorkerContext> &workerContext = context->workerContext;
+	
 	const int numberOfSubmitProcessors = context->numberOfSubmitProcessors;
 	const int numberOfSubmitThreadsPerProcessor = context->numberOfSubmitThreadsPerProcessor;
 	const int block_M = context->block_M;
@@ -242,9 +237,7 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 
 	const size_t sizeOfTaskQueue = context->sizeOfGpuTaskQueue * context->numberOfBlockBPerBlockA;
 	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
-
-	typename BlockMatchContext<Type>::Buffer &buffer = context->buffer;
-
+	
 	const int numberOfBlockBPerBlockA_M = context->numberOfBlockBPerBlockA_M;
 	const int numberOfBlockBPerBlockA_N = context->numberOfBlockBPerBlockA_N;
 	const int matrixC_M = context->C_dimensions[0], matrixC_N = context->C_dimensions[1], matrixC_O = context->C_dimensions[2];
@@ -255,42 +248,27 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 
 	for (int indexOfThread = 0; indexOfThread < numberOfThreads; ++indexOfThread)
 	{
-		perThreadBufferPointer[indexOfThread].matrixA_buffer = buffer.matrixA_buffer +
-			indexOfThread * sizeOfTaskSourceData;
-
-		perThreadBufferPointer[indexOfThread].matrixB_buffer = buffer.matrixB_buffer +
-			indexOfThread * sizeOfTaskSourceData;
-
-		perThreadBufferPointer[indexOfThread].matrixC_buffer = buffer.matrixC_buffer + indexOfThread * sizeOfTaskQueue;
-		perThreadBufferPointer[indexOfThread].matrixA_deviceBuffer = buffer.matrixA_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
-		perThreadBufferPointer[indexOfThread].matrixB_deviceBuffer = buffer.matrixB_deviceBuffer + indexOfThread * sizeOfTaskSourceData;
-		perThreadBufferPointer[indexOfThread].matrixC_deviceBuffer = buffer.matrixC_deviceBuffer + indexOfThread * sizeOfTaskQueue;
-
-		perThreadBufferPointer[indexOfThread].index_x_sorting_buffer = buffer.index_x_sorting_buffer + indexOfThread * sizeOfTaskQueue;
-		perThreadBufferPointer[indexOfThread].index_y_sorting_buffer = buffer.index_y_sorting_buffer + indexOfThread * sizeOfTaskQueue;
-
-		perThreadBufferPointer[indexOfThread].index_raw_sorting_buffer = buffer.index_raw_sorting_buffer + indexOfThread * context->numberOfBlockBPerBlockA;
-
-		workerContext.numberOfIteration[indexOfThread] = numberOfTasksPerWorker_minimum;
-		workerContext.rawMatrixCIndex_begin[indexOfThread] = indexOfThread * numberOfTasksPerWorker_minimum;
-		int indexC_M = workerContext.rawMatrixCIndex_begin[indexOfThread] / matrixC_N;
-		int indexC_N = workerContext.rawMatrixCIndex_begin[indexOfThread] % matrixC_N;
-		workerContext.beginMatrixAIndex_M[indexOfThread] = indexC_M * strideA_M + context->indexA_M_begin;
-		workerContext.beginMatrixAIndex_N[indexOfThread] = indexC_N * strideA_N + context->indexA_N_begin;
+		int rawMatrixCIndex_begin = indexOfThread * numberOfTasksPerWorker_minimum;
+		int indexC_M = rawMatrixCIndex_begin / matrixC_N;
+		int indexC_N = rawMatrixCIndex_begin % matrixC_N;
+		int beginMatrixAIndex_M = indexC_M * strideA_M + context->indexA_M_begin;
+		int beginMatrixAIndex_N = indexC_N * strideA_N + context->indexA_N_begin;
 		if (sequenceABorderType == BorderType::includeLastBlock) {
-			if (workerContext.beginMatrixAIndex_M[indexOfThread] >= context->indexA_M_end)
-				workerContext.beginMatrixAIndex_M[indexOfThread] = context->indexA_M_end - 1;
-			if (workerContext.beginMatrixAIndex_N[indexOfThread] >= context->indexA_N_end)
-				workerContext.beginMatrixAIndex_N[indexOfThread] = context->indexA_N_end - 1;
+			if (beginMatrixAIndex_M >= context->indexA_M_end)
+				beginMatrixAIndex_M = context->indexA_M_end - 1;
+			if (beginMatrixAIndex_N >= context->indexA_N_end)
+				beginMatrixAIndex_N = context->indexA_N_end - 1;
 		}
-	}
-	workerContext.numberOfIteration[numberOfThreads - 1] += (numberOfTasks - numberOfThreads * numberOfTasksPerWorker_minimum);
-}
 
-template <typename Type>
-void zeroInstanceOptionalInformation(BlockMatchContext<Type> *context)
-{
-	memset(&context->optionalBuffer, 0, sizeof(context->optionalBuffer));
+		workerContext.emplace_back(BlockMatchContext<Type>::WorkerContext{
+			numberOfTasksPerWorker_minimum, // numberOfIteration
+			rawMatrixCIndex_begin,
+			beginMatrixAIndex_M,
+			beginMatrixAIndex_N,
+			std::make_unique<ExecutionContext<Type>>()
+		});
+	}
+	workerContext[numberOfThreads - 1].numberOfIteration += (numberOfTasks - numberOfThreads * numberOfTasksPerWorker_minimum);
 }
 
 bool allocateInternalBuffer(void **buffer, size_t size)
@@ -431,9 +409,8 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 	}
 }
 
-
 template <typename Type>
-bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
+void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -460,7 +437,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	const int numberOfBlockBPerBlockA_N = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_N,
 		matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
-	int indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end;
+	int indexA_M_begin = 0, indexA_M_end = 0, indexA_N_begin = 0, indexA_N_end = 0;
 
 	const int matrixA_padded_M = matrixA_M + matrixAPadding_M_pre + matrixAPadding_M_post;
 	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
@@ -499,7 +476,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		}
 		else
 		{
-			return false;
+			NOT_IMPLEMENTED_ERROR;
 		}
 	}
 	else
@@ -511,7 +488,7 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	}
 
 	if (indexA_M_end <= indexA_M_begin || indexA_N_end <= indexA_N_begin)
-		return false;
+		throw std::exception("Parameter 'blockSize' is too large.");
 
 	int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
 	int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
@@ -526,12 +503,9 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
-	BlockMatchContext<Type> * instance = new BlockMatchContext<Type>;
-
-	instance->indexA_M_begin = indexA_M_begin;
-	instance->indexA_M_end = indexA_M_end;
-	instance->indexA_N_begin = indexA_N_begin;
-	instance->indexA_N_end = indexA_N_end;
+	PadFunction<Type> *padFunctionA;
+	PadFunction<Type> *padFunctionB;
+	ExecutionFunction<Type> *executionFunction;
 
 	if (sort) {
 		if (searchType == SearchType::local)
@@ -540,63 +514,63 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local_topLeft,
+							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 						else
-							instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+							executionFunction = processWorker<Type, determineBlockB_index_local,
 							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 		}
 		else if (searchType == SearchType::global)
@@ -604,37 +578,37 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 			if (measureMethod == LibMatchMeasureMethod::mse) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			}
 			else if (measureMethod == LibMatchMeasureMethod::cc) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 					else
-						instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+						executionFunction = processWorker<Type, determineBlockB_index_full,
 						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 			}
 			else
-				abort();
+				NOT_IMPLEMENTED_ERROR;
 		}
 	}
 	else
@@ -643,55 +617,55 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		{
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
-					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+					executionFunction = processWorker<Type, determineBlockB_index_local,
 					block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
-					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+					executionFunction = processWorker<Type, determineBlockB_index_local,
 					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
-					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+					executionFunction = processWorker<Type, determineBlockB_index_local,
 					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
-					instance->executionMethod = processWorker<Type, determineBlockB_index_local,
+					executionFunction = processWorker<Type, determineBlockB_index_local,
 					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
 			else
-				abort();
+				NOT_IMPLEMENTED_ERROR;
 		}
 		else if (searchType == SearchType::global)
 		{
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
-					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					executionFunction = processWorker<Type, determineBlockB_index_full,
 					block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
-					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					executionFunction = processWorker<Type, determineBlockB_index_full,
 					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
-					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					executionFunction = processWorker<Type, determineBlockB_index_full,
 					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
-					instance->executionMethod = processWorker<Type, determineBlockB_index_full,
+					executionFunction = processWorker<Type, determineBlockB_index_full,
 					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
 			else
-				abort();
+				NOT_IMPLEMENTED_ERROR;
 		}
 	}
 
 	switch (padMethodA)
 	{
 	case PadMethod::zero:
-		instance->padMethodA = zeroPadding<Type>;
+		padFunctionA = zeroPadding<Type>;
 		break;
 	case PadMethod::circular:
-		instance->padMethodA = circularPadding<Type>;
+		padFunctionA = circularPadding<Type>;
 		break;
 	case PadMethod::replicate:
-		instance->padMethodA = replicatePadding<Type>;
+		padFunctionA = replicatePadding<Type>;
 		break;
 	case PadMethod::symmetric:
-		instance->padMethodA = symmetricPadding<Type>;
+		padFunctionA = symmetricPadding<Type>;
 		break;
 	default: break;
 	}
@@ -699,35 +673,20 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	switch (padMethodB)
 	{
 	case PadMethod::zero:
-		instance->padMethodB = zeroPadding<Type>;
+		padFunctionB = zeroPadding<Type>;
 		break;
 	case PadMethod::circular:
-		instance->padMethodB = circularPadding<Type>;
+		padFunctionB = circularPadding<Type>;
 		break;
 	case PadMethod::replicate:
-		instance->padMethodB = replicatePadding<Type>;
+		padFunctionB = replicatePadding<Type>;
 		break;
 	case PadMethod::symmetric:
-		instance->padMethodB = symmetricPadding<Type>;
+		padFunctionB = symmetricPadding<Type>;
 		break;
 	default: break;
 	}
-
-	initializeBasicInstanceInformation(instance,
-		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
-		searchRegion_M, searchRegion_N,
-		block_M, block_N,
-		strideA_M, strideA_N,
-		strideB_M, strideB_N,
-		matrixAPadding_M_pre, matrixAPadding_M_post,
-		matrixAPadding_N_pre, matrixAPadding_N_post,
-		matrixBPadding_M_pre, matrixBPadding_M_post,
-		matrixBPadding_N_pre, matrixBPadding_N_post,
-		numberOfIndexRetain,
-		matrixA_padded_M, matrixA_padded_N,
-		matrixB_padded_M, matrixB_padded_N
-	);
-
+	
 	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
@@ -737,36 +696,61 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
 		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
-
-	instance->C_dimensions[0] = matrixC_M;
-	instance->C_dimensions[1] = matrixC_N;
-	instance->C_dimensions[2] = matrixC_X;
-
-	instance->numberOfSubmitThreadsPerProcessor = numberOfSubmitThreadsPerProcessor;
-	instance->numberOfSubmitProcessors = numberOfSubmitProcessors;
-	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
-
-	instance->numberOfBlockBPerBlockA_M = numberOfBlockBPerBlockA_M;
-	instance->numberOfBlockBPerBlockA_N = numberOfBlockBPerBlockA_N;
-	instance->numberOfBlockBPerBlockA = numberOfBlockBPerBlockA;
-	instance->numberOfThreads = numberOfThreads;
-
+	
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
-	{
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
-		goto Failed;
-	}
 
-	if (!initializeMemoryResources(instance)) {
-		setLastErrorString("Error: memory allocation failed");
-		goto Failed;
-	}
+	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
+	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
 
-	zeroInstanceOptionalInformation(instance);
+	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
+		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
+	matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
+	block_M, block_N,
+	searchRegion_M, searchRegion_N,
+	strideA_M, strideA_N, strideB_M, strideB_N,
+	matrixAPadding_M_pre, matrixAPadding_M_post,matrixAPadding_N_pre, matrixAPadding_N_post,
+	matrixBPadding_M_pre, matrixBPadding_M_post, matrixBPadding_N_pre, matrixBPadding_N_post,
+	indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end,
+	numberOfIndexRetain,
+	numberOfThreads,
+	padFunctionA, padFunctionB , executionFunction,
+		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
+		{matrixC_M, matrixC_N, matrixC_X},
+		std::vector<cudaStreamWarper>(numberOfThreads), // streams
+		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue,
+		std::vector<void *>(), // threadPoolTaskHandle
+		system_memory_allocator<int>(numberOfBlockBPerBlockA), // common_buffer
+		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
+		std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
+		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer
+		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
+	};
+
+	instance->workerContext.reserve(numberOfThreads);
+	instance->threadPoolTaskHandle.reserve(numberOfThreads);
+	instance->streams.resize(numberOfThreads);
+	instance->perThreadBuffer.reserve(numberOfThreads);
+
+	for (int i = 0; i < numberOfThreads; ++i)
+	{
+		instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
+			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_buffer
+			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_buffer
+			page_locked_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_buffer
+			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
+			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_deviceBuffer
+			gpu_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
+			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+			system_memory_allocator<int>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
+		});
+	}
 
 	initializeInstanceWorkerContext(instance, sequenceABorderType);
 
-	generateIndexSequence(instance->buffer.common_buffer, numberOfBlockBPerBlockA);
+	instance->common_buffer.alloc();
+	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
 
 	*LIB_MATCH_OUT(instance) = instance;
 
@@ -786,17 +770,11 @@ bool blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 		*LIB_MATCH_OUT(matrixB_padded_M) = matrixB_padded_M;
 		*LIB_MATCH_OUT(matrixB_padded_N) = matrixB_padded_N;
 	}
-
-	return true;
-
-Failed:
-	free(instance);
-	return false;
 }
 
 LIB_MATCH_EXPORT
 template
-bool blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
+void blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -819,7 +797,7 @@ bool blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-bool blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
+void blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -839,7 +817,7 @@ bool blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
 	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
 	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
-
+/*
 template
 BlockMatchContext<float> * allocateContext(const int numberOfThreads);
 template
@@ -852,3 +830,4 @@ template
 void initializeWorkerInternalBuffer(BlockMatchContext<float> *context, void *buffer, enum class InternalBufferType bufferType);
 template
 void initializeWorkerInternalBuffer(BlockMatchContext<double> *context, void *buffer, enum class InternalBufferType bufferType);
+*/
