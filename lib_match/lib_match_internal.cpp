@@ -7,6 +7,8 @@
 
 const int numberOfGPUProcessorThread = 512;
 
+#define MAX_NUMBER_OF_PROCESSOR 4
+
 // Hyper-Threading do harms to arithmetic computation
 unsigned getNumberOfPhysicalProcessor()
 {

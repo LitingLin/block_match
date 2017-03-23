@@ -92,3 +92,16 @@ void memory_allocation_counter::trigger_error(size_t size, memory_allocation_typ
 		current_gpu_memory_size, max_gpu_memory_size
 	));
 }
+
+void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size, size_t* max_page_locked_memory_size, size_t* max_gpu_memory_size)
+{
+	*max_memory_size = this->max_memory_size;
+	*max_page_locked_memory_size = this->max_page_locked_memory_size;
+	*max_gpu_memory_size = this->max_gpu_memory_size;
+}
+
+void diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size, size_t* max_gpu_memory_size)
+{
+	g_memory_allocator.get_max_memory_required(max_memory_size,
+		max_page_locked_memory_size, max_gpu_memory_size);
+}

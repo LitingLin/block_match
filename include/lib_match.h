@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <bitset>
+#include <array>
 
 #define LIB_MATCH_EXPORT 
 
@@ -127,80 +130,102 @@ void symmetricPadding(const T *old_ptr, T *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
-enum class memory_allocation_type
-{
-	memory,
-	page_locked,
-	gpu
-};
-
-class memory_allocation_counter
+class diagnose
 {
 public:
-	memory_allocation_counter();
-	void register_allocator(size_t size, memory_allocation_type type);
-	void allocated(size_t size, memory_allocation_type type);
-	void released(size_t size, memory_allocation_type type);
-	void trigger_error(size_t size, memory_allocation_type type) const;
-private:
-	size_t max_memory_size;
-	size_t max_page_locked_memory_size;
-	size_t max_gpu_memory_size;
-	size_t current_memory_size;
-	size_t current_page_locked_memory_size;
-	size_t current_gpu_memory_size;
-} extern g_memory_allocator;
-
-template <typename Type>
-class system_memory_allocator
-{
-public:
-	system_memory_allocator(size_t elem_size, bool is_temp = false);
-	~system_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
+	
+	static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
 };
 
-template <typename Type>
-system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
+class InstructionSet
 {
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, memory_allocation_type::memory);
-}
+	// forward declarations  
+	class InstructionSet_Internal;
 
-template <typename Type>
-system_memory_allocator<Type>::~system_memory_allocator()
-{
-	if (ptr)
-		release();
-}
+public:
+	// getters  
+	static std::string Vendor(void);
+	static std::string Brand(void);
 
-template <typename Type>
-Type* system_memory_allocator<Type>::alloc()
-{
-	ptr = malloc(size);
-	if (ptr)
-		g_memory_allocator.allocated(size, memory_allocation_type::memory);
-	else
-		g_memory_allocator.trigger_error(size, memory_allocation_type::memory);
-	return static_cast<Type*>(ptr);
-}
+	static bool SSE3(void);
+	static bool PCLMULQDQ(void);
+	static bool MONITOR(void);
+	static bool SSSE3(void);
+	static bool FMA(void);
+	static bool CMPXCHG16B(void);
+	static bool SSE41(void);
+	static bool SSE42(void);
+	static bool MOVBE(void);
+	static bool POPCNT(void);
+	static bool AES(void);
+	static bool XSAVE(void);
+	static bool OSXSAVE(void);
+	static bool AVX(void);
+	static bool F16C(void);
+	static bool RDRAND(void);
 
-template <typename Type>
-void system_memory_allocator<Type>::release()
-{
-	free(ptr);
-	g_memory_allocator.released(size, memory_allocation_type::memory);
-	ptr = nullptr;
-}
+	static bool MSR(void);
+	static bool CX8(void);
+	static bool SEP(void);
+	static bool CMOV(void);
+	static bool CLFSH(void);
+	static bool MMX(void);
+	static bool FXSR(void);
+	static bool SSE(void);
+	static bool SSE2(void);
 
-template <typename Type>
-Type* system_memory_allocator<Type>::get()
-{
-	return static_cast<Type*>(ptr);
-}
+	static bool FSGSBASE(void);
+	static bool BMI1(void);
+	static bool HLE(void);
+	static bool AVX2(void);
+	static bool BMI2(void);
+	static bool ERMS(void);
+	static bool INVPCID(void);
+	static bool RTM(void);
+	static bool AVX512F(void);
+	static bool RDSEED(void);
+	static bool ADX(void);
+	static bool AVX512PF(void);
+	static bool AVX512ER(void);
+	static bool AVX512CD(void);
+	static bool SHA(void);
+
+	static bool PREFETCHWT1(void);
+
+	static bool LAHF(void);
+	static bool LZCNT(void);
+	static bool ABM(void);
+	static bool SSE4a(void);
+	static bool XOP(void);
+	static bool TBM(void);
+
+	static bool SYSCALL(void);
+	static bool MMXEXT(void);
+	static bool RDTSCP(void);
+	static bool _3DNOWEXT(void);
+	static bool _3DNOW(void);
+
+private:
+	static const InstructionSet_Internal CPU_Rep;
+
+	class InstructionSet_Internal
+	{
+	public:
+		InstructionSet_Internal();
+
+		int nIds_;
+		int nExIds_;
+		std::string vendor_;
+		std::string brand_;
+		bool isIntel_;
+		bool isAMD_;
+		std::bitset<32> f_1_ECX_;
+		std::bitset<32> f_1_EDX_;
+		std::bitset<32> f_7_EBX_;
+		std::bitset<32> f_7_ECX_;
+		std::bitset<32> f_81_ECX_;
+		std::bitset<32> f_81_EDX_;
+		std::vector<std::array<int, 4>> data_;
+		std::vector<std::array<int, 4>> extdata_;
+	};
+};

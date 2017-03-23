@@ -503,9 +503,9 @@ void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
-	PadFunction<Type> *padFunctionA;
-	PadFunction<Type> *padFunctionB;
-	ExecutionFunction<Type> *executionFunction;
+	PadFunction<Type> *padFunctionA = nullptr;
+	PadFunction<Type> *padFunctionB = nullptr;
+	ExecutionFunction<Type> *executionFunction = nullptr;
 
 	if (sort) {
 		if (searchType == SearchType::local)

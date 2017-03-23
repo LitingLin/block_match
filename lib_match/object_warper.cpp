@@ -1,5 +1,9 @@
 #include "lib_match_internal.h"
 
+/* 
+ * RAII warpers
+ */
+
 cudaStreamWarper::cudaStreamWarper()
 {
 	CUDA_CHECK_POINT(cudaStreamCreate(&stream));

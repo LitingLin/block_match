@@ -19,8 +19,8 @@ protected:
 
 void custom_sink::flush()
 {
-
 }
+
 void custom_sink::_sink_it(const spdlog::details::log_msg& msg)
 {
 	if (sinkFunction != nullptr)
@@ -61,7 +61,10 @@ fatal_error_logging::~fatal_error_logging() noexcept(false)
 	str_stream << std::endl
 		<< "*** Check failure stack trace: ***" << std::endl
 		<< getStackTrace();
-	throw std::runtime_error(str_stream.str());
+	if (std::uncaught_exception())
+		logger.error("Fatal error occured during exception handling. Message: {}", str_stream.str());
+	else
+		throw std::runtime_error(str_stream.str());
 }
 
 std::ostringstream& fatal_error_logging::stream()

@@ -18,7 +18,7 @@ extern spdlog::logger logger;
 #define FORCE_INLINE __inline__ __attribute__((always_inline))
 #endif
 
-#include "thread_pool.h"
+#include "execution_service.h"
 
 #define LIB_MATCH_OUT(PARAMETER) out_##PARAMETER
 
@@ -35,6 +35,87 @@ struct GlobalContext
 };
 
 extern GlobalContext globalContext;
+
+enum class memory_allocation_type
+{
+	memory,
+	page_locked,
+	gpu
+};
+
+class memory_allocation_counter
+{
+public:
+	memory_allocation_counter();
+	void register_allocator(size_t size, memory_allocation_type type);
+	void allocated(size_t size, memory_allocation_type type);
+	void released(size_t size, memory_allocation_type type);
+	void trigger_error(size_t size, memory_allocation_type type) const;
+	void get_max_memory_required(size_t *max_memory_size,
+		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
+private:
+	size_t max_memory_size;
+	size_t max_page_locked_memory_size;
+	size_t max_gpu_memory_size;
+	size_t current_memory_size;
+	size_t current_page_locked_memory_size;
+	size_t current_gpu_memory_size;
+} extern g_memory_allocator;
+
+
+template <typename Type>
+class system_memory_allocator
+{
+public:
+	system_memory_allocator(size_t elem_size, bool is_temp = false);
+	~system_memory_allocator();
+	Type *alloc();
+	void release();
+	Type *get();
+private:
+	void *ptr;
+	size_t size;
+};
+
+template <typename Type>
+system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
+	: ptr(nullptr), size(elem_size * sizeof(Type))
+{
+	if (!is_temp)
+		g_memory_allocator.register_allocator(size, memory_allocation_type::memory);
+}
+
+template <typename Type>
+system_memory_allocator<Type>::~system_memory_allocator()
+{
+	if (ptr)
+		release();
+}
+
+template <typename Type>
+Type* system_memory_allocator<Type>::alloc()
+{
+	ptr = malloc(size);
+	if (ptr)
+		g_memory_allocator.allocated(size, memory_allocation_type::memory);
+	else
+		g_memory_allocator.trigger_error(size, memory_allocation_type::memory);
+	return static_cast<Type*>(ptr);
+}
+
+template <typename Type>
+void system_memory_allocator<Type>::release()
+{
+	free(ptr);
+	g_memory_allocator.released(size, memory_allocation_type::memory);
+	ptr = nullptr;
+}
+
+template <typename Type>
+Type* system_memory_allocator<Type>::get()
+{
+	return static_cast<Type*>(ptr);
+}
 
 template <typename Type>
 class page_locked_memory_allocator
