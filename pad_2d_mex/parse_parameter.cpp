@@ -5,13 +5,13 @@
 LibMatchMexError parsePadM(struct PaddingMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementIntegerParameter(pa, &context->pad_M_pre, &context->pad_M_post);
+	return parse2ElementIntegerParameter(pa, &context->pad_N_pre, &context->pad_N_post);
 }
 
 LibMatchMexError parsePadN(struct PaddingMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementIntegerParameter(pa, &context->pad_N_pre, &context->pad_N_post);
+	return parse2ElementIntegerParameter(pa, &context->pad_M_pre, &context->pad_M_post);
 }
 
 LibMatchMexError parseMethod(struct PaddingMexContext *context,
@@ -40,7 +40,7 @@ LibMatchMexError parseMethod(struct PaddingMexContext *context,
 LibMatchMexError parseMatrix(struct PaddingMexContext *context,
 	const mxArray *pa)
 {
-	return parse2DMatrixParameter(pa, reinterpret_cast<void**>(&context->originImage), &context->image_M, &context->image_N);
+	return parse2DMatrixParameter(pa, reinterpret_cast<void**>(&context->originImage), &context->image_N, &context->image_M);
 }
 
 LibMatchMexError parseOutputArgument(struct PaddingMexContext *context, 
@@ -115,10 +115,7 @@ struct LibMatchMexErrorWithMessage parseParameter(struct PaddingMexContext *cont
 		{
 			if (context->pad_M_pre > context->image_M || context->pad_M_post > context->image_M)
 				return generateErrorMessage(LibMatchMexError::errorInvalidValue, "Value of PadM cannot exceed the size of matrix");
-		}
 
-		if (error == LibMatchMexError::success)
-		{
 			if (context->pad_N_pre > context->image_N || context->pad_N_post > context->image_N)
 				return generateErrorMessage(LibMatchMexError::errorInvalidValue, "Value of PadN cannot exceed the size of matrix");
 		}

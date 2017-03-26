@@ -11,11 +11,15 @@
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Zc:throwingNew %(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4100;4189</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <AdditionalCompilerOptions>/wd"4819" /wd"4100" /wd"4189" /arch:AVX2</AdditionalCompilerOptions>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;compute_61,sm_61</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -12,10 +12,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		return;
 	}
 
-	int newM = context.image_M + context.pad_M_pre + context.pad_M_post, 
+	int newM = context.image_M + context.pad_M_pre + context.pad_M_post,
 		newN = context.image_N + context.pad_N_pre + context.pad_N_post;
 
-	plhs[0] = mxCreateDoubleMatrix(newM, newN, mxREAL);
+	plhs[0] = mxCreateDoubleMatrix(newN, newM, mxREAL);
 	double *newImageMatrixPointer = mxGetPr(plhs[0]);
 	switch (context.method)
 	{

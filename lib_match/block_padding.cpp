@@ -41,181 +41,181 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 	*N_right = _N_right;
 }
 
-template <typename T>
-void zeroPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
-{
-	size_t new_width = old_width + pad_left + pad_right;
-	size_t size;
-	size = new_width * pad_up;
-	memset(new_ptr, 0, size * sizeof(T));
-	new_ptr += size;
-	for (size_t i_row = 0; i_row != old_height; i_row++)
-	{
-		memset(new_ptr, 0, pad_left * sizeof(T));
-		new_ptr += pad_left;
-		memcpy(new_ptr, old_ptr, old_width * sizeof(T));
-		new_ptr += old_width;
-		old_ptr += old_width;
-		memset(new_ptr, 0, pad_right * sizeof(T));
-		new_ptr += pad_right;
-	}
-	size = new_width * pad_buttom;
-	memset(new_ptr, 0, size * sizeof(T));
-}
-
 
 /*******************
-*      x           *
+*      n           *
 *    ----------    *
-*  y |             *
+*  m | data -->    *
 *    |             *
 *    |             *
 *                  *
 *******************/
 
 template <typename T>
-void circularPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
+void zeroPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
 {
-	size_t new_width = old_width + pad_left + pad_right;
-	size_t new_height = old_height + pad_up + pad_buttom;
-	for (size_t i_y = 0; i_y != new_height; i_y++)
+	size_t new_n = n + n_pre + n_post;
+	size_t size;
+	size = new_n * m_pre;
+	memset(dst_ptr, 0, size * sizeof(T));
+	dst_ptr += size;
+	for (size_t i_row = 0; i_row != m; i_row++)
 	{
-		size_t old_i_y = abs_subtract(i_y, pad_up) % old_height;
-		for (size_t i_x = 0; i_x != new_width; i_x++)
+		memset(dst_ptr, 0, n_pre * sizeof(T));
+		dst_ptr += n_pre;
+		memcpy(dst_ptr, src_ptr, n * sizeof(T));
+		dst_ptr += n;
+		src_ptr += n;
+		memset(dst_ptr, 0, n_post * sizeof(T));
+		dst_ptr += n_post;
+	}
+	size = new_n * m_post;
+	memset(dst_ptr, 0, size * sizeof(T));
+}
+
+template <typename T>
+void circularPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
+{
+	size_t new_n = n + n_pre + n_post;
+	size_t new_m = m + m_pre + m_post;
+	for (size_t i_y = 0; i_y != new_m; i_y++)
+	{
+		size_t old_i_y = abs_subtract(i_y, m_pre) % m;
+		for (size_t i_x = 0; i_x != new_n; i_x++)
 		{
-			size_t old_i_x = abs_subtract(i_x, pad_left) % old_width;
-			*new_ptr = old_ptr[old_i_y * old_width + old_i_x];
-			++new_ptr;
+			size_t old_i_x = abs_subtract(i_x, n_pre) % n;
+			*dst_ptr = src_ptr[old_i_y * n + old_i_x];
+			++dst_ptr;
 		}
 	}
 }
 
 template <typename T>
-void replicatePadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
+void replicatePadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
 {
-	size_t new_width = old_width + pad_left + pad_right;
-	size_t new_height = old_height + pad_up + pad_buttom;
-	for (size_t i_y = 0; i_y != new_height; i_y++)
+	size_t new_n = n + n_pre + n_post;
+	size_t new_m = m + m_pre + m_post;
+	for (size_t i_y = 0; i_y != new_m; i_y++)
 	{
 		size_t old_i_y;
-		if (i_y <= pad_up) old_i_y = 0;
-		else if (i_y >= pad_up + old_height) old_i_y = old_height - 1;
-		else old_i_y = i_y - pad_up;
+		if (i_y <= m_pre) old_i_y = 0;
+		else if (i_y >= m_pre + m) old_i_y = m - 1;
+		else old_i_y = i_y - m_pre;
 
-		for (size_t i_x = 0; i_x != new_width; i_x++)
+		for (size_t i_x = 0; i_x != new_n; i_x++)
 		{
 			size_t old_i_x;
-			if (i_x <= pad_left) old_i_x = 0;
-			else if (i_x >= pad_left + old_width) old_i_x = old_width - 1;
-			else old_i_x = i_x - pad_left;
+			if (i_x <= n_pre) old_i_x = 0;
+			else if (i_x >= n_pre + n) old_i_x = n - 1;
+			else old_i_x = i_x - n_pre;
 
-			*new_ptr = old_ptr[old_i_y * old_width + old_i_x];
-			++new_ptr;
+			*dst_ptr = src_ptr[old_i_y * n + old_i_x];
+			++dst_ptr;
 		}
 	}
 }
 
-// Ensure pad_left <= old_width, pad_right <= old_width, pad_up <= old_height, pad_buttom <= old_height
+// Ensure n_pre <= n, n_post <= n, m_pre <= m, m_post <= m
 template <typename T>
-void symmetricPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom)
+void symmetricPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
 {
-	size_t new_width = old_width + pad_left + pad_right;
+	size_t new_n = n + n_pre + n_post;
 	T *t1_ptr;
 	T *t2_ptr;
 
 	const T *t3_ptr;
 
-	t3_ptr = old_ptr + old_width * (pad_up - 1);
-	new_ptr += pad_left;
+	t3_ptr = src_ptr + n * (m_pre - 1);
+	dst_ptr += n_pre;
 
-	for (size_t i = 0; i != pad_up; i++)
+	for (size_t i = 0; i != m_pre; i++)
 	{
-		t1_ptr = new_ptr;
+		t1_ptr = dst_ptr;
 
-		memcpy(t1_ptr, t3_ptr, old_width * sizeof(T));
+		memcpy(t1_ptr, t3_ptr, n * sizeof(T));
 
 		t2_ptr = t1_ptr - 1;
 
-		for (size_t j = 0; j != pad_left; j++)
+		for (size_t j = 0; j != n_pre; j++)
 			*t2_ptr-- = *t1_ptr++;
 
-		t2_ptr = new_ptr + old_width;
+		t2_ptr = dst_ptr + n;
 		t1_ptr = t2_ptr - 1;
 
-		for (size_t j = 0; j != pad_right; j++)
+		for (size_t j = 0; j != n_post; j++)
 			*t2_ptr++ = *t1_ptr--;
 
-		t3_ptr -= old_width;
-		new_ptr += new_width;
+		t3_ptr -= n;
+		dst_ptr += new_n;
 	}
 
-	t3_ptr = old_ptr;
-	for (size_t i = 0; i != old_height; i++)
+	t3_ptr = src_ptr;
+	for (size_t i = 0; i != m; i++)
 	{
-		t1_ptr = new_ptr;
-		memcpy(t1_ptr, t3_ptr, old_width * sizeof(T));
+		t1_ptr = dst_ptr;
+		memcpy(t1_ptr, t3_ptr, n * sizeof(T));
 		t2_ptr = t1_ptr - 1;
 
-		for (size_t j = 0; j != pad_left; j++)
+		for (size_t j = 0; j != n_pre; j++)
 			*t2_ptr-- = *t1_ptr++;
-		t2_ptr = new_ptr + old_width;
+		t2_ptr = dst_ptr + n;
 		t1_ptr = t2_ptr - 1;
-		for (size_t j = 0; j != pad_right; j++)
+		for (size_t j = 0; j != n_post; j++)
 			*t2_ptr++ = *t1_ptr--;
 
-		t3_ptr += old_width;
-		new_ptr += new_width;
+		t3_ptr += n;
+		dst_ptr += new_n;
 	}
 
-	t3_ptr = old_ptr + old_width * (old_height - 1);
+	t3_ptr = src_ptr + n * (m - 1);
 
-	for (size_t i = 0; i != pad_buttom; i++)
+	for (size_t i = 0; i != m_post; i++)
 	{
-		t1_ptr = new_ptr;
-		memcpy(t1_ptr, t3_ptr, old_width * sizeof(T));
+		t1_ptr = dst_ptr;
+		memcpy(t1_ptr, t3_ptr, n * sizeof(T));
 		t2_ptr = t1_ptr - 1;
 
-		for (size_t j = 0; j != pad_left; j++)
+		for (size_t j = 0; j != n_pre; j++)
 			*t2_ptr-- = *t1_ptr++;
-		t2_ptr = new_ptr + old_width;
+		t2_ptr = dst_ptr + n;
 		t1_ptr = t2_ptr - 1;
-		for (size_t j = 0; j != pad_right; j++)
+		for (size_t j = 0; j != n_post; j++)
 			*t2_ptr++ = *t1_ptr--;
 
-		t3_ptr -= old_width;
-		new_ptr += new_width;
+		t3_ptr -= n;
+		dst_ptr += new_n;
 	}
-
 }
+
 LIB_MATCH_EXPORT
 template
-void zeroPadding(const float *old_ptr, float *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void zeroPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void zeroPadding(const double *old_ptr, double *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void zeroPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void circularPadding(const float *old_ptr, float *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void circularPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void circularPadding(const double *old_ptr, double *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void circularPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void replicatePadding(const float *old_ptr, float *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void replicatePadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void replicatePadding(const double *old_ptr, double *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void replicatePadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void symmetricPadding(const float *old_ptr, float *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void symmetricPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
 LIB_MATCH_EXPORT
 template
-void symmetricPadding(const double *old_ptr, double *new_ptr, size_t old_width, size_t old_height, size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void symmetricPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);

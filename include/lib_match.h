@@ -114,21 +114,21 @@ typedef bool LibMatchInterruptPendingFunction();
 void libMatchRegisterInterruptPeddingFunction(LibMatchInterruptPendingFunction);
 
 template <typename T>
-void zeroPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void zeroPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void circularPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void circularPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void replicatePadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void replicatePadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void symmetricPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void symmetricPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 
 class diagnose
 {
@@ -228,4 +228,31 @@ private:
 		std::vector<std::array<int, 4>> data_;
 		std::vector<std::array<int, 4>> extdata_;
 	};
+};
+
+class memory_alloc_exception : public std::runtime_error
+{
+public:
+	memory_alloc_exception(const std::string& _Message,
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
+
+	memory_alloc_exception(const char* _Message, 
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
+
+	size_t get_max_memory_size() const;
+	size_t get_max_page_locked_memory_size() const;
+	size_t get_max_gpu_memory_size() const;
+	size_t get_current_memory_size() const;
+	size_t get_current_page_locked_memory_size() const;
+	size_t get_current_gpu_memory_size() const;
+
+private:
+	size_t max_memory_size;
+	size_t max_page_locked_memory_size;
+	size_t max_gpu_memory_size;
+	size_t current_memory_size;
+	size_t current_page_locked_memory_size;
+	size_t current_gpu_memory_size;
 };
