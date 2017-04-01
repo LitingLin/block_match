@@ -2,6 +2,7 @@
 
 #include <intrin.h>
 
+
 std::string InstructionSet::Vendor()
 {
 	return CPU_Rep.vendor_;
@@ -359,7 +360,6 @@ extdata_{}
 		brand_ = brand;
 	}
 }
-
 
 // Initialize static member data  
 const InstructionSet::InstructionSet_Internal InstructionSet::CPU_Rep;

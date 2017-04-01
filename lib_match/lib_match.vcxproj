@@ -103,21 +103,22 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClInclude Include="execution_service.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="block_match.cpp" />
     <ClCompile Include="instruction_set.cpp" />
     <ClCompile Include="interrupt_handler.cpp" />
     <ClCompile Include="lib_match.cpp" />
     <ClCompile Include="block_match_cc_cpu.cpp" />
     <ClInclude Include="block_match_execute.hpp" />
-    <ClCompile Include="block_match_finalize.cpp" />
+    <ClCompile Include="block_match_destroy.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="lib_match_internal.cpp" />
     <ClCompile Include="block_match_mse_cpu.cpp" />
-    <ClCompile Include="block_match_execution_launcher.cpp" />
+    <ClCompile Include="block_match_execute.cpp" />
     <ClCompile Include="block_match_sort.cpp" />
     <ClCompile Include="block_copying.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="block_padding.cpp" />
-    <ClCompile Include="memory_allocation_counter.cpp" />
+    <ClCompile Include="memory_allocation.cpp" />
     <ClCompile Include="object_warper.cpp" />
     <ClCompile Include="execution_service.cpp" />
     <ClCompile Include="stack_trace.cpp" />

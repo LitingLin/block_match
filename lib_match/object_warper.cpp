@@ -14,7 +14,7 @@ cudaStreamWarper::~cudaStreamWarper()
 	CUDA_CHECK_POINT(cudaStreamDestroy(stream));
 }
 
-cudaStreamWarper::operator cudaStream_t()
+cudaStreamWarper::operator cudaStream_t() const
 {
 	return stream;
 }

@@ -123,7 +123,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 }
 
 template <typename Type>
-void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
+void BlockMatch<Type>::initialize(
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -465,7 +465,7 @@ void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	instance->common_buffer.alloc();
 	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
 
-	*LIB_MATCH_OUT(instance) = instance;
+	this->m_instance = instance;
 
 	if (LIB_MATCH_OUT(matrixC_M) != nullptr)
 	{
@@ -487,8 +487,7 @@ void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-void blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
-	SearchType searchType,
+void BlockMatch<float>::initialize(SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
@@ -510,7 +509,7 @@ void blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-void blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
+void BlockMatch<double>::initialize(
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,

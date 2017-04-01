@@ -1,4 +1,4 @@
-#include "lib_match.h"
+#include "lib_match_internal.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -79,4 +79,9 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 	const int numberOfGpuProcessorThread)
 {
 	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread;
+}
+
+double diagnose::getFinishedPercentage(void* instance)
+{
+	
 }

@@ -1,12 +1,12 @@
 #include "block_match_execute.hpp"
 
 template <typename Type>
-void blockMatchExecute(void *_instance, Type *A, Type *B,
+void BlockMatch<Type>::execute(Type *A, Type *B,
 	Type *C,
 	Type *padded_A, Type *padded_B,
 	int *index_x, int *index_y)
 {
-	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(_instance);
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
 
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
@@ -115,14 +115,14 @@ void blockMatchExecute(void *_instance, Type *A, Type *B,
 
 LIB_MATCH_EXPORT
 template
-void blockMatchExecute(void *_instance, float *A, float *B,
+void BlockMatch<float>::execute(float *A, float *B,
 	float *C,
 	float *padded_A, float *padded_B,
 	int *index_x, int *index_y);
 
 LIB_MATCH_EXPORT
 template
-void blockMatchExecute(void *_instance, double *A, double *B,
+void BlockMatch<double>::execute(double *A, double *B,
 	double *C,
 	double *padded_A, double *padded_B,
 	int *index_x, int *index_y);
