@@ -65,37 +65,52 @@ size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray);
 LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
 */
-// SearchRegion size 0 for full search
-template <typename Type>
-void blockMatchInitialize(void **instance,
-	SearchType searchType,
-	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethodA, PadMethod padMethodB,
-	BorderType sequenceABorderType,
-	SearchFrom searchFrom,
-	bool sort,
-	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
-	int searchRegion_M, int searchRegion_N,
-	int block_M, int block_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int matrixAPadding_M_pre, int matrixAPadding_M_post,
-	int matrixAPadding_N_pre, int matrixAPadding_N_post,
-	int matrixBPadding_M_pre, int matrixBPadding_M_post,
-	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfIndexRetain,
-	int *matrixC_M, int *matrixC_N, int *matrixC_X,
-	int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
-	int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
 
+LIB_MATCH_EXPORT
 template <typename Type>
-void blockMatchExecute(void *instance, Type *A, Type *B,
-	Type *C,
-	Type *padded_A = nullptr, Type *padded_B = nullptr,
-	int *index_x = nullptr, int *index_y = nullptr);
+class BlockMatch
+{
+public:
+	BlockMatch();
+	~BlockMatch();
+	// SearchRegion size 0 for full search
+	void initialize(SearchType searchType,
+		LibMatchMeasureMethod measureMethod,
+		PadMethod padMethodA, PadMethod padMethodB,
+		BorderType sequenceABorderType,
+		SearchFrom searchFrom,
+		bool sort,
+		int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+		int searchRegion_M, int searchRegion_N,
+		int block_M, int block_N,
+		int strideA_M, int strideA_N,
+		int strideB_M, int strideB_N,
+		int matrixAPadding_M_pre, int matrixAPadding_M_post,
+		int matrixAPadding_N_pre, int matrixAPadding_N_post,
+		int matrixBPadding_M_pre, int matrixBPadding_M_post,
+		int matrixBPadding_N_pre, int matrixBPadding_N_post,
+		int numberOfIndexRetain,
+		int *matrixC_M, int *matrixC_N, int *matrixC_X,
+		int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
+		int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
+	void execute(Type *A, Type *B,
+		Type *C,
+		Type *padded_A = nullptr, Type *padded_B = nullptr,
+		int *index_x = nullptr, int *index_y = nullptr);
+	void destroy();
 
-template <typename Type>
-void blockMatchFinalize(void *instance);
+	class Diagnose
+	{
+	public:
+		Diagnose(void *instance);
+		static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
+		double getFinishedPercentage();
+	private:
+		void *m_instance;
+	} dianose;
+private:
+	void *m_instance;
+};
 
 LIB_MATCH_EXPORT
 bool libMatchReset();
@@ -111,32 +126,27 @@ LIB_MATCH_EXPORT
 void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction);
 
 typedef bool LibMatchInterruptPendingFunction();
+LIB_MATCH_EXPORT
 void libMatchRegisterInterruptPeddingFunction(LibMatchInterruptPendingFunction);
 
 template <typename T>
-void zeroPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void zeroPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void circularPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void circularPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void replicatePadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void replicatePadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 template <typename T>
-void symmetricPadding(const T *old_ptr, T *new_ptr,
-	size_t old_width, size_t old_height,
-	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
+void symmetricPadding(const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 
-class diagnose
-{
-public:
-	
-	static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
-};
-
+LIB_MATCH_EXPORT
 class InstructionSet
 {
 	// forward declarations  
@@ -228,4 +238,55 @@ private:
 		std::vector<std::array<int, 4>> data_;
 		std::vector<std::array<int, 4>> extdata_;
 	};
+};
+
+enum class malloc_type_enum
+{
+	memory,
+	page_locked,
+	gpu
+};
+
+LIB_MATCH_EXPORT
+class malloc_type
+{
+public:
+	malloc_type(malloc_type_enum);
+	explicit operator malloc_type_enum() const;
+	operator std::string() const;
+private:
+	malloc_type_enum type;
+};
+
+LIB_MATCH_EXPORT
+class memory_alloc_exception : public std::runtime_error
+{
+public:
+	memory_alloc_exception(const std::string& _Message,
+		malloc_type type,
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
+
+	memory_alloc_exception(const char* _Message,
+		malloc_type type,
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
+
+	malloc_type get_memory_allocation_type() const;
+
+	size_t get_max_memory_size() const;
+	size_t get_max_page_locked_memory_size() const;
+	size_t get_max_gpu_memory_size() const;
+	size_t get_current_memory_size() const;
+	size_t get_current_page_locked_memory_size() const;
+	size_t get_current_gpu_memory_size() const;
+
+private:
+	malloc_type type;
+	size_t max_memory_size;
+	size_t max_page_locked_memory_size;
+	size_t max_gpu_memory_size;
+	size_t current_memory_size;
+	size_t current_page_locked_memory_size;
+	size_t current_gpu_memory_size;
 };

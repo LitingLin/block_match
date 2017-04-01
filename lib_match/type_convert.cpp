@@ -7,7 +7,7 @@ void convert(T1 *src, T2 *dst, size_t size)
 {
 	for (size_t i=0;i<size;++i)
 	{
-		dst[i] = src[i];
+		dst[i] = (T2)src[i];
 	}
 }
 

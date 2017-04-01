@@ -1,12 +1,12 @@
 #include "block_match_execute.hpp"
 
 template <typename Type>
-void blockMatchExecute(void *_instance, Type *A, Type *B,
+void BlockMatch<Type>::execute(Type *A, Type *B,
 	Type *C,
 	Type *padded_A, Type *padded_B,
 	int *index_x, int *index_y)
 {
-	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(_instance);
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
 
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
@@ -21,71 +21,14 @@ void blockMatchExecute(void *_instance, Type *A, Type *B,
 		B_N_padPre = instance->matrixBPadding_N_pre,
 		B_N_padPost = instance->matrixBPadding_N_post,
 		numberOfThreads = instance->numberOfThreads;
-	/*
-	if (padded_A == nullptr)
-	{
-		if (instance->optionalBuffer.matrixA_padded_internal == nullptr)
-			if (!allocateInternalBuffer(instance, InternalBufferType::MatrixA_Padded_Buffer))
-			{
-				setLastErrorString("Error: allocation failed");
 
-				return false;
-			}
-
-		padded_A = instance->optionalBuffer.matrixA_padded_internal;
-	}
-	if (padded_B == nullptr)
-	{
-		if (instance->optionalBuffer.matrixB_padded_internal == nullptr)
-			if (!allocateInternalBuffer(instance, InternalBufferType::MatrixA_Padded_Buffer))
-			{
-				setLastErrorString("Error: allocation failed");
-
-				return false;
-			}
-
-		padded_B = instance->optionalBuffer.matrixB_padded_internal;
-	}*/
 	// TODO: Fix
-	instance->padMethodA(A, padded_A, A_N, A_M, A_N_padPre, A_N_padPost, A_M_padPre, A_M_padPost);
-	instance->padMethodB(B, padded_B, B_N, B_M, B_N_padPre, B_N_padPost, B_M_padPre, B_M_padPost);
-	/*
-	if (index_x == nullptr)
-	{
-		if (instance->optionalBuffer.index_x_internal == nullptr)
-		{
-			if (!allocateInternalBuffer(instance, InternalBufferType::Index_X_Internal))
-			{
-				setLastErrorString("Error: allocation failed");
-				return false;
-			}
-		}
-
-		index_x = instance->optionalBuffer.index_x_internal;
-	}
-	else
-		initializeWorkerInternalBuffer(instance, index_x, InternalBufferType::Index_X_Internal);
-
-	if (index_y == nullptr)
-	{
-		if (instance->optionalBuffer.index_y_internal == nullptr)
-		{
-			if (!allocateInternalBuffer(instance, InternalBufferType::Index_Y_Internal))
-			{
-				setLastErrorString("Error: allocation failed");
-				return false;
-			}
-		}
-
-		index_y = instance->optionalBuffer.index_y_internal;
-	}
-	else
-		initializeWorkerInternalBuffer(instance, index_y, InternalBufferType::Index_Y_Internal);
-		*/
+	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
+	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
 	if (instance->perThreadBuffer[0].matrixA_buffer.get() == nullptr)
 	{
-		for (int indexOfThread = 0; indexOfThread != instance->numberOfThreads;++indexOfThread)
+		for (int indexOfThread = 0; indexOfThread != instance->numberOfThreads; ++indexOfThread)
 		{
 			typename BlockMatchContext<Type>::PerThreadBuffer &perThreadBuffer = instance->perThreadBuffer[indexOfThread];
 			perThreadBuffer.matrixA_buffer.alloc();
@@ -172,14 +115,14 @@ void blockMatchExecute(void *_instance, Type *A, Type *B,
 
 LIB_MATCH_EXPORT
 template
-void blockMatchExecute(void *_instance, float *A, float *B,
+void BlockMatch<float>::execute(float *A, float *B,
 	float *C,
 	float *padded_A, float *padded_B,
 	int *index_x, int *index_y);
 
 LIB_MATCH_EXPORT
 template
-void blockMatchExecute(void *_instance, double *A, double *B,
+void BlockMatch<double>::execute(double *A, double *B,
 	double *C,
 	double *padded_A, double *padded_B,
 	int *index_x, int *index_y);

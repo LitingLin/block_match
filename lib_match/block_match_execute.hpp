@@ -5,11 +5,10 @@
 template <typename Type>
 using ProcessFunction = cudaError_t(*)(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+using ProcessFunctionCPU = void(*)(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
 typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
-/*
- * All false are cuda error
- */
 template <typename Type, ProcessFunction<Type> processFunction>
 void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
 	int blockSize,
@@ -60,14 +59,14 @@ namespace SortMethodProxy {
 
 template <typename Type>
 using SortMethod = 
-void (int *&index_x, int *&index_y, Type *&result,
+void (int *index_x, int *index_y, Type *result,
 	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort);
 
 template <typename Type, SortType<Type> sortType>
 inline void
-sortWithIndex(int *&index_x, int *&index_y, Type *&result,
+sortWithIndex(int *index_x, int *index_y, Type *result,
 	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
@@ -94,7 +93,7 @@ sortWithIndex(int *&index_x, int *&index_y, Type *&result,
 
 template <typename Type>
 inline
-void dummySort(int *&index_x, int *&index_y, Type *&result,
+void dummySort(int *index_x, int *index_y, Type *result,
 	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
@@ -102,14 +101,13 @@ void dummySort(int *&index_x, int *&index_y, Type *&result,
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
 		//memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
-		
-		for (int j = 0; j < retain; ++j)
-		{
-			*result++ = result_buffer[j];
+		memcpy(result, result_buffer, retain * sizeof(Type));
+		memcpy(index_x, index_x_buffer, retain * sizeof(int));
+		memcpy(index_y, index_y_buffer, retain * sizeof(int));
 
-			*index_x++ = index_x_buffer[j];
-			*index_y++ = index_y_buffer[j];
-		}
+		result += retain;
+		index_x += retain;
+		index_y += retain;
 
 		index_x_buffer += numberOfBlockBPerBlockA;
 		index_y_buffer += numberOfBlockBPerBlockA;
@@ -262,7 +260,7 @@ template <typename Type,
 						indexB_M, indexB_N, block_M, block_N);
 					recordIndex(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 					c_bufferB += blockSize;
-
+					
 #ifndef NDEBUG
 					sequenceBCount++;
 #endif
@@ -273,8 +271,7 @@ template <typename Type,
 			if (sequenceBCount != numberOfBlockBPerBlockA)
 				logger.critical("Internal logical error: sequenceBCount != numberOfBlockBPerBlockA");
 #endif
-
-
+			
 			++numberOfQueuedTasks;
 			numberOfBlockA += 1;
 
@@ -301,6 +298,9 @@ template <typename Type,
 					matrixC_buffer,
 					numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
 					rawIndexTemplate, rawIndexBuffer);
+				c_index_x += numberOfBlockA * numberOfIndexRetain;
+				c_index_y += numberOfBlockA * numberOfIndexRetain;
+				c_result += numberOfBlockA * numberOfIndexRetain;
 
 				//c_result += numTasks;
 				c_bufferA = matrixA_buffer;
@@ -340,6 +340,110 @@ JumpOut:
 		sortMethod(c_index_x, c_index_y, c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
 			rawIndexTemplate, rawIndexBuffer);
+	}
+
+	return 0;
+}
+
+
+template <typename Type,
+	DetermineBlockBIndex determineBlockB_index,
+	ProcessFunctionCPU<Type> processFunction,
+	SortMethod<Type> sortMethod,
+	CheckIsLastBlock checkIsLastBlock>
+	unsigned processWorker_cpu(ExecutionContext<Type> *executionContext)
+{
+	Type *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
+		*matrixC = executionContext->matrixC,
+		*matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
+		*matrixC_buffer = executionContext->matrixC_buffer;
+
+	int matrixA_M = executionContext->matrixA_M, matrixA_N = executionContext->matrixA_N,
+		matrixB_M = executionContext->matrixB_M, matrixB_N = executionContext->matrixB_N;
+	int *index_x = executionContext->index_x, *index_y = executionContext->index_y,
+		*index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
+		*rawIndexTemplate = executionContext->rawIndexTemplate, *rawIndexBuffer = executionContext->rawIndexBuffer,
+		block_M = executionContext->block_M, block_N = executionContext->block_N,
+		strideA_M = executionContext->strideA_M, strideA_N = executionContext->strideA_N,
+		strideB_M = executionContext->strideB_M, strideB_N = executionContext->strideB_N,
+		neighbour_M = executionContext->neighbour_M, neighbour_N = executionContext->neighbour_N,
+		numberOfBlockBPerBlockA = executionContext->numberOfBlockBPerBlockA,
+		numberOfIndexRetain = executionContext->numberOfIndexRetain,
+		indexA_M_begin = executionContext->indexA_M_begin, indexA_N_begin = executionContext->indexA_N_begin,
+		indexA_M_end = executionContext->indexA_M_end, indexA_N_end = executionContext->indexA_N_end,
+		startIndexOfMatrixA_M = executionContext->startIndexOfMatrixA_M, startIndexOfMatrixA_N = executionContext->startIndexOfMatrixA_N;
+	
+	int blockSize = executionContext->block_M * executionContext->block_N;
+	int *c_index_x = executionContext->index_x, *c_index_y = executionContext->index_y,
+		*c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
+
+	Type *c_matrixC = matrixC, c_matrixC_buffer = matrixC_buffer;
+
+	if (!numberOfIndexRetain)
+		numberOfIndexRetain = numberOfBlockBPerBlockA;
+
+	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
+
+	goto JumpIn;
+
+	for (indexA_M = indexA_M_begin; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
+	{
+		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
+		{
+		JumpIn:
+			copyBlock(matrixA_buffer, matrixA,
+				matrixA_M, matrixA_N,
+				indexA_M, indexA_N, block_M, block_N);
+
+#ifndef NDEBUG
+			int sequenceBCount = 0;
+#endif
+			int indexB_M_begin, indexB_M_end;
+			determineBlockB_index(&indexB_M_begin, &indexB_M_end,
+				matrixB_M, block_M,
+				neighbour_M, indexA_M);
+			for (int indexB_M = indexB_M_begin; indexB_M < indexB_M_end; indexB_M += strideB_M)
+			{
+				int indexB_N_begin, indexB_N_end;
+				determineBlockB_index(&indexB_N_begin, &indexB_N_end,
+					matrixB_N, block_N, neighbour_N, indexA_N);
+				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
+				{
+					copyBlock(matrixB_buffer, matrixB,
+						matrixB_M, matrixB_N,
+						indexB_M, indexB_N, block_M, block_N);
+					recordIndex(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
+
+					processFunction(matrixA_buffer, matrixB_buffer, blockSize, c_matrixC_buffer++);
+
+#ifndef NDEBUG
+					sequenceBCount++;
+#endif
+				}
+			}
+
+#ifndef NDEBUG
+			if (sequenceBCount != numberOfBlockBPerBlockA)
+				logger.critical("Internal logical error: sequenceBCount != numberOfBlockBPerBlockA");
+#endif
+
+			c_index_x_buffer = index_x_buffer;
+			c_index_y_buffer = index_y_buffer;
+
+			sortMethod(c_index_x, c_index_y, c_matrixC, index_x_buffer, index_y_buffer,
+				matrixC_buffer,
+				1, numberOfBlockBPerBlockA, numberOfIndexRetain,
+				rawIndexTemplate, rawIndexBuffer);
+
+			c_index_x += numberOfIndexRetain;
+			c_index_y += numberOfIndexRetain;
+			c_matrixC += numberOfIndexRetain;
+
+			// TODO
+			checkIsLastBlock(&indexA_N, strideA_N, indexA_N_end);
+		}
+		//TODO
+		checkIsLastBlock(&indexA_M, strideA_M, indexA_M_end);
 	}
 
 	return 0;

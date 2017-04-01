@@ -25,9 +25,6 @@
     <ClCompile Include="block_match_initialize.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match_finalize.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="block_match_sort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -38,9 +35,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="block_match_execution_launcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib_match.cpp">
@@ -58,9 +52,6 @@
     <ClCompile Include="interrupt_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memory_allocation_counter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stack_trace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -74,6 +65,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="execution_service.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match_destroy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match_execute.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memory_allocation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

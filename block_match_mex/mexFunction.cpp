@@ -112,6 +112,18 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 
 		libMatchWarper.destroy();
 	}
+	catch (memory_alloc_exception &exp)
+	{
+		
+	}
+	catch (page_locked_memory_alloc_exception &exp)
+	{
+		
+	}
+	catch (gpu_memory_alloc_exception &exp)
+	{
+		
+	}
 	catch (std::exception &exp)
 	{
 		mexErrMsgTxt(exp.what());

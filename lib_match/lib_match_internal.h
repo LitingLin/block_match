@@ -36,23 +36,16 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
-enum class memory_allocation_type
-{
-	memory,
-	page_locked,
-	gpu
-};
-
 class memory_allocation_counter
 {
 public:
 	memory_allocation_counter();
-	void register_allocator(size_t size, memory_allocation_type type);
-	void allocated(size_t size, memory_allocation_type type);
-	void released(size_t size, memory_allocation_type type);
-	void trigger_error(size_t size, memory_allocation_type type) const;
+	void register_allocator(size_t size, malloc_type_enum type);
+	void allocated(size_t size, malloc_type_enum type);
+	void released(size_t size, malloc_type_enum type);
+	void trigger_error(size_t size, malloc_type_enum type) const;
 	void get_max_memory_required(size_t *max_memory_size,
-		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
+		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size) const;
 private:
 	size_t max_memory_size;
 	size_t max_page_locked_memory_size;
@@ -267,7 +260,7 @@ class cudaStreamWarper
 public:
 	cudaStreamWarper();
 	~cudaStreamWarper();
-	operator cudaStream_t();
+	operator cudaStream_t() const;
 private:
 	cudaStream_t stream;
 };

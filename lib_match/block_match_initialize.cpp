@@ -35,56 +35,6 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 	}
 }
 
-template <typename Type>
-void initializeBasicInstanceInformation(BlockMatchContext<Type> *instance,
-	const int matrixA_M, const int matrixA_N, const int matrixB_M, const int matrixB_N,
-	const int searchRegion_M, const int searchRegion_N,
-	const int block_M, const int block_N,
-	const int strideA_M, const int strideA_N,
-	const int strideB_M, const int strideB_N,
-	const int matrixAPadding_M_pre, const int matrixAPadding_M_post,
-	const int matrixAPadding_N_pre, const int matrixAPadding_N_post,
-	const int matrixBPadding_M_pre, const int matrixBPadding_M_post,
-	const int matrixBPadding_N_pre, const int matrixBPadding_N_post,
-	const int numberOfIndexRetain,
-	const int matrixA_padded_M, const int matrixA_padded_N,
-	const int matrixB_padded_M, const int matrixB_padded_N
-)
-{
-	instance->matrixA_M = matrixA_M;
-	instance->matrixA_N = matrixA_N;
-	instance->matrixB_M = matrixB_M;
-	instance->matrixB_N = matrixB_N;
-
-	instance->block_M = block_M;
-	instance->block_N = block_N;
-
-	instance->searchRegion_M = searchRegion_M;
-	instance->searchRegion_N = searchRegion_N;
-
-	instance->strideA_M = strideA_M;
-	instance->strideA_N = strideA_N;
-	instance->strideB_M = strideB_M;
-	instance->strideB_N = strideB_N;
-
-	instance->matrixAPadding_M_pre = matrixAPadding_M_pre;
-	instance->matrixAPadding_M_post = matrixAPadding_M_post;
-	instance->matrixAPadding_N_pre = matrixAPadding_N_pre;
-	instance->matrixAPadding_N_post = matrixAPadding_N_post;
-
-	instance->matrixBPadding_M_pre = matrixBPadding_M_pre;
-	instance->matrixBPadding_M_post = matrixBPadding_M_post;
-	instance->matrixBPadding_N_pre = matrixBPadding_N_pre;
-	instance->matrixBPadding_N_post = matrixBPadding_N_post;
-
-	instance->numberOfIndexRetain = numberOfIndexRetain;
-
-	instance->matrixA_padded_M = matrixA_padded_M;
-	instance->matrixA_padded_N = matrixA_padded_N;
-	instance->matrixB_padded_M = matrixB_padded_M;
-	instance->matrixB_padded_N = matrixB_padded_N;
-}
-
 int determineNumberOfThreads(bool sort,
 	const int A_M, const int A_N,
 	const int maxNumberOfThreads)
@@ -110,118 +60,6 @@ int determineSizeOfMatrixC_X(int numberOfIndexRetain, int group_M, int group_N)
 		return group_M * group_N;
 }
 
-/*
- * Initialized parameter list:
- * WorkerContext:
- *  numberOfIteration
- *  rawMatrixCIndex_begin
- *  beginMatrixAIndex_M
- *  beginMatrixAIndex_N
- * stream
- * Buffer:
- *  matrixA_buffer
- *  matrixB_buffer
- *  matrixC_buffer
- *  index_x_sorting_buffer
- *  index_y_sorting_buffer
- *  common_buffer
- *  index_raw_sorting_buffer
- *  matrixA_deviceBuffer
- *  matrixB_deviceBuffer
- *  matrixC_deviceBuffer
- */
-/*
-template <typename Type>
-bool initializeMemoryResources(BlockMatchContext<Type> *instance)
-{
-	const int block_M = instance->block_M;
-	const int block_N = instance->block_N;
-	const int numberOfBlockBPerBlockA = instance->numberOfBlockBPerBlockA;
-
-	const int numberOfThreads = instance->numberOfThreads;
-	const int numberOfGPUDeviceMultiProcessor = instance->numberOfSubmitProcessors;
-	const int numberOfGPUProcessorThread = instance->numberOfSubmitThreadsPerProcessor;
-
-	const int bufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA * numberOfThreads;
-	const int matBufferSize = bufferSize * block_M * block_N;
-
-	instance->workerContext.reserve(numberOfThreads);
-	instance->threadPoolTaskHandle.reserve(numberOfThreads);
-
-	instance->streams.resize(numberOfThreads);
-
-	instance->perThreadBuffer.reserve(numberOfThreads);
-
-	const int perThreadMatrixCBufferSize = instance->sizeOfGpuTaskQueue * instance->numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
-
-	for (unsigned i = 0; i < numberOfThreads; ++i)
-	{
-		instance->perThreadBuffer.emplace_back({ perThreadMatrixABufferSize , perThreadMatrixABufferSize , perThreadMatrixCBufferSize,
-		perThreadMatrixABufferSize, perThreadMatrixABufferSize, perThreadMatrixCBufferSize,
-			perThreadMatrixCBufferSize, perThreadMatrixCBufferSize,numberOfBlockBPerBlockA
-		});
-	}
-
-	instance->common_buffer;
-
-	// Remember to * sizeof(type)
-	cuda_error = cudaMallocHost(&buffer.matrixA_buffer,
-		(matBufferSize * 2 + bufferSize) * sizeof(Type)
-	);
-
-	if (cuda_error != cudaSuccess)
-		goto release_cuda_stream;
-
-	buffer.matrixB_buffer = buffer.matrixA_buffer + matBufferSize;
-	buffer.matrixC_buffer = buffer.matrixB_buffer + matBufferSize;
-
-	buffer.index_x_sorting_buffer = static_cast<int *>(malloc(
-		bufferSize * 2 * sizeof(int) +
-		numberOfBlockBPerBlockA * (numberOfThreads + 1) * sizeof(int)));
-
-	if (buffer.index_x_sorting_buffer == nullptr) {
-		goto release_page_locked_memory;
-	}
-
-	buffer.index_y_sorting_buffer = buffer.index_x_sorting_buffer + bufferSize;
-	buffer.common_buffer = buffer.index_y_sorting_buffer + bufferSize;
-	buffer.index_raw_sorting_buffer = buffer.common_buffer + numberOfBlockBPerBlockA;
-
-	cuda_error = cudaMalloc(&buffer.matrixA_deviceBuffer,
-		(matBufferSize * 2 + bufferSize) * sizeof(Type));
-	if (cuda_error != cudaSuccess)
-		goto release_memory;
-
-	buffer.matrixB_deviceBuffer = buffer.matrixA_deviceBuffer + matBufferSize;
-	buffer.matrixC_deviceBuffer = buffer.matrixB_deviceBuffer + matBufferSize;
-
-	return true;
-
-release_device_memory:
-	cudaFree(buffer.matrixA_deviceBuffer);
-
-release_memory:
-	free(buffer.common_buffer);
-
-release_page_locked_memory:
-
-	cudaFreeHost(buffer.matrixA_buffer);
-
-release_cuda_stream:
-	for (int i = 0; i < numberOfThreads * 2; ++i)
-	{
-		cudaStreamDestroy(instance->stream[i]);
-	}
-	free(instance->stream);
-
-release_worker_context:
-	free(instance->workerContext.numberOfIteration);
-
-failed:
-	return false;
-}
-*/
 template <typename Type>
 void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 	BorderType sequenceABorderType)
@@ -271,131 +109,6 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 	workerContext[numberOfThreads - 1].numberOfIteration += (numberOfTasks - numberOfThreads * numberOfTasksPerWorker_minimum);
 }
 
-bool allocateInternalBuffer(void **buffer, size_t size)
-{
-	float *buffer_ = static_cast<float*>(malloc(size));
-	if (buffer_ == nullptr)
-		return false;
-
-	*buffer = buffer_;
-
-	return true;
-}
-
-template <typename Type>
-size_t getMatrixAPaddedSizeInBytes(const BlockMatchContext<Type> *context)
-{
-	return context->matrixA_padded_M * context->matrixA_padded_N * sizeof(float);
-}
-
-template <typename Type>
-size_t getMatrixBPaddedSizeInBytes(const BlockMatchContext<Type> *context)
-{
-	return context->matrixB_padded_M * context->matrixB_padded_N * sizeof(float);
-}
-
-template <typename Type>
-bool allocateMatrixAPaddedInternalBuffer(BlockMatchContext<Type> *context)
-{
-	size_t size = getMatrixAPaddedSizeInBytes(context);
-
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixA_padded_internal), size);
-}
-
-template <typename Type>
-bool allocateMatrixBPaddedInternalBuffer(BlockMatchContext<Type> *context)
-{
-	size_t size = getMatrixBPaddedSizeInBytes(context);
-
-	return allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.matrixB_padded_internal), size);
-}
-
-// TODO support 4D C
-template <typename Type>
-size_t getIndexSizeInBytes(BlockMatchContext<Type> *context)
-{
-	return context->C_dimensions[0] * context->C_dimensions[1] * context->C_dimensions[2];
-}
-
-template <typename Type>
-void initializeWorkerInternalBuffer(BlockMatchContext<Type> *context, void *buffer, enum class InternalBufferType bufferType)
-{
-	size_t size = context->C_dimensions[2];
-
-	switch (bufferType)
-	{
-	case InternalBufferType::Index_X_Internal:
-		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
-		{
-			context->optionalPerThreadBufferPointer[indexOfThreads].index_x_internal = static_cast<int*>(buffer) +
-				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
-		}
-		break;
-	case InternalBufferType::Index_Y_Internal:
-		for (int indexOfThreads = 0; indexOfThreads < context->numberOfThreads; ++indexOfThreads)
-		{
-			context->optionalPerThreadBufferPointer[indexOfThreads].index_y_internal = static_cast<int*>(buffer) +
-				context->workerContext.rawMatrixCIndex_begin[indexOfThreads] * size;
-		}
-		break;
-	default: break;
-	}
-}
-
-template <typename Type>
-bool allocateIndexXInternal(BlockMatchContext<Type> *context)
-{
-	size_t size = getIndexSizeInBytes(context);
-
-	if (allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_x_internal), size))
-	{
-		initializeWorkerInternalBuffer(context, context->optionalBuffer.index_x_internal, InternalBufferType::Index_X_Internal);
-		return true;
-	}
-	else
-		return false;
-}
-
-template <typename Type>
-bool allocateIndexYInternal(BlockMatchContext<Type> *context)
-{
-	size_t size = getIndexSizeInBytes(context);
-
-	if (allocateInternalBuffer(reinterpret_cast<void**>(&context->optionalBuffer.index_y_internal), size))
-	{
-		initializeWorkerInternalBuffer(context, context->optionalBuffer.index_y_internal, InternalBufferType::Index_Y_Internal);
-		return true;
-	}
-	else
-		return false;
-}
-
-template <typename Type>
-bool allocateInternalBuffer(BlockMatchContext<Type> *context, enum class InternalBufferType bufferType)
-{
-	switch (bufferType)
-	{
-	case InternalBufferType::MatrixA_Padded_Buffer:
-		return allocateMatrixAPaddedInternalBuffer(context);
-	case InternalBufferType::MatrixB_Padded_Buffer:
-		return allocateMatrixBPaddedInternalBuffer(context);
-	case InternalBufferType::Index_X_Internal:
-		return allocateIndexXInternal(context);
-	case InternalBufferType::Index_Y_Internal:
-		return allocateIndexYInternal(context);
-	default:
-		return false;
-	}
-}
-
-template <typename Type>
-BlockMatchContext<Type> * allocateContext(const int numberOfThreads)
-{
-	return static_cast<BlockMatchContext<Type>*>(malloc(sizeof(BlockMatchContext<Type>) +
-		(sizeof(typename BlockMatchContext<Type>::PerThreadBufferPointer) +
-			sizeof(typename BlockMatchContext<Type>::OptionalPerThreadBufferPointer)) * numberOfThreads));
-}
-
 int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 	int matrixB, int matrixBPadding_pre, int matrixBPadding_post, int block, int strideB)
 {
@@ -410,7 +123,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 }
 
 template <typename Type>
-void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
+void BlockMatch<Type>::initialize(
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -752,7 +465,7 @@ void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 	instance->common_buffer.alloc();
 	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
 
-	*LIB_MATCH_OUT(instance) = instance;
+	this->m_instance = instance;
 
 	if (LIB_MATCH_OUT(matrixC_M) != nullptr)
 	{
@@ -774,8 +487,7 @@ void blockMatchInitialize(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-void blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
-	SearchType searchType,
+void BlockMatch<float>::initialize(SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
@@ -797,7 +509,7 @@ void blockMatchInitialize<float>(void **LIB_MATCH_OUT(instance),
 
 LIB_MATCH_EXPORT
 template
-void blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
+void BlockMatch<double>::initialize(
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -817,17 +529,3 @@ void blockMatchInitialize<double>(void **LIB_MATCH_OUT(instance),
 	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
 	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
 	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
-/*
-template
-BlockMatchContext<float> * allocateContext(const int numberOfThreads);
-template
-BlockMatchContext<double> * allocateContext(const int numberOfThreads);
-template
-bool allocateInternalBuffer(BlockMatchContext<float> *context, enum class InternalBufferType bufferType);
-template
-bool allocateInternalBuffer(BlockMatchContext<double> *context, enum class InternalBufferType bufferType);
-template
-void initializeWorkerInternalBuffer(BlockMatchContext<float> *context, void *buffer, enum class InternalBufferType bufferType);
-template
-void initializeWorkerInternalBuffer(BlockMatchContext<double> *context, void *buffer, enum class InternalBufferType bufferType);
-*/

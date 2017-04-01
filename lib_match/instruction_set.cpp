@@ -2,6 +2,7 @@
 
 #include <intrin.h>
 
+
 std::string InstructionSet::Vendor()
 {
 	return CPU_Rep.vendor_;
@@ -272,18 +273,18 @@ bool InstructionSet::_3DNOW()
 	return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[31];
 }
 
-InstructionSet::InstructionSet_Internal::InstructionSet_Internal(): nIds_{0},
-                                                                    nExIds_{0},
-                                                                    isIntel_{false},
-                                                                    isAMD_{false},
-                                                                    f_1_ECX_{0},
-                                                                    f_1_EDX_{0},
-                                                                    f_7_EBX_{0},
-                                                                    f_7_ECX_{0},
-                                                                    f_81_ECX_{0},
-                                                                    f_81_EDX_{0},
-                                                                    data_{},
-                                                                    extdata_{}
+InstructionSet::InstructionSet_Internal::InstructionSet_Internal() : nIds_{ 0 },
+nExIds_{ 0 },
+isIntel_{ false },
+isAMD_{ false },
+f_1_ECX_{ 0 },
+f_1_EDX_{ 0 },
+f_7_EBX_{ 0 },
+f_7_ECX_{ 0 },
+f_81_ECX_{ 0 },
+f_81_EDX_{ 0 },
+data_{},
+extdata_{}
 {
 	//int cpuInfo[4] = {-1};  
 	std::array<int, 4> cpui;
