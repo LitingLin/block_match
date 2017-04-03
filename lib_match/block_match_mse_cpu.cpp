@@ -1,5 +1,3 @@
-#define __AVX2__
-
 #ifdef __AVX2__
 #include <immintrin.h>
 
