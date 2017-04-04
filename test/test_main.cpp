@@ -22,10 +22,3 @@ public:
 		libMatchRegisterInterruptPeddingFunction(dummyIsInterruptPending);
 	}
 }initializer;
-
-char *getLastErrorString()
-{
-	static char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH];
-	libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-	return buffer;
-}

@@ -1,18 +1,18 @@
 #include "test_common.h"
 
 template <typename Type>
-void isNormal(Type *ptr, int size)
+void checkIsNormal(Type *ptr, int size)
 {
-	float mean = 0;
+	Type mean = 0;
 	for (int i = 0; i<size; ++i)
 	{
 		mean += ptr[i];
 	}
 	mean /= size;
 
-	BOOST_CHECK_SMALL(mean, 0.0001f);
+	BOOST_CHECK_SMALL(mean, (Type)singleFloatingPointErrorTolerance);
 
-	float sd = 0;
+	Type sd = 0;
 
 	for (int i = 0; i<size; ++i)
 	{
@@ -20,10 +20,10 @@ void isNormal(Type *ptr, int size)
 	}
 	sd /= size;
 	sd = sqrt(sd);
-	BOOST_CHECK_SMALL(sd - 1, 0.0001f);
+	BOOST_CHECK_SMALL(sd - 1, (Type)singleFloatingPointErrorTolerance);
 }
 
 template
-void isNormal(float *ptr, int size);
+void checkIsNormal(float *ptr, int size);
 template
-void isNormal(double *ptr, int size);
+void checkIsNormal(double *ptr, int size);

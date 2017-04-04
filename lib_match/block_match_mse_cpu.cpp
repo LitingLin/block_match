@@ -1,14 +1,13 @@
-#ifdef __AVX2__
 #include <immintrin.h>
 
 template <typename Type>
-void block_match_mse_cpu(Type *, Type *, int, Type *)
+void lib_match_mse_cpu_avx2(Type *, Type *, int, Type *)
 {
 	static_assert("NOT IMPLEMENTED");
 }
 
 template <>
-void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *result)
+void lib_match_mse_cpu_avx2(float *block_A, float *block_B, int blockSize, float *result)
 {
 	__m256 t = _mm256_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
@@ -25,7 +24,7 @@ void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *r
 }
 
 template <>
-void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double *result)
+void lib_match_mse_cpu_avx2(double *block_A, double *block_B, int blockSize, double *result)
 {
 	__m256d t = _mm256_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
@@ -40,18 +39,14 @@ void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double
 	*result = t.m256d_f64[0] / blockSize;
 }
 
-#elif defined __AVX__
-
-#include <immintrin.h>
-
 template <typename Type>
-void block_match_mse_cpu(Type *, Type *, int, Type *)
+void lib_match_mse_cpu_avx(Type *, Type *, int, Type *)
 {
 	static_assert("NOT IMPLEMENTED");
 }
 
 template <>
-void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *result)
+void lib_match_mse_cpu_avx(float *block_A, float *block_B, int blockSize, float *result)
 {
 	__m256 t = _mm256_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
@@ -69,7 +64,7 @@ void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *r
 }
 
 template <>
-void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double *result)
+void lib_match_mse_cpu_avx(double *block_A, double *block_B, int blockSize, double *result)
 {
 	__m256d t = _mm256_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
@@ -85,18 +80,16 @@ void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double
 	*result = t.m256d_f64[0] / blockSize;
 }
 
-#elif defined __SSE3__
-
 #include <pmmintrin.h>
 
 template <typename Type>
-void block_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result)
+void lib_match_mse_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result)
 {
 	static_assert("NOT IMPLEMENTED");
 }
 
 template <>
-void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *result)
+void lib_match_mse_cpu_sse3(float *block_A, float *block_B, int blockSize, float *result)
 {
 	__m128 t = _mm_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m128) / sizeof(float))
@@ -113,7 +106,7 @@ void block_match_mse_cpu(float *block_A, float *block_B, int blockSize, float *r
 }
 
 template <>
-void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double *result)
+void lib_match_mse_cpu_sse3(double *block_A, double *block_B, int blockSize, double *result)
 {
 	__m128d t = _mm_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m128d) / sizeof(double))
@@ -128,14 +121,13 @@ void block_match_mse_cpu(double *block_A, double *block_B, int blockSize, double
 	*result = t.m128d_f64[0] / blockSize;
 }
 
-#else
 template <typename Type>
-void block_match_mse_cpu(Type *blocks_A, Type *blocks_B, int blockSize, Type *result)
+void lib_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result)
 {
 	Type temp = 0;
 	for (int index_in_block = 0; index_in_block < blockSize; ++index_in_block)
 	{
-		Type v = blocks_A[index_in_block] - blocks_B[index_in_block];
+		Type v = block_A[index_in_block] - block_B[index_in_block];
 		temp += v*v;
 	}
 
@@ -143,8 +135,6 @@ void block_match_mse_cpu(Type *blocks_A, Type *blocks_B, int blockSize, Type *re
 }
 
 template
-void block_match_mse_cpu(float *blocks_A, float *blocks_B, int blockSize, float *result);
+void lib_match_mse_cpu(float *, float *, int, float *);
 template
-void block_match_mse_cpu(double *blocks_A, double *blocks_B, int blockSize, double *result);
-
-#endif
+void lib_match_mse_cpu(double *, double *, int, double *);

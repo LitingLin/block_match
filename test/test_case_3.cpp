@@ -2,7 +2,6 @@
 
 BOOST_AUTO_TEST_CASE(test_case_3)
 {
-	void *instance;
 	float inputMatrix[10 * 10] = {
 		30,49,68,34,89,62,98,82,43,53,
 		32,58,40,68,33,86,71,82,83,42,
@@ -20,13 +19,14 @@ BOOST_AUTO_TEST_CASE(test_case_3)
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BOOST_TEST(blockMatchInitialize<float>(&instance, SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::normal, SearchFrom::topLeft, true,
+	BlockMatch<float> match;
+	match.initialize(SearchType::global, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::normal, SearchFrom::topLeft, true,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain,
 		&matrixC_M, &matrixC_N, &matrixC_O,
 		&matrixA_padded_M, &matrixA_padded_N,
-		&matrixB_padded_M, &matrixB_padded_N), getLastErrorString());
+		&matrixB_padded_M, &matrixB_padded_N);
 
 	float *matrixC = (float*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
 	float *matrixAPadded = (float*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(float));
@@ -34,8 +34,7 @@ BOOST_AUTO_TEST_CASE(test_case_3)
 	int *indexX = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(int));
 	int *indexY = (int*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(int));
 
-	BOOST_TEST(blockMatchExecute(instance, inputMatrix, inputMatrix, matrixC, matrixAPadded, matrixBPadded, indexX, indexY), getLastErrorString());
-	blockMatchFinalize<float>(instance);
+	match.execute(inputMatrix, inputMatrix, matrixC, matrixAPadded, matrixBPadded, indexX, indexY);
 	free(matrixC);
 	free(matrixAPadded);
 	free(matrixBPadded);

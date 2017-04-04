@@ -74,6 +74,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="func_isnormal.cpp" />
+    <ClCompile Include="test_cc_cpu.cpp" />
     <ClCompile Include="test_cc_gpu.cpp" />
     <ClCompile Include="test_determine_gpu_task_configuration.cpp" />
     <ClCompile Include="test_determine_end_of_index.cpp" />
@@ -83,8 +84,6 @@
     <ClCompile Include="test_mse_gpu.cpp" />
     <ClCompile Include="test_padding.cpp" />
     <ClCompile Include="test_sort.cpp" />
-    <ClCompile Include="test_standardize_cpu.cpp" />
-    <ClCompile Include="test_standardize_gpu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_common.h" />

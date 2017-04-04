@@ -1,8 +1,6 @@
 #include "test_common.h"
 
-// TODO fix fail
-// But it seems like the precision problem of float
-BOOST_AUTO_TEST_CASE(test_cc_gpu_float)
+BOOST_AUTO_TEST_CASE(test_cc_cpu_float)
 {
 	float a[] = { 108,215,3,136,218,154,162,90,63,222,57,179,
 		119,60,215,72,141,166,12,240,43,93,71,173,5,20,25,226,
@@ -37,32 +35,13 @@ BOOST_AUTO_TEST_CASE(test_cc_gpu_float)
 		15,99,28,243,196,135,193,119,3,146,104,25,141,92,76,97,
 		145,192,163,207,109,98,138,225,13,91,103,92,106,157,
 		198,100,131,10,150,58,78,256,239,69,39,38,35,23,185,
-		221,145,110,205,175,55,94,214,233,173,253,120,168,209,151 };
-	float *dev_a, *dev_b, *dev_c;
-
-	int a_length = sizeof(a) / sizeof(*a);
-	int b_length = sizeof(b) / sizeof(*b);
-	BOOST_CHECK_EQUAL(a_length, b_length);
-
-	cudaError_t cuda_error = cudaMalloc(&dev_a, sizeof(a) * 2 + 1 * sizeof(*a));
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	dev_b = dev_a + a_length;
-	dev_c = dev_b + b_length;
-	cuda_error = cudaMemcpy(dev_a, a, sizeof(a), cudaMemcpyHostToDevice);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = cudaMemcpy(dev_b, b, sizeof(b), cudaMemcpyHostToDevice);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = block_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	float c;
-	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	BOOST_CHECK_SMALL(c - 0.0014f, singleFloatingPointErrorTolerance);
-	cuda_error = cudaFree(dev_a);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
+		221,145,110,205,175,55,94,214,233,173,253,120,168,209,151};
+	float result;
+	block_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
+	BOOST_CHECK_SMALL(result - 0.0014f, singleFloatingPointErrorTolerance);
 }
 
-BOOST_AUTO_TEST_CASE(test_cc_gpu_double)
+BOOST_AUTO_TEST_CASE(test_cc_cpu_double)
 {
 	double a[] = { 108,215,3,136,218,154,162,90,63,222,57,179,
 		119,60,215,72,141,166,12,240,43,93,71,173,5,20,25,226,
@@ -98,26 +77,7 @@ BOOST_AUTO_TEST_CASE(test_cc_gpu_double)
 		145,192,163,207,109,98,138,225,13,91,103,92,106,157,
 		198,100,131,10,150,58,78,256,239,69,39,38,35,23,185,
 		221,145,110,205,175,55,94,214,233,173,253,120,168,209,151 };
-	double *dev_a, *dev_b, *dev_c;
-
-	int a_length = sizeof(a) / sizeof(*a);
-	int b_length = sizeof(b) / sizeof(*b);
-	BOOST_CHECK_EQUAL(a_length, b_length);
-
-	cudaError_t cuda_error = cudaMalloc(&dev_a, sizeof(a) * 2 + 1 * sizeof(*a));
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	dev_b = dev_a + a_length;
-	dev_c = dev_b + b_length;
-	cuda_error = cudaMemcpy(dev_a, a, sizeof(a), cudaMemcpyHostToDevice);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = cudaMemcpy(dev_b, b, sizeof(b), cudaMemcpyHostToDevice);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = block_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	double c;
-	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	BOOST_CHECK_SMALL(c - 0.0014, doubleFloatingPointErrorTolerance);
-	cuda_error = cudaFree(dev_a);
-	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
+	double result;
+	block_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
+	BOOST_CHECK_SMALL(result - 0.0014, doubleFloatingPointErrorTolerance);
 }
