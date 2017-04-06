@@ -555,7 +555,7 @@ public:
 
 	warning_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
 
-	~warning_logging() noexcept(false);
+	~warning_logging();
 
 	std::ostringstream& stream();
 private:

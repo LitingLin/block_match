@@ -87,7 +87,7 @@ warning_logging::warning_logging(const char* file, int line, const char* functio
 	str_stream << "Check failed: " << exp1 << ' ' << op << ' ' << exp2 << ' ';
 }
 
-warning_logging::~warning_logging() noexcept(false)
+warning_logging::~warning_logging()
 {
 	str_stream << std::endl
 		<< "*** Check failure stack trace: ***" << std::endl
