@@ -42,22 +42,16 @@ array_match_mse_kernel(const Type *block_A, const Type *block_B, int blockSize, 
 
 template <typename Type>
 __global__ void
-block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int block_B_groupSize, int blockSize, Type *resultsBuffer)
+block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize, Type *resultsBuffer)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
-	const int block_A_groupSize = 1;
-	int blockGroupSize = block_A_groupSize * block_B_groupSize;
 
-	int groupIndex = tid / blockGroupSize;
+	int groupIndex = tid / numberOfBlockBPerBlockA;
 
-	int inGroupOffset = tid % blockGroupSize;
+	int inGroupOffset = tid % numberOfBlockBPerBlockA;
 
-	int block_A_index = inGroupOffset / block_B_groupSize;
-
-	int block_B_index = inGroupOffset % block_B_groupSize;
-
-	const Type *c_block_A = blocks_A + groupIndex * block_A_groupSize * blockSize + block_A_index * blockSize;
-	const Type *c_block_B = blocks_B + groupIndex * block_B_groupSize * blockSize + block_B_index * blockSize;
+	const Type *c_block_A = blocks_A + groupIndex * blockSize;
+	const Type *c_block_B = blocks_B + groupIndex * numberOfBlockBPerBlockA * blockSize + inGroupOffset * blockSize;
 
 	Type temp = 0;
 	for (int i = 0; i<blockSize; ++i)
@@ -73,26 +67,19 @@ block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int blo
 
 template <typename Type>
 __global__ void
-block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int block_B_groupSize, int blockSize, Type *resultsBuffer, int n)
+block_match_mse_async_kernel(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize, Type *resultsBuffer, int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (tid >= n)
 		return;
+		
+	int groupIndex = tid / numberOfBlockBPerBlockA;
 
-	const int block_A_groupSize = 1;
-	int blockGroupSize = block_A_groupSize * block_B_groupSize;
+	int inGroupOffset = tid % numberOfBlockBPerBlockA;
 
-	int groupIndex = tid / blockGroupSize;
-
-	int inGroupOffset = tid % blockGroupSize;
-
-	int block_A_index = inGroupOffset / block_B_groupSize;
-
-	int block_B_index = inGroupOffset % block_B_groupSize;
-
-	const Type *c_block_A = blocks_A + groupIndex * block_A_groupSize * blockSize + block_A_index * blockSize;
-	const Type *c_block_B = blocks_B + groupIndex * block_B_groupSize * blockSize + block_B_index * blockSize;
+	const Type *c_block_A = blocks_A + groupIndex * blockSize;
+	const Type *c_block_B = blocks_B + groupIndex * numberOfBlockBPerBlockA * blockSize + inGroupOffset * blockSize;
 
 	Type temp = 0;
 	for (int i = 0; i<blockSize; ++i)
@@ -125,33 +112,34 @@ cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
 }
 
 template <typename Type>
-cudaError_t block_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
+cudaError_t block_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A,
+	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result);
+	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result);
 	return cudaGetLastError();
 }
 
 template <typename Type>
-cudaError_t block_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
+cudaError_t block_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
+	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, block_B_groupSize, blockSize, result, numBlocks_B);
+	block_match_mse_async_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result, 
+		numberOfBlockBPerBlockA * numBlocks_A);
 	return cudaGetLastError();
 }
 
 template
-cudaError_t block_match_mse(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse(float *, float *, int,
+	int, int, float *, int, int, cudaStream_t);
 template
-cudaError_t block_match_mse(double *blocks_A, double *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, double *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse(double *, double *, int,
+	int, int, double *, int, int, cudaStream_t);
 template
-cudaError_t block_match_mse_check_border(float *blocks_A, float *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, float *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse_check_border(float *, float *, int,
+	int, int, float *, int, int, cudaStream_t);
 template
-cudaError_t block_match_mse_check_border(double *blocks_A, double *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, double *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse_check_border(double *, double *, int,
+	int, int, double *, int, int, cudaStream_t);
 template
 cudaError_t arrayMatchMse(float *A, float *B, float *C,
 	int lengthOfArray,

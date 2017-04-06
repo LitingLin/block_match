@@ -24,9 +24,6 @@
     <ClCompile Include="test_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_standardize_cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="test_mse_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -34,9 +31,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="test_cc_gpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="test_standardize_gpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="func_isnormal.cpp">
@@ -49,6 +43,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="test_determine_gpu_task_configuration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_cc_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

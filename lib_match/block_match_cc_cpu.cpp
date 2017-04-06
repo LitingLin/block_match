@@ -1,57 +1,61 @@
+#include <immintrin.h>
+
+__m256 accumulate_avx(float *begin, float *end)
+{
+	__m256 t = _mm256_setzero_ps();
+	for (float * iter = begin; iter < end; iter += sizeof(__m256) / sizeof(float))
+	{
+		__m256 a = _mm256_load_ps(iter);
+		t = _mm256_add_ps(a, t);
+	}
+	t = _mm256_hadd_ps(t, t);
+	t = _mm256_hadd_ps(t, t);
+	t = _mm256_hadd_ps(t, t);
+	return t;
+}
+
+__m256d accumulate_avx(double *begin, double *end)
+{
+	__m256d t = _mm256_setzero_pd();
+	for (double * iter = begin; iter < end; iter += sizeof(__m256d) / sizeof(double))
+	{
+		__m256d a = _mm256_load_pd(iter);
+		t = _mm256_add_pd(a, t);
+	}
+	t = _mm256_hadd_pd(t, t);
+	t = _mm256_hadd_pd(t, t);
+	return t;
+}
+
+template <typename Type>
+void lib_match_cc_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *result)
+{
+	
+}
+
 #include <cmath>
+#include <numeric>
 
 template <typename Type>
-void standardize_cpu(Type *sequence, int size)
+void lib_match_cc_cpu(Type *block_A, Type *block_B, int blockSize, Type *result)
 {
-	Type mean = 0;
-	for (int i=0;i<size;++i)
-	{
-		mean += sequence[i];
-	}
-	mean /= size;
-	Type sd = 0;
-	for (int i=0;i<size;++i)
-	{
-		Type t = sequence[i] -= mean;
-		sd += t*t;
-	}
-	sd /= size;
-	sd = sqrt(sd);
-	for (int i=0;i<size;++i)
-	{
-		sequence[i] /= sd;
-	}
-}
+	Type X = 0, Y = 0, Z = 0;
+	Type A_mean = std::accumulate(block_A, block_A + blockSize, (Type)0) / (Type)blockSize;
+	Type B_mean = std::accumulate(block_B, block_B + blockSize, (Type)0) / (Type)blockSize;
 
-template <typename Type>
-void block_match_cc_cpu(Type *blocks_A, Type *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, Type *result)
-{
-	Type *c_blocks_A = blocks_A;
-	Type *c_blocks_B = blocks_B;
-
-	for (int index_A = 0; index_A < numberOfBlockA; ++index_A)
+	for (int i = 0; i < blockSize; ++i)
 	{
-		for (int index_B = 0; index_B < numberOfBlockBPerBlockA; ++index_B)
-		{
-			Type temp = 0;
-			for (int index_in_block = 0; index_in_block < blockSize; ++index_in_block)
-			{
-				Type v = c_blocks_A[index_in_block] - c_blocks_B[index_in_block];
-				temp += v*v;
-			}
-			*result++ = temp / blockSize;
-
-			blocks_B += blockSize;
-		}
-		blocks_A += blockSize;
+		Type M = block_A[i] - A_mean;
+		Type N = block_B[i] - B_mean;
+		X += M*N;
+		Y += M*M;
+		Z += N*N;
 	}
+
+	*result = X / std::sqrt(Y*Z);
 }
 
 template
-void standardize_cpu(float *sequence, int size);
+void lib_match_cc_cpu(float *, float *, int, float *);
 template
-void standardize_cpu(double *sequence, int size);
-template
-void block_match_cc_cpu(float *blocks_A, float *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, float *result);
-template
-void block_match_cc_cpu(double *blocks_A, double *blocks_B, int numberOfBlockA, int numberOfBlockBPerBlockA, int blockSize, double *result);
+void lib_match_cc_cpu(double *, double *, int, double *);

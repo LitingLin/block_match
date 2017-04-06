@@ -3,8 +3,8 @@
 #include "lib_match_internal.h"
 
 template <typename Type>
-using ProcessFunction = cudaError_t(*)(Type *blocks_A, Type *blocks_B, int numBlocks_A, int numBlocks_B,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+using ProcessFunction = cudaError_t(*)(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
 using ProcessFunctionCPU = void(*)(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
 typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
@@ -22,7 +22,7 @@ void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *devic
 
 	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream));
 
-	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockB, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
+	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
 		numberOfGpuProcessors, numberOfGpuThreads, stream));
 
 	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream));
@@ -232,9 +232,9 @@ template <typename Type,
 	
 	goto JumpIn;
 
-	for (indexA_M = indexA_M_begin; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
+	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
 	{
-		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
+		for (/*indexA_N = indexA_N_begin*/; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
 			copyBlock(c_bufferA, matrixA,

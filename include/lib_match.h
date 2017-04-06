@@ -102,12 +102,8 @@ public:
 	class Diagnose
 	{
 	public:
-		Diagnose(void *instance);
 		static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
-		double getFinishedPercentage();
-	private:
-		void *m_instance;
-	} dianose;
+	};
 private:
 	void *m_instance;
 };

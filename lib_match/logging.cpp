@@ -4,9 +4,9 @@
 
 LibMatchSinkFunction *sinkFunction = nullptr;
 
-void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction sinkFunction)
+void libMatchRegisterLoggingSinkFunction(LibMatchSinkFunction _sinkFunction)
 {
-	::sinkFunction = sinkFunction;
+	::sinkFunction = _sinkFunction;
 }
 
 class custom_sink : public spdlog::sinks::base_sink<std::mutex>

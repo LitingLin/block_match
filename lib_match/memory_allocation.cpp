@@ -101,7 +101,7 @@ void memory_allocation_counter::trigger_error(size_t size, malloc_type_enum type
 		"System:\t{}\t{}\n"
 		"Page Locked:\t{}\t{}\n"
 		"GPU:\t{}\t{}",
-		type, size,
+		std::string(malloc_type(type)), size,
 		current_memory_size, max_memory_size,
 		current_page_locked_memory_size, max_page_locked_memory_size,
 		current_gpu_memory_size, max_gpu_memory_size

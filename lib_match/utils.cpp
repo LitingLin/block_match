@@ -80,8 +80,3 @@ size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProc
 {
 	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread;
 }
-
-double diagnose::getFinishedPercentage(void* instance)
-{
-	
-}
