@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(test_cc_cpu_float)
 		198,100,131,10,150,58,78,256,239,69,39,38,35,23,185,
 		221,145,110,205,175,55,94,214,233,173,253,120,168,209,151};
 	float result;
-	block_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
+	lib_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
 	BOOST_CHECK_SMALL(result - 0.0014f, singleFloatingPointErrorTolerance);
 }
 
@@ -78,6 +78,6 @@ BOOST_AUTO_TEST_CASE(test_cc_cpu_double)
 		198,100,131,10,150,58,78,256,239,69,39,38,35,23,185,
 		221,145,110,205,175,55,94,214,233,173,253,120,168,209,151 };
 	double result;
-	block_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
+	lib_match_cc_cpu(a, b, sizeof(a) / sizeof(*a), &result);
 	BOOST_CHECK_SMALL(result - 0.0014, doubleFloatingPointErrorTolerance);
 }

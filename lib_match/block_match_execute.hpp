@@ -35,25 +35,25 @@ namespace SortMethodProxy {
 	template <typename Type>
 	void sortAscend(int *index, Type *value, int size, int retain)
 	{
-		block_sort(index, value, size);
+		lib_match_sort(index, value, size);
 	}
 
 	template <typename Type>
 	void sortPartialAscend(int *index, Type *value, int size, int retain)
 	{
-		block_sort_partial(index, value, size, retain);
+		lib_match_sort_partial(index, value, size, retain);
 	}
 
 	template <typename Type>
 	void sortDescend(int *index, Type *value, int size, int retain)
 	{
-		block_sort_descend(index, value, size);
+		lib_match_sort_descend(index, value, size);
 	}
 
 	template <typename Type>
 	void sortPartialDescend(int *index, Type *value, int size, int retain)
 	{
-		block_sort_partial_descend(index, value, size, retain);
+		lib_match_sort_partial_descend(index, value, size, retain);
 	}
 }
 

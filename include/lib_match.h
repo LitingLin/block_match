@@ -236,22 +236,20 @@ private:
 	};
 };
 
-enum class malloc_type_enum
-{
-	memory,
-	page_locked,
-	gpu
-};
-
 LIB_MATCH_EXPORT
 class malloc_type
 {
 public:
-	malloc_type(malloc_type_enum);
-	explicit operator malloc_type_enum() const;
+	enum class values {
+		memory,
+		page_locked,
+		gpu
+	};
+	malloc_type(values);
+	explicit operator values() const;
 	operator std::string() const;
 private:
-	malloc_type_enum type;
+	values type;
 };
 
 LIB_MATCH_EXPORT

@@ -99,6 +99,7 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\lib_match.h" />
+    <ClInclude Include="intrinsic_func_helper.hpp" />
     <ClInclude Include="lib_match_internal.h" />
     <ClInclude Include="execution_service.h" />
   </ItemGroup>
@@ -107,14 +108,14 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="instruction_set.cpp" />
     <ClCompile Include="interrupt_handler.cpp" />
     <ClCompile Include="lib_match.cpp" />
-    <ClCompile Include="block_match_cc_cpu.cpp" />
+    <ClCompile Include="lib_match_cc_cpu.cpp" />
     <ClInclude Include="block_match_execute.hpp" />
     <ClCompile Include="block_match_destroy.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="lib_match_internal.cpp" />
-    <ClCompile Include="block_match_mse_cpu.cpp" />
+    <ClCompile Include="lib_match_mse_cpu.cpp" />
     <ClCompile Include="block_match_execute.cpp" />
-    <ClCompile Include="block_match_sort.cpp" />
+    <ClCompile Include="lib_match_sort.cpp" />
     <ClCompile Include="block_copying.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="block_padding.cpp" />
@@ -126,8 +127,8 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="block_match_mse.cu" />
-    <CudaCompile Include="block_match_cc.cu" />
+    <CudaCompile Include="lib_match_mse.cu" />
+    <CudaCompile Include="lib_match_cc.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

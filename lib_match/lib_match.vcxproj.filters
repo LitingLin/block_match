@@ -11,10 +11,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="block_match_cc.cu">
+    <CudaCompile Include="lib_match_mse.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="block_match_mse.cu">
+    <CudaCompile Include="lib_match_cc.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
@@ -23,15 +23,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="block_match_initialize.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="block_match_sort.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="block_match_mse_cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="block_match_cc_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
@@ -79,6 +70,15 @@
     <ClCompile Include="memory_allocation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lib_match_sort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib_match_cc_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib_match_mse_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\lib_match.h">
@@ -91,6 +91,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="execution_service.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="intrinsic_func_helper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

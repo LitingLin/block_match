@@ -57,8 +57,7 @@ void zeroPadding(const T *src_ptr, T *dst_ptr,
 	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
 {
 	size_t new_n = n + n_pre + n_post;
-	size_t size;
-	size = new_n * m_pre;
+	size_t size = new_n * m_pre;
 	memset(dst_ptr, 0, size * sizeof(T));
 	dst_ptr += size;
 	for (size_t i_row = 0; i_row != m; i_row++)

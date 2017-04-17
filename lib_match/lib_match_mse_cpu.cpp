@@ -1,4 +1,4 @@
-#include <immintrin.h>
+#include "intrinsic_func_helper.hpp"
 
 template <typename Type>
 void lib_match_mse_cpu_avx2(Type *, Type *, int, Type *)
@@ -12,15 +12,12 @@ void lib_match_mse_cpu_avx2(float *block_A, float *block_B, int blockSize, float
 	__m256 t = _mm256_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
 	{
-		__m256 a = _mm256_load_ps(block_A);
-		__m256 b = _mm256_load_ps(block_B);
+		__m256 a = _mm256_load_ps(block_A + i);
+		__m256 b = _mm256_load_ps(block_B + i);
 		a = _mm256_sub_ps(a, b);
 		t = _mm256_fmadd_ps(a, a, t);
 	}
-	t = _mm256_hadd_ps(t, t);
-	t = _mm256_hadd_ps(t, t);
-	t = _mm256_hadd_ps(t, t);
-	*result = t.m256_f32[0] / blockSize;
+	*result = sum8f_avx(t) / blockSize;
 }
 
 template <>
@@ -29,14 +26,12 @@ void lib_match_mse_cpu_avx2(double *block_A, double *block_B, int blockSize, dou
 	__m256d t = _mm256_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
 	{
-		__m256d a = _mm256_load_pd(block_A);
-		__m256d b = _mm256_load_pd(block_B);
+		__m256d a = _mm256_load_pd(block_A + i);
+		__m256d b = _mm256_load_pd(block_B + i);
 		a = _mm256_sub_pd(a, b);
 		t = _mm256_fmadd_pd(a, a, t);
 	}
-	t = _mm256_hadd_pd(t, t);
-	t = _mm256_hadd_pd(t, t);
-	*result = t.m256d_f64[0] / blockSize;
+	*result = sum4d_avx(t) / blockSize;
 }
 
 template <typename Type>
@@ -51,16 +46,13 @@ void lib_match_mse_cpu_avx(float *block_A, float *block_B, int blockSize, float 
 	__m256 t = _mm256_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
 	{
-		__m256 a = _mm256_load_ps(block_A);
-		__m256 b = _mm256_load_ps(block_B);
+		__m256 a = _mm256_load_ps(block_A + i);
+		__m256 b = _mm256_load_ps(block_B + i);
 		a = _mm256_sub_ps(a, b);
 		a = _mm256_mul_ps(a, a);
 		t = _mm256_add_ps(a, t);
 	}
-	t = _mm256_hadd_ps(t, t);
-	t = _mm256_hadd_ps(t, t);
-	t = _mm256_hadd_ps(t, t);
-	*result = t.m256_f32[0] / blockSize;
+	*result = sum8f_avx(t) / blockSize;
 }
 
 template <>
@@ -69,18 +61,14 @@ void lib_match_mse_cpu_avx(double *block_A, double *block_B, int blockSize, doub
 	__m256d t = _mm256_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
 	{
-		__m256d a = _mm256_load_pd(block_A);
-		__m256d b = _mm256_load_pd(block_B);
+		__m256d a = _mm256_load_pd(block_A + i);
+		__m256d b = _mm256_load_pd(block_B + i);
 		a = _mm256_sub_pd(a, b);
 		a = _mm256_mul_pd(a, a);
 		t = _mm256_add_pd(a, t);
 	}
-	t = _mm256_hadd_pd(t, t);
-	t = _mm256_hadd_pd(t, t);
-	*result = t.m256d_f64[0] / blockSize;
+	*result = sum4d_avx(t) / blockSize;
 }
-
-#include <pmmintrin.h>
 
 template <typename Type>
 void lib_match_mse_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result)
@@ -94,15 +82,13 @@ void lib_match_mse_cpu_sse3(float *block_A, float *block_B, int blockSize, float
 	__m128 t = _mm_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m128) / sizeof(float))
 	{
-		__m128 a = _mm_load_ps(block_A);
-		__m128 b = _mm_load_ps(block_B);
+		__m128 a = _mm_load_ps(block_A + i);
+		__m128 b = _mm_load_ps(block_B + i);
 		a = _mm_sub_ps(a, b);
 		a = _mm_mul_ps(a, a);
 		t = _mm_add_ps(a, t);
 	}
-	t = _mm_hadd_ps(t, t);
-	t = _mm_hadd_ps(t, t);
-	*result = t.m128_f32[0] / blockSize;
+	*result = sum4f_sse3(t) / blockSize;
 }
 
 template <>
@@ -111,14 +97,13 @@ void lib_match_mse_cpu_sse3(double *block_A, double *block_B, int blockSize, dou
 	__m128d t = _mm_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m128d) / sizeof(double))
 	{
-		__m128d a = _mm_load_pd(block_A);
-		__m128d b = _mm_load_pd(block_B);
+		__m128d a = _mm_load_pd(block_A + i);
+		__m128d b = _mm_load_pd(block_B + i);
 		a = _mm_sub_pd(a, b);
 		a = _mm_mul_pd(a, a);
 		t = _mm_add_pd(a, t);
 	}
-	t = _mm_hadd_pd(t, t);
-	*result = t.m128d_f64[0] / blockSize;
+	*result = sum2d_sse3(t) / blockSize;
 }
 
 template <typename Type>

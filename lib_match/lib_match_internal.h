@@ -40,10 +40,10 @@ class memory_allocation_counter
 {
 public:
 	memory_allocation_counter();
-	void register_allocator(size_t size, malloc_type_enum type);
-	void allocated(size_t size, malloc_type_enum type);
-	void released(size_t size, malloc_type_enum type);
-	void trigger_error(size_t size, malloc_type_enum type) const;
+	void register_allocator(size_t size, malloc_type type);
+	void allocated(size_t size, malloc_type type);
+	void released(size_t size, malloc_type type);
+	void trigger_error(size_t size, malloc_type type) const;
 	void get_max_memory_required(size_t *max_memory_size,
 		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size) const;
 private:
@@ -56,164 +56,65 @@ private:
 } extern g_memory_allocator;
 
 
-template <typename Type>
-class system_memory_allocator
+template <typename Type, malloc_type::values malloc_type>
+class memory_allocator
 {
 public:
-	system_memory_allocator(size_t elem_size, bool is_temp = false);
-	~system_memory_allocator();
+	memory_allocator(size_t elem_size = 0);
+	~memory_allocator();
 	Type *alloc();
 	void release();
 	Type *get();
+	void resize(size_t elem_size);
 private:
 	void *ptr;
 	size_t size;
 };
-
-template <typename Type>
-system_memory_allocator<Type>::system_memory_allocator(size_t elem_size, bool is_temp)
+template <typename Type, malloc_type::values malloc_type>
+memory_allocator<Type, malloc_type>::memory_allocator(size_t elem_size)
 	: ptr(nullptr), size(elem_size * sizeof(Type))
 {
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, malloc_type_enum::memory);
 }
 
-template <typename Type>
-system_memory_allocator<Type>::~system_memory_allocator()
+template <typename Type, malloc_type::values malloc_type>
+memory_allocator<Type, malloc_type>::~memory_allocator()
 {
 	if (ptr)
 		release();
 }
 
-template <typename Type>
-Type* system_memory_allocator<Type>::alloc()
+template <typename Type, malloc_type::values malloc_type>
+Type *memory_allocator<Type, malloc_type>::alloc()
 {
 	ptr = malloc(size);
 	if (ptr)
-		g_memory_allocator.allocated(size, malloc_type_enum::memory);
+		g_memory_allocator.allocated(size, malloc_type);
 	else
-		g_memory_allocator.trigger_error(size, malloc_type_enum::memory);
+		g_memory_allocator.trigger_error(size, malloc_type);
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type>
-void system_memory_allocator<Type>::release()
+template <typename Type, malloc_type::values malloc_type>
+void memory_allocator<Type, malloc_type>::release()
 {
 	free(ptr);
-	g_memory_allocator.released(size, malloc_type_enum::memory);
+	g_memory_allocator.released(size, malloc_type);
 	ptr = nullptr;
 }
 
-template <typename Type>
-Type* system_memory_allocator<Type>::get()
+template <typename Type, malloc_type::values malloc_type>
+Type* memory_allocator<Type, malloc_type>::get()
 {
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type>
-class page_locked_memory_allocator
-{
-public:
-	page_locked_memory_allocator(size_t elem_size, bool is_temp = false);
-	~page_locked_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-page_locked_memory_allocator<Type>::page_locked_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, malloc_type_enum::page_locked);
-}
-
-template <typename Type>
-page_locked_memory_allocator<Type>::~page_locked_memory_allocator()
+template <typename Type, malloc_type::values malloc_type>
+void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 {
 	if (ptr)
 		release();
-}
-
-template <typename Type>
-Type* page_locked_memory_allocator<Type>::alloc()
-{
-	if (cudaMallocHost(&ptr, size) == cudaSuccess)
-		g_memory_allocator.allocated(size, malloc_type_enum::page_locked);
-	else
-		g_memory_allocator.trigger_error(size, malloc_type_enum::page_locked);
-	return static_cast<Type*>(ptr);
-}
-
-template <typename Type>
-void page_locked_memory_allocator<Type>::release()
-{
-	cudaFreeHost(ptr);
-	g_memory_allocator.released(size, malloc_type_enum::page_locked);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* page_locked_memory_allocator<Type>::get()
-{
-	return static_cast<Type*>(ptr);
-}
-
-template <typename Type>
-class gpu_memory_allocator
-{
-public:
-	gpu_memory_allocator(size_t elem_size, bool is_temp = false);
-	~gpu_memory_allocator();
-	Type *alloc();
-	void release();
-	Type *get();
-private:
-	void *ptr;
-	size_t size;
-};
-
-template <typename Type>
-gpu_memory_allocator<Type>::gpu_memory_allocator(size_t elem_size, bool is_temp)
-	: ptr(nullptr), size(elem_size * sizeof(Type))
-{
-	if (!is_temp)
-		g_memory_allocator.register_allocator(size, malloc_type_enum::gpu);
-}
-
-template <typename Type>
-gpu_memory_allocator<Type>::~gpu_memory_allocator()
-{
-	if (ptr)
-		release();
-}
-
-template <typename Type>
-Type* gpu_memory_allocator<Type>::alloc()
-{
-	if (cudaMalloc(&ptr, size) == cudaSuccess)
-		g_memory_allocator.allocated(size, malloc_type_enum::gpu);
-	else
-		g_memory_allocator.trigger_error(size, malloc_type_enum::gpu);
-	return static_cast<Type*>(ptr);
-}
-
-template <typename Type>
-void gpu_memory_allocator<Type>::release()
-{
-	cudaFree(ptr);
-	g_memory_allocator.released(size, malloc_type_enum::gpu);
-	ptr = nullptr;
-}
-
-template <typename Type>
-Type* gpu_memory_allocator<Type>::get()
-{
-	return static_cast<Type*>(ptr);
+	size = elem_size * sizeof(Type);
+	g_memory_allocator.register_allocator(size, malloc_type);
 }
 
 /*
@@ -265,7 +166,6 @@ private:
 	cudaStream_t stream;
 };
 
-// TODO support int64
 template <typename Type>
 struct BlockMatchContext
 {
@@ -319,7 +219,6 @@ struct BlockMatchContext
 	int C_dimensions[3];
 
 	std::vector<cudaStreamWarper> streams;
-
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
 	std::vector<void *>threadPoolTaskHandle;
@@ -441,71 +340,47 @@ template <typename Type>
 void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
 template <typename Type>
-cudaError_t block_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
-cudaError_t block_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
-cudaError_t block_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
 	int block_B_blockSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
-cudaError_t block_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
+cudaError_t lib_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 
 template <typename Type>
-void block_match_mse_cpu(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
+void lib_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_match_mse_cpu_sse3(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
+void lib_match_mse_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_match_mse_cpu_avx(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
+void lib_match_mse_cpu_avx(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_match_mse_cpu_avx2(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
-template <typename Type>
-void block_match_cc_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
-template <typename Type>
-void block_match_cc_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result);
-template <typename Type>
-void block_match_cc_cpu_avx(Type *block_A, Type *block_B, int blockSize, Type *result);
-template <typename Type>
-void block_match_cc_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *result);
+void lib_match_mse_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *result);
 
 template <typename Type>
-void block_sort(int *index, Type *value, int size);
+void lib_match_cc_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_sort_partial(int *index, Type *value, int size, int retain);
+void lib_match_cc_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_sort_descend(int *index, Type *value, int size);
+void lib_match_cc_cpu_avx(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void block_sort_partial_descend(int *index, Type *value, int size, int retain);
+void lib_match_cc_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *result);
+
+template <typename Type>
+void lib_match_sort(int *index, Type *value, int size);
+template <typename Type>
+void lib_match_sort_partial(int *index, Type *value, int size, int retain);
+template <typename Type>
+void lib_match_sort_descend(int *index, Type *value, int size);
+template <typename Type>
+void lib_match_sort_partial_descend(int *index, Type *value, int size, int retain);
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations);
-
-template <typename Type>
-cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
-	int lengthOfArray,
-	int numberOfProcessors, int numberOfThreads);
-template <typename Type>
-cudaError_t arrayMatchMse(Type *A, Type *B, Type *C,
-	int lengthOfArray, int numberOfArray,
-	int numberOfProcessors, int numberOfThreads);
-template <typename Type>
-cudaError_t arrayMatchCc(Type *A, Type *B, Type *C,
-	int lengthOfArray, int numberOfArray,
-	int numberOfProcessors, int numberOfThreads);
-
-
-size_t arrayMatchPerThreadDeviceBufferASize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray);
-
-size_t arrayMatchPerThreadDeviceBufferBSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray);
-
-size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread);
 
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
@@ -605,3 +480,6 @@ fatal_error_logging(__FILE__, __LINE__, __func__, #exp1, #op, #exp2).stream() <<
 	fatal_error_logging(__FILE__, __LINE__, __func__).stream() << "Unknown internal error. "
 
 void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
+
+void *aligned_block_malloc(size_t size, size_t alignment);
+void aligned_free(void *ptr);

@@ -27,7 +27,7 @@ void custom_sink::_sink_it(const spdlog::details::log_msg& msg)
 		sinkFunction(msg.formatted.c_str());
 }
 
-spdlog::logger logger("logging", std::make_shared<custom_sink>());
+spdlog::logger logger("libmatch", std::make_shared<custom_sink>());
 
 const char *get_base_file_name(const char *file_name)
 {

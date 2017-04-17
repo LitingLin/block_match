@@ -15,7 +15,8 @@ accumulate(const Type *begin, const Type *end)
 
 template <typename Type>
 __device__ inline void
-lib_match_cc_helper(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize, Type *resultsBuffer, int tid)
+lib_match_cc_kernel_helper(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize,
+	Type *resultsBuffer, int tid)
 {
 	int groupIndex = tid / numberOfBlockBPerBlockA;
 
@@ -46,26 +47,28 @@ lib_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, int numberOfBloc
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 	
-	lib_match_cc_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
+	lib_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
 }
 
 template <typename Type>
 __global__ void
-lib_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize, Type *resultsBuffer, int n)
+lib_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, int numberOfBlockBPerBlockA, int blockSize, Type *resultsBuffer, 
+	int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (tid >= n)
 		return;
 		
-	lib_match_cc_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
+	lib_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
 }
 
 template <typename Type>
 cudaError_t lib_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A,
 	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	lib_match_cc_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result);
+	lib_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
+		(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result);
 
 	return cudaGetLastError();
 }
@@ -74,8 +77,8 @@ template <typename Type>
 cudaError_t lib_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
 	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream)
 {
-	lib_match_cc_kernel << <numProcessors, numThreads, 0, stream >> > (blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result, 
-	numberOfBlockBPerBlockA*numBlocks_A);
+	lib_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
+		(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result, numberOfBlockBPerBlockA*numBlocks_A);
 
 	return cudaGetLastError();
 }

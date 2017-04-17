@@ -67,7 +67,7 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 	const int numberOfThreads = context->numberOfThreads;
 
 	std::vector<typename BlockMatchContext<Type>::WorkerContext> &workerContext = context->workerContext;
-	
+
 	const int numberOfSubmitProcessors = context->numberOfSubmitProcessors;
 	const int numberOfSubmitThreadsPerProcessor = context->numberOfSubmitThreadsPerProcessor;
 	const int block_M = context->block_M;
@@ -75,7 +75,7 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 
 	const size_t sizeOfTaskQueue = context->sizeOfGpuTaskQueue * context->numberOfBlockBPerBlockA;
 	const size_t sizeOfTaskSourceData = sizeOfTaskQueue * block_M * block_N;
-	
+
 	const int numberOfBlockBPerBlockA_M = context->numberOfBlockBPerBlockA_M;
 	const int numberOfBlockBPerBlockA_N = context->numberOfBlockBPerBlockA_N;
 	const int matrixC_M = context->C_dimensions[0], matrixC_N = context->C_dimensions[1], matrixC_O = context->C_dimensions[2];
@@ -120,6 +120,48 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 	{
 		return getLength(matrixB, matrixBPadding_pre, matrixBPadding_post, block, strideB);
 	}
+}
+
+template <typename Type>
+void resourceInitialize_GPU_sorting(BlockMatchContext<Type> *instance, const int numberOfBlockBPerBlockA, )
+{
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
+
+	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
+		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
+
+
+	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
+	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
+
+
+	instance->workerContext.reserve(numberOfThreads);
+	instance->threadPoolTaskHandle.reserve(numberOfThreads);
+	instance->streams.resize(numberOfThreads);
+	instance->perThreadBuffer.reserve(numberOfThreads);
+
+	for (int i = 0; i < numberOfThreads; ++i)
+	{
+		instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
+			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_buffer
+			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_buffer
+			page_locked_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_buffer
+			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
+			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_deviceBuffer
+			gpu_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
+			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+			system_memory_allocator<int>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
+		});
+	}
+
+	initializeInstanceWorkerContext(instance, sequenceABorderType);
+
+	instance->common_buffer.alloc();
+	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
 }
 
 template <typename Type>
@@ -220,6 +262,13 @@ void BlockMatch<Type>::initialize(
 	PadFunction<Type> *padFunctionB = nullptr;
 	ExecutionFunction<Type> *executionFunction = nullptr;
 
+	/*
+		if (sort && searchType == SearchType::local && measureMethod == LibMatchMeasureMethod::mse
+			&& numberOfIndexRetain && sequenceABorderType == BorderType::normal && searchFrom == SearchFrom::topLeft)
+		{
+
+		}*/
+
 	if (sort) {
 		if (searchType == SearchType::local)
 		{
@@ -228,63 +277,63 @@ void BlockMatch<Type>::initialize(
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 		}
 		else if (searchType == SearchType::global)
 		{
@@ -292,33 +341,33 @@ void BlockMatch<Type>::initialize(
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			}
 			else if (measureMethod == LibMatchMeasureMethod::cc) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						block_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 			}
 			else
 				NOT_IMPLEMENTED_ERROR;
@@ -331,17 +380,17 @@ void BlockMatch<Type>::initialize(
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
 			else
 				NOT_IMPLEMENTED_ERROR;
 		}
@@ -350,17 +399,17 @@ void BlockMatch<Type>::initialize(
 			if (measureMethod == LibMatchMeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					block_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					block_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
 			else if (measureMethod == LibMatchMeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					block_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					block_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
 			else
 				NOT_IMPLEMENTED_ERROR;
 		}
@@ -399,39 +448,28 @@ void BlockMatch<Type>::initialize(
 		break;
 	default: break;
 	}
-	
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
 	const int numberOfBlockBPerBlockA = numberOfBlockBPerBlockA_M * numberOfBlockBPerBlockA_N;
 
-	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
-
-	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
-		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
-	
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 
-	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
-
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
-	matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
-	block_M, block_N,
-	searchRegion_M, searchRegion_N,
-	strideA_M, strideA_N, strideB_M, strideB_N,
-	matrixAPadding_M_pre, matrixAPadding_M_post,matrixAPadding_N_pre, matrixAPadding_N_post,
-	matrixBPadding_M_pre, matrixBPadding_M_post, matrixBPadding_N_pre, matrixBPadding_N_post,
-	indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end,
-	numberOfIndexRetain,
-	numberOfThreads,
-	padFunctionA, padFunctionB , executionFunction,
+		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
+		block_M, block_N,
+		searchRegion_M, searchRegion_N,
+		strideA_M, strideA_N, strideB_M, strideB_N,
+		matrixAPadding_M_pre, matrixAPadding_M_post,matrixAPadding_N_pre, matrixAPadding_N_post,
+		matrixBPadding_M_pre, matrixBPadding_M_post, matrixBPadding_N_pre, matrixBPadding_N_post,
+		indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end,
+		numberOfIndexRetain,
+		numberOfThreads,
+		padFunctionA, padFunctionB , executionFunction,
 		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
 		{matrixC_M, matrixC_N, matrixC_X},
-		std::vector<cudaStreamWarper>(numberOfThreads), // streams
-		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue,
+		std::vector<cudaStreamWarper>(), // streams
+		0, 0, 0, // numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue
 		std::vector<void *>(), // threadPoolTaskHandle
 		system_memory_allocator<int>(numberOfBlockBPerBlockA), // common_buffer
 		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
@@ -439,6 +477,21 @@ void BlockMatch<Type>::initialize(
 		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
+
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+
+	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
+
+	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
+		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
+
+	instance->numberOfSubmitThreadsPerProcessor = numberOfSubmitThreadsPerProcessor;
+	instance->numberOfSubmitProcessors = numberOfSubmitProcessors;
+	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
+
+	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
+	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
 
 	instance->workerContext.reserve(numberOfThreads);
 	instance->threadPoolTaskHandle.reserve(numberOfThreads);

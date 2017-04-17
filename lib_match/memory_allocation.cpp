@@ -7,12 +7,12 @@
 
 memory_allocation_counter g_memory_allocator;
 
-malloc_type::malloc_type(malloc_type_enum type)
+malloc_type::malloc_type(values type)
 	: type(type)
 {
 }
 
-malloc_type::operator malloc_type_enum() const
+malloc_type::operator values() const
 {
 	return type;
 }
@@ -21,13 +21,13 @@ malloc_type::operator std::string() const
 {
 	switch (type)
 	{
-	case malloc_type_enum::memory:
+	case values::memory:
 		return "System";
 		break;
-	case malloc_type_enum::page_locked:
+	case values::page_locked:
 		return "Page locked";
 		break;
-	case malloc_type_enum::gpu:
+	case values::gpu:
 		return "GPU";
 		break;
 	default:;
@@ -42,58 +42,58 @@ memory_allocation_counter::memory_allocation_counter()
 {
 }
 
-void memory_allocation_counter::register_allocator(size_t size, malloc_type_enum type)
+void memory_allocation_counter::register_allocator(size_t size, malloc_type type)
 {
-	switch (type)
+	switch (malloc_type::values(type))
 	{
-	case malloc_type_enum::memory:
+	case malloc_type::values::memory:
 		max_memory_size += size;
 		break;
-	case malloc_type_enum::page_locked:
+	case malloc_type::values::page_locked:
 		max_page_locked_memory_size += size;
 		break;
-	case malloc_type_enum::gpu:
+	case malloc_type::values::gpu:
 		max_gpu_memory_size += size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::allocated(size_t size, malloc_type_enum type)
+void memory_allocation_counter::allocated(size_t size, malloc_type type)
 {
-	switch (type)
+	switch (malloc_type::values(type))
 	{
-	case malloc_type_enum::memory:
+	case malloc_type::values::memory:
 		current_memory_size += size;
 		break;
-	case malloc_type_enum::page_locked:
+	case malloc_type::values::page_locked:
 		current_page_locked_memory_size += size;
 		break;
-	case malloc_type_enum::gpu:
+	case malloc_type::values::gpu:
 		current_gpu_memory_size += size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::released(size_t size, malloc_type_enum type)
+void memory_allocation_counter::released(size_t size, malloc_type type)
 {
-	switch (type)
+	switch (malloc_type::values(type))
 	{
-	case malloc_type_enum::memory:
+	case malloc_type::values::memory:
 		current_memory_size -= size;
 		break;
-	case malloc_type_enum::page_locked:
+	case malloc_type::values::page_locked:
 		current_page_locked_memory_size -= size;
 		break;
-	case malloc_type_enum::gpu:
+	case malloc_type::values::gpu:
 		current_gpu_memory_size -= size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::trigger_error(size_t size, malloc_type_enum type) const
+void memory_allocation_counter::trigger_error(size_t size, malloc_type type) const
 {
 	throw memory_alloc_exception(fmt::format(
 		"{} memory allocation failed with {} bytes.\n"
@@ -111,7 +111,8 @@ void memory_allocation_counter::trigger_error(size_t size, malloc_type_enum type
 		current_memory_size, current_page_locked_memory_size, current_gpu_memory_size);
 }
 
-void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size_, size_t* max_page_locked_memory_size_, size_t* max_gpu_memory_size_) const
+void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size_, size_t* max_page_locked_memory_size_,
+	size_t* max_gpu_memory_size_) const
 {
 	*max_memory_size_ = this->max_memory_size;
 	*max_page_locked_memory_size_ = this->max_page_locked_memory_size;
@@ -119,17 +120,18 @@ void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size_
 }
 
 template <typename Type>
-void BlockMatch<Type>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size, size_t* max_gpu_memory_size)
+void BlockMatch<Type>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size,
+	size_t* max_gpu_memory_size)
 {
 	g_memory_allocator.get_max_memory_required(max_memory_size,
 		max_page_locked_memory_size, max_gpu_memory_size);
 }
 LIB_MATCH_EXPORT
 template 
-void BlockMatch<float>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size, size_t* max_gpu_memory_size);
+void BlockMatch<float>::Diagnose::getMaxMemoryUsage(size_t*, size_t*, size_t*);
 LIB_MATCH_EXPORT
 template 
-void BlockMatch<double>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size, size_t* max_gpu_memory_size);
+void BlockMatch<double>::Diagnose::getMaxMemoryUsage(size_t*, size_t* , size_t*);
 
 memory_alloc_exception::memory_alloc_exception(const std::string& _Message,
 	malloc_type type,
@@ -194,4 +196,23 @@ size_t memory_alloc_exception::get_current_page_locked_memory_size() const
 size_t memory_alloc_exception::get_current_gpu_memory_size() const
 {
 	return current_gpu_memory_size;
+}
+
+void *aligned_block_malloc(size_t size, size_t alignment)
+{
+	if (size % alignment)
+		size += (alignment - size % alignment);
+
+	void *ptr = _aligned_malloc(size, alignment);
+
+	if (!ptr)
+		throw std::runtime_error("");
+
+	memset(ptr, 0, size);
+	return ptr;
+}
+
+void aligned_free(void *ptr)
+{
+	_aligned_free(ptr);
 }
