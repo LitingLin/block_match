@@ -7,27 +7,17 @@
 
 memory_allocation_counter g_memory_allocator;
 
-malloc_type::malloc_type(values type)
-	: type(type)
-{
-}
-
-malloc_type::operator values() const
-{
-	return type;
-}
-
-malloc_type::operator std::string() const
+std::string to_string(malloc_type type)
 {
 	switch (type)
 	{
-	case values::memory:
+	case malloc_type::memory:
 		return "System";
 		break;
-	case values::page_locked:
+	case malloc_type::page_locked:
 		return "Page locked";
 		break;
-	case values::gpu:
+	case malloc_type::gpu:
 		return "GPU";
 		break;
 	default:;
@@ -44,15 +34,15 @@ memory_allocation_counter::memory_allocation_counter()
 
 void memory_allocation_counter::register_allocator(size_t size, malloc_type type)
 {
-	switch (malloc_type::values(type))
+	switch (type)
 	{
-	case malloc_type::values::memory:
+	case malloc_type::memory:
 		max_memory_size += size;
 		break;
-	case malloc_type::values::page_locked:
+	case malloc_type::page_locked:
 		max_page_locked_memory_size += size;
 		break;
-	case malloc_type::values::gpu:
+	case malloc_type::gpu:
 		max_gpu_memory_size += size;
 		break;
 	default:;
@@ -61,15 +51,15 @@ void memory_allocation_counter::register_allocator(size_t size, malloc_type type
 
 void memory_allocation_counter::allocated(size_t size, malloc_type type)
 {
-	switch (malloc_type::values(type))
+	switch (type)
 	{
-	case malloc_type::values::memory:
+	case malloc_type::memory:
 		current_memory_size += size;
 		break;
-	case malloc_type::values::page_locked:
+	case malloc_type::page_locked:
 		current_page_locked_memory_size += size;
 		break;
-	case malloc_type::values::gpu:
+	case malloc_type::gpu:
 		current_gpu_memory_size += size;
 		break;
 	default:;
@@ -78,15 +68,15 @@ void memory_allocation_counter::allocated(size_t size, malloc_type type)
 
 void memory_allocation_counter::released(size_t size, malloc_type type)
 {
-	switch (malloc_type::values(type))
+	switch (type)
 	{
-	case malloc_type::values::memory:
+	case malloc_type::memory:
 		current_memory_size -= size;
 		break;
-	case malloc_type::values::page_locked:
+	case malloc_type::page_locked:
 		current_page_locked_memory_size -= size;
 		break;
-	case malloc_type::values::gpu:
+	case malloc_type::gpu:
 		current_gpu_memory_size -= size;
 		break;
 	default:;
@@ -101,7 +91,7 @@ void memory_allocation_counter::trigger_error(size_t size, malloc_type type) con
 		"System:\t{}\t{}\n"
 		"Page Locked:\t{}\t{}\n"
 		"GPU:\t{}\t{}",
-		std::string(malloc_type(type)), size,
+		to_string(type), size,
 		current_memory_size, max_memory_size,
 		current_page_locked_memory_size, max_page_locked_memory_size,
 		current_gpu_memory_size, max_gpu_memory_size
@@ -126,6 +116,7 @@ void BlockMatch<Type>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size
 	g_memory_allocator.get_max_memory_required(max_memory_size,
 		max_page_locked_memory_size, max_gpu_memory_size);
 }
+
 LIB_MATCH_EXPORT
 template 
 void BlockMatch<float>::Diagnose::getMaxMemoryUsage(size_t*, size_t*, size_t*);

@@ -1,11 +1,24 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <bitset>
 #include <array>
 
-#define LIB_MATCH_EXPORT 
+#if defined _WIN32
+#ifdef LIB_MATCH_BUILD_DLL
+#define LIB_MATCH_EXPORT __declspec(dllexport)
+#else
+#define LIB_MATCH_EXPORT __declspec(dllimport)
+#endif
+#else
+#ifdef LIB_MATCH_BUILD_DLL
+#define LIB_MATCH_EXPORT __attribute__ ((visibility ("default")))
+#else
+#define LIB_MATCH_EXPORT
+#endif
+#endif
 
 enum class LibMatchMeasureMethod { mse, cc };
 
@@ -66,7 +79,6 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
 */
 
-LIB_MATCH_EXPORT
 template <typename Type>
 class BlockMatch
 {
@@ -236,21 +248,14 @@ private:
 	};
 };
 
-LIB_MATCH_EXPORT
-class malloc_type
-{
-public:
-	enum class values {
-		memory,
-		page_locked,
-		gpu
-	};
-	malloc_type(values);
-	explicit operator values() const;
-	operator std::string() const;
-private:
-	values type;
+enum class malloc_type {
+	memory,
+	page_locked,
+	gpu
 };
+
+LIB_MATCH_EXPORT
+std::string to_string(malloc_type type);
 
 LIB_MATCH_EXPORT
 class memory_alloc_exception : public std::runtime_error
@@ -258,12 +263,12 @@ class memory_alloc_exception : public std::runtime_error
 public:
 	memory_alloc_exception(const std::string& _Message,
 		malloc_type type,
-		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
 
 	memory_alloc_exception(const char* _Message,
 		malloc_type type,
-		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size, 
+		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
 
 	malloc_type get_memory_allocation_type() const;

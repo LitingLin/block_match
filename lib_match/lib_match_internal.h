@@ -56,7 +56,7 @@ private:
 } extern g_memory_allocator;
 
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 class memory_allocator
 {
 public:
@@ -70,20 +70,20 @@ private:
 	void *ptr;
 	size_t size;
 };
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 memory_allocator<Type, malloc_type>::memory_allocator(size_t elem_size)
 	: ptr(nullptr), size(elem_size * sizeof(Type))
 {
 }
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 memory_allocator<Type, malloc_type>::~memory_allocator()
 {
 	if (ptr)
 		release();
 }
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 Type *memory_allocator<Type, malloc_type>::alloc()
 {
 	ptr = malloc(size);
@@ -94,7 +94,7 @@ Type *memory_allocator<Type, malloc_type>::alloc()
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 void memory_allocator<Type, malloc_type>::release()
 {
 	free(ptr);
@@ -102,13 +102,13 @@ void memory_allocator<Type, malloc_type>::release()
 	ptr = nullptr;
 }
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 Type* memory_allocator<Type, malloc_type>::get()
 {
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type, malloc_type::values malloc_type>
+template <typename Type, malloc_type malloc_type>
 void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 {
 	if (ptr)
@@ -223,7 +223,7 @@ struct BlockMatchContext
 
 	std::vector<void *>threadPoolTaskHandle;
 
-	system_memory_allocator<int> common_buffer; // index template
+	memory_allocator<int, malloc_type::values::memory> common_buffer; // index template
 	
 	struct WorkerContext
 	{
@@ -384,21 +384,6 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 
 void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int patch_N,
 	int *M_left, int *M_right, int *N_left, int *N_right);
-
-template <typename Type>
-BlockMatchContext<Type> * allocateContext(const int numberOfThreads);
-enum class InternalBufferType
-{
-	MatrixA_Padded_Buffer,
-	MatrixB_Padded_Buffer,
-	Index_X_Internal,
-	Index_Y_Internal
-};
-
-template <typename Type>
-bool allocateInternalBuffer(BlockMatchContext<Type> *context, enum class InternalBufferType bufferType);
-template <typename Type>
-void initializeWorkerInternalBuffer(BlockMatchContext<Type> *context, void *buffer, enum class InternalBufferType bufferType);
 
 bool isInterruptPending();
 
