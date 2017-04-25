@@ -4,17 +4,17 @@
  * RAII warpers
  */
 
-cudaStreamWarper::cudaStreamWarper()
+cudaStream_guard::cudaStream_guard()
 {
 	CUDA_CHECK_POINT(cudaStreamCreate(&stream));
 }
 
-cudaStreamWarper::~cudaStreamWarper()
+cudaStream_guard::~cudaStream_guard()
 {
 	CUDA_CHECK_POINT(cudaStreamDestroy(stream));
 }
 
-cudaStreamWarper::operator cudaStream_t() const
+cudaStream_guard::operator cudaStream_t() const
 {
 	return stream;
 }

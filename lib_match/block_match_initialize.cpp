@@ -468,7 +468,7 @@ void BlockMatch<Type>::initialize(
 		padFunctionA, padFunctionB , executionFunction,
 		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
 		{matrixC_M, matrixC_N, matrixC_X},
-		std::vector<cudaStreamWarper>(), // streams
+		std::vector<cudaStream_guard>(), // streams
 		0, 0, 0, // numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue
 		std::vector<void *>(), // threadPoolTaskHandle
 		system_memory_allocator<int>(numberOfBlockBPerBlockA), // common_buffer

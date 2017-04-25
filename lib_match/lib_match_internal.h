@@ -156,11 +156,11 @@ using PadFunction = void(const Type *old_ptr, Type *new_ptr,
 template <typename Type>
 using ExecutionFunction = unsigned(ExecutionContext<Type> *);
 
-class cudaStreamWarper
+class cudaStream_guard
 {
 public:
-	cudaStreamWarper();
-	~cudaStreamWarper();
+	cudaStream_guard();
+	~cudaStream_guard();
 	operator cudaStream_t() const;
 private:
 	cudaStream_t stream;
@@ -218,7 +218,7 @@ struct BlockMatchContext
 
 	int C_dimensions[3];
 
-	std::vector<cudaStreamWarper> streams;
+	std::vector<cudaStream_guard> streams;
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
 
 	std::vector<void *>threadPoolTaskHandle;
