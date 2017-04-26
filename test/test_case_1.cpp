@@ -18,14 +18,15 @@ BOOST_AUTO_TEST_CASE(test_case_1)
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BlockMatch<float> match;
-	match.initialize(SearchType::local, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::includeLastBlock, SearchFrom::topLeft, true,
+	BlockMatch<float> match(SearchType::local, LibMatchMeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::includeLastBlock, SearchFrom::topLeft, true,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		0, 0, 0, 0, 0, 0, 0, 0,
-		numberOfResultRetain,
-		&matrixC_M, &matrixC_N, &matrixC_O,
-		&matrixA_padded_M, &matrixA_padded_N,
-		&matrixB_padded_M, &matrixB_padded_N);
+		numberOfResultRetain);
+	match.initialize();
+	int n_matrixC_dims;
+	match.get_matrixC_dimensions(&n_matrixC_dims, &matrixC_M, &matrixC_N, &matrixC_O);
+	match.get_matrixA_padded_dimensions(&matrixA_padded_M, &matrixA_padded_N);
+	match.get_matrixB_padded_dimensions(&matrixB_padded_M, &matrixB_padded_N);
 
 	float *matrixC = (float*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
 	float *matrixAPadded = (float*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(float));

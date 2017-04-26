@@ -7,17 +7,17 @@
 
 memory_allocation_counter g_memory_allocator;
 
-std::string to_string(malloc_type type)
+std::string to_string(memory_type type)
 {
 	switch (type)
 	{
-	case malloc_type::memory:
+	case memory_type::system:
 		return "System";
 		break;
-	case malloc_type::page_locked:
+	case memory_type::page_locked:
 		return "Page locked";
 		break;
-	case malloc_type::gpu:
+	case memory_type::gpu:
 		return "GPU";
 		break;
 	default:;
@@ -32,61 +32,78 @@ memory_allocation_counter::memory_allocation_counter()
 {
 }
 
-void memory_allocation_counter::register_allocator(size_t size, malloc_type type)
+void memory_allocation_counter::register_allocator(size_t size, memory_type type)
 {
 	switch (type)
 	{
-	case malloc_type::memory:
+	case memory_type::system:
 		max_memory_size += size;
 		break;
-	case malloc_type::page_locked:
+	case memory_type::page_locked:
 		max_page_locked_memory_size += size;
 		break;
-	case malloc_type::gpu:
+	case memory_type::gpu:
 		max_gpu_memory_size += size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::allocated(size_t size, malloc_type type)
+void memory_allocation_counter::unregister_allocator(size_t size, memory_type type)
 {
 	switch (type)
 	{
-	case malloc_type::memory:
+	case memory_type::system:
+		max_memory_size -= size;
+		break;
+	case memory_type::page_locked:
+		max_page_locked_memory_size -= size;
+		break;
+	case memory_type::gpu:
+		max_gpu_memory_size -= size;
+		break;
+	default:;
+	}
+}
+
+void memory_allocation_counter::allocated(size_t size, memory_type type)
+{
+	switch (type)
+	{
+	case memory_type::system:
 		current_memory_size += size;
 		break;
-	case malloc_type::page_locked:
+	case memory_type::page_locked:
 		current_page_locked_memory_size += size;
 		break;
-	case malloc_type::gpu:
+	case memory_type::gpu:
 		current_gpu_memory_size += size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::released(size_t size, malloc_type type)
+void memory_allocation_counter::released(size_t size, memory_type type)
 {
 	switch (type)
 	{
-	case malloc_type::memory:
+	case memory_type::system:
 		current_memory_size -= size;
 		break;
-	case malloc_type::page_locked:
+	case memory_type::page_locked:
 		current_page_locked_memory_size -= size;
 		break;
-	case malloc_type::gpu:
+	case memory_type::gpu:
 		current_gpu_memory_size -= size;
 		break;
 	default:;
 	}
 }
 
-void memory_allocation_counter::trigger_error(size_t size, malloc_type type) const
+void memory_allocation_counter::trigger_error(size_t size, memory_type type) const
 {
 	throw memory_alloc_exception(fmt::format(
-		"{} memory allocation failed with {} bytes.\n"
+		"{} system allocation failed with {} bytes.\n"
 		"\tCurrent\tMax(estimated)\n"
 		"System:\t{}\t{}\n"
 		"Page Locked:\t{}\t{}\n"
@@ -117,15 +134,15 @@ void BlockMatch<Type>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size
 		max_page_locked_memory_size, max_gpu_memory_size);
 }
 
+template
 LIB_MATCH_EXPORT
-template 
 void BlockMatch<float>::Diagnose::getMaxMemoryUsage(size_t*, size_t*, size_t*);
+template
 LIB_MATCH_EXPORT
-template 
 void BlockMatch<double>::Diagnose::getMaxMemoryUsage(size_t*, size_t* , size_t*);
 
 memory_alloc_exception::memory_alloc_exception(const std::string& _Message,
-	malloc_type type,
+	memory_type type,
 	size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 	size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size)
 	: runtime_error(_Message),
@@ -140,7 +157,7 @@ memory_alloc_exception::memory_alloc_exception(const std::string& _Message,
 }
 
 memory_alloc_exception::memory_alloc_exception(const char* _Message,
-	malloc_type type,
+	memory_type type,
 	size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 	size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size)
 	: runtime_error(_Message),
@@ -154,7 +171,7 @@ memory_alloc_exception::memory_alloc_exception(const char* _Message,
 {
 }
 
-malloc_type memory_alloc_exception::get_memory_allocation_type() const
+memory_type memory_alloc_exception::get_memory_allocation_type() const
 {
 	return type;
 }

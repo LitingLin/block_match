@@ -22,28 +22,10 @@ void BlockMatch<Type>::execute(Type *A, Type *B,
 		B_N_padPost = instance->matrixBPadding_N_post,
 		numberOfThreads = instance->numberOfThreads;
 
-	// TODO: Fix
 	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
 	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
-	if (instance->perThreadBuffer[0].matrixA_buffer.get() == nullptr)
-	{
-		for (int indexOfThread = 0; indexOfThread != instance->numberOfThreads; ++indexOfThread)
-		{
-			typename BlockMatchContext<Type>::PerThreadBuffer &perThreadBuffer = instance->perThreadBuffer[indexOfThread];
-			perThreadBuffer.matrixA_buffer.alloc();
-			perThreadBuffer.matrixB_buffer.alloc();
-			perThreadBuffer.matrixC_buffer.alloc();
-			perThreadBuffer.matrixA_deviceBuffer.alloc();
-			perThreadBuffer.matrixB_deviceBuffer.alloc();
-			perThreadBuffer.matrixC_deviceBuffer.alloc();
-			perThreadBuffer.index_x_sorting_buffer.alloc();
-			perThreadBuffer.index_y_sorting_buffer.alloc();
-			perThreadBuffer.index_raw_sorting_buffer.alloc();
-		}
-	}
-
-	execution_service &pool = globalContext.pool;
+	execution_service &exec_serv = globalContext.exec_serv;
 
 	for (int i = 0; i < numberOfThreads; ++i)
 	{
@@ -90,38 +72,38 @@ void BlockMatch<Type>::execute(Type *A, Type *B,
 		executionContext->strideB_N = instance->strideB_N;
 		executionContext->matrixC = C + instance->workerContext[i].rawMatrixCIndex_begin * instance->C_dimensions[2];
 
-		instance->threadPoolTaskHandle[i] = pool.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
+		instance->threadPoolTaskHandle[i] = exec_serv.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
 			static_cast<void*>(executionContext));
 	}
 
 	for (int i = 0; i < numberOfThreads; ++i)
 	{
-		pool.join(instance->threadPoolTaskHandle[i]);
+		exec_serv.join(instance->threadPoolTaskHandle[i]);
 	}
 	bool isFailed = false;
 
 	std::string error_message;
 	for (int i = 0; i < numberOfThreads; ++i)
 	{
-		if (pool.get_rc(instance->threadPoolTaskHandle[i]) != 0)
+		if (exec_serv.get_rc(instance->threadPoolTaskHandle[i]) != 0)
 			isFailed = true;
-		error_message += pool.get_exp_what(instance->threadPoolTaskHandle[i]);
-		pool.release(instance->threadPoolTaskHandle[i]);
+		error_message += exec_serv.get_exp_what(instance->threadPoolTaskHandle[i]);
+		exec_serv.release(instance->threadPoolTaskHandle[i]);
 	}
 
 	if (isFailed)
 		throw std::runtime_error(error_message);
 }
 
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void BlockMatch<float>::execute(float *A, float *B,
 	float *C,
 	float *padded_A, float *padded_B,
 	int *index_x, int *index_y);
 
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void BlockMatch<double>::execute(double *A, double *B,
 	double *C,
 	double *padded_A, double *padded_B,

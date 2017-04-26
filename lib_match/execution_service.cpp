@@ -14,8 +14,8 @@ execution_service::execution_service(unsigned num)
 		abort();
 #endif
 
-	SetThreadpoolThreadMaximum((PTP_POOL)pool, num);
-	BOOL isOK = SetThreadpoolThreadMinimum((PTP_POOL)pool, 0);
+	SetThreadpoolThreadMaximum(static_cast<PTP_POOL>(pool), num);
+	BOOL isOK = SetThreadpoolThreadMinimum(static_cast<PTP_POOL>(pool), 0);
 #ifndef NDEBUG
 	if (!isOK)
 		abort();
@@ -24,7 +24,7 @@ execution_service::execution_service(unsigned num)
 
 execution_service::~execution_service()
 {
-	CloseThreadpool((PTP_POOL)pool);
+	CloseThreadpool(static_cast<PTP_POOL>(pool));
 }
 
 struct work_context

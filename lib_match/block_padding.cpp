@@ -50,7 +50,6 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 *    |             *
 *                  *
 *******************/
-
 template <typename T>
 void zeroPadding(const T *src_ptr, T *dst_ptr,
 	size_t m, size_t n,
@@ -194,27 +193,27 @@ void symmetricPadding(const T *src_ptr, T *dst_ptr,
 	}
 }
 
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void zeroPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void zeroPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void circularPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void circularPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void replicatePadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void replicatePadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void symmetricPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-LIB_MATCH_EXPORT
 template
+LIB_MATCH_EXPORT
 void symmetricPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);

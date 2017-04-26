@@ -1,29 +1,47 @@
-#include "lib_match.h"
+#include "lib_match_internal.h"
 
 template <typename Type>
-BlockMatch<Type>::BlockMatch()
-	: m_instance(nullptr)
-{	
-}
-
-
-template <typename Type>
-BlockMatch<Type>::~BlockMatch()
+void BlockMatch<Type>::get_matrixC_dimensions(int* dim0, int* dim1, int* dim2)
 {
-	if (m_instance)
-		destroy();
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
+	*dim0 = instance->C_dimensions[0];
+	*dim1 = instance->C_dimensions[1];
+	*dim2 = instance->C_dimensions[2];
 }
 
-LIB_MATCH_EXPORT
-template
-BlockMatch<float>::BlockMatch();
-LIB_MATCH_EXPORT
-template
-BlockMatch<double>::BlockMatch();
+template <typename Type>
+void BlockMatch<Type>::get_matrixA_padded_dimensions(int* m, int* n)
+{
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
 
-LIB_MATCH_EXPORT
+	*m = instance->matrixA_padded_M;
+	*n = instance->matrixA_padded_N;
+}
+
+template <typename Type>
+void BlockMatch<Type>::get_matrixB_padded_dimensions(int* m, int* n)
+{
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
+
+	*m = instance->matrixB_padded_M;
+	*n = instance->matrixB_padded_N;
+}
+
 template
-BlockMatch<float>::~BlockMatch();
 LIB_MATCH_EXPORT
+void BlockMatch<float>::get_matrixC_dimensions(int *, int *, int *);
 template
-BlockMatch<double>::~BlockMatch();
+LIB_MATCH_EXPORT
+void BlockMatch<double>::get_matrixC_dimensions(int *, int *, int *);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<float>::get_matrixA_padded_dimensions(int *, int *);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<double>::get_matrixA_padded_dimensions(int *, int *);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<float>::get_matrixB_padded_dimensions(int *, int *);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<double>::get_matrixB_padded_dimensions(int *, int *);

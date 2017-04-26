@@ -58,9 +58,6 @@
     <ClCompile Include="execution_service.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_match.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="block_match_destroy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -77,6 +74,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib_match_mse_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block_match.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -26,9 +26,10 @@ std::string getStackTrace()
 	{
 		if (!SymInitialize(hProcess, nullptr, TRUE))
 		{
-			message += ("Warning! SymInitialize() failed.\n"
+			message += ("Warning! SymInitialize() failed with "
 			"Win32 Error Code: " + std::to_string(GetLastError()) + "\n");			
 		}
+		stack_trace_initialized = true;
 	}
 	const unsigned short max_frames = std::numeric_limits<unsigned short>::max();
 	void *stacks[max_frames];

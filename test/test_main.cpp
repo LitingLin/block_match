@@ -20,5 +20,10 @@ public:
 	{
 		libMatchRegisterLoggingSinkFunction(logging_sink);
 		libMatchRegisterInterruptPeddingFunction(dummyIsInterruptPending);
+		libMatchOnLoad();
+	}
+	~GlobalContextInitializer()
+	{
+		libMatchAtExit();
 	}
 }initializer;

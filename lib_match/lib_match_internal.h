@@ -20,7 +20,82 @@ extern spdlog::logger logger;
 
 #include "execution_service.h"
 
-#define LIB_MATCH_OUT(PARAMETER) out_##PARAMETER
+#ifndef DEBUG
+#define CALL_DBG __debugbreak();
+#else
+#define CALL_DBG
+#endif
+
+std::string getStackTrace();
+
+#include <sstream>
+
+class fatal_error_logging
+{
+public:
+	fatal_error_logging(const char* file, int line, const char* function);
+
+	fatal_error_logging(const char* file, int line, const char* function, const char* exp);
+
+	fatal_error_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
+
+	~fatal_error_logging() noexcept(false);
+
+	std::ostringstream& stream();
+private:
+	std::ostringstream str_stream;
+};
+
+class warning_logging
+{
+public:
+	warning_logging(const char* file, int line, const char* function);
+
+	warning_logging(const char* file, int line, const char* function, const char* exp);
+
+	warning_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
+
+	~warning_logging();
+
+	std::ostringstream& stream();
+private:
+	std::ostringstream str_stream;
+};
+
+template <typename T1, typename T2, typename Op>
+std::unique_ptr<std::pair<T1, T2>> check_impl(const T1 &a, const T2 &b, Op op) {
+	if (op(a, b))
+		return nullptr;
+	else
+		return std::make_unique<std::pair<T1, T2>>(a, b);
+}
+
+#define CHECK_POINT(val) \
+	if (!(val)) \
+fatal_error_logging(__FILE__, __LINE__, __func__, #val).stream()
+
+#define CHECK_POINT_OP(exp1, exp2, op, functional_op)  \
+	if (auto _rc = check_impl((exp1), (exp2), functional_op)) \
+fatal_error_logging(__FILE__, __LINE__, __func__, #exp1, #op, #exp2).stream() << '(' << _rc->first << " vs. " << _rc->second << ") "
+
+#define CHECK_POINT_EQ(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, ==, std::equal_to<>())
+#define CHECK_POINT_NE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, !=, std::not_equal_to<>())
+#define CHECK_POINT_LE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, <=, std::less_equal<>())
+#define CHECK_POINT_LT(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, <, std::less<>())
+#define CHECK_POINT_GE(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, >=, std::greater_equal<>())
+#define CHECK_POINT_GT(exp1, exp2) \
+	CHECK_POINT_OP(exp1, exp2, >, std::greater<>())
+
+#define CUDA_CHECK_POINT(cudaExp) \
+	CHECK_POINT_EQ(cudaExp, cudaSuccess) << "CUDA Error message: " << cudaGetErrorString(_rc->first)
+
+#define NOT_IMPLEMENTED_ERROR \
+	fatal_error_logging(__FILE__, __LINE__, __func__).stream() << "Unknown internal error. "
 
 struct GlobalContext
 {
@@ -28,7 +103,7 @@ struct GlobalContext
 	bool initialize();
 
 	unsigned numberOfThreads;
-	execution_service pool;
+	execution_service exec_serv;
 	int numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread;
 	bool hasGPU;
@@ -40,10 +115,11 @@ class memory_allocation_counter
 {
 public:
 	memory_allocation_counter();
-	void register_allocator(size_t size, malloc_type type);
-	void allocated(size_t size, malloc_type type);
-	void released(size_t size, malloc_type type);
-	void trigger_error(size_t size, malloc_type type) const;
+	void register_allocator(size_t size, memory_type type);
+	void unregister_allocator(size_t size, memory_type type);
+	void allocated(size_t size, memory_type type);
+	void released(size_t size, memory_type type);
+	void trigger_error(size_t size, memory_type type) const;
 	void get_max_memory_required(size_t *max_memory_size,
 		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size) const;
 private:
@@ -55,8 +131,59 @@ private:
 	size_t current_gpu_memory_size;
 } extern g_memory_allocator;
 
+template <typename Type, memory_type malloc_type>
+struct raw_allocator {
+	static Type *alloc(size_t size);
+	static void free(Type *ptr);
+};
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type>
+struct raw_allocator <Type, memory_type::system>{
+	static Type *alloc(size_t size)
+	{
+		return static_cast<Type*>(::malloc(size));
+	}
+	static void free(Type *ptr)
+	{
+		::free(ptr);
+	}
+};
+
+template <typename Type>
+struct raw_allocator <Type, memory_type::page_locked> {
+	static Type *alloc(size_t size)
+	{
+		Type *ptr;
+		cudaError_t cudaError = cudaMallocHost(&ptr, size);
+		if (cudaError == cudaErrorMemoryAllocation)
+			return nullptr;
+		CUDA_CHECK_POINT(cudaError);
+		return ptr;
+	}
+	static void free(Type *ptr)
+	{
+		CUDA_CHECK_POINT(cudaFreeHost(ptr));
+	}
+};
+
+template <typename Type>
+struct raw_allocator <Type, memory_type::gpu> {
+	static Type *alloc(size_t size)
+	{
+		Type *ptr;
+		cudaError_t cudaError = cudaMalloc(&ptr, size);
+		if (cudaError == cudaErrorMemoryAllocation)
+			return nullptr;
+		CUDA_CHECK_POINT(cudaError);
+		return ptr;
+	}
+	static void free(Type *ptr)
+	{
+		CUDA_CHECK_POINT(cudaFree(ptr));
+	}
+};
+
+template <typename Type, memory_type malloc_type>
 class memory_allocator
 {
 public:
@@ -67,26 +194,29 @@ public:
 	Type *get();
 	void resize(size_t elem_size);
 private:
-	void *ptr;
+	Type *ptr;
 	size_t size;
 };
-template <typename Type, malloc_type malloc_type>
+
+template <typename Type, memory_type malloc_type>
 memory_allocator<Type, malloc_type>::memory_allocator(size_t elem_size)
 	: ptr(nullptr), size(elem_size * sizeof(Type))
 {
 }
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type, memory_type malloc_type>
 memory_allocator<Type, malloc_type>::~memory_allocator()
 {
 	if (ptr)
 		release();
+
+	g_memory_allocator.unregister_allocator(size, malloc_type);
 }
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type, memory_type malloc_type>
 Type *memory_allocator<Type, malloc_type>::alloc()
 {
-	ptr = malloc(size);
+	ptr = raw_allocator<Type, malloc_type>::alloc(size);
 	if (ptr)
 		g_memory_allocator.allocated(size, malloc_type);
 	else
@@ -94,25 +224,26 @@ Type *memory_allocator<Type, malloc_type>::alloc()
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type, memory_type malloc_type>
 void memory_allocator<Type, malloc_type>::release()
 {
-	free(ptr);
+	raw_allocator<Type, malloc_type>::free(ptr);
 	g_memory_allocator.released(size, malloc_type);
 	ptr = nullptr;
 }
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type, memory_type malloc_type>
 Type* memory_allocator<Type, malloc_type>::get()
 {
 	return static_cast<Type*>(ptr);
 }
 
-template <typename Type, malloc_type malloc_type>
+template <typename Type, memory_type malloc_type>
 void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 {
 	if (ptr)
 		release();
+	g_memory_allocator.unregister_allocator(size, malloc_type);
 	size = elem_size * sizeof(Type);
 	g_memory_allocator.register_allocator(size, malloc_type);
 }
@@ -223,7 +354,7 @@ struct BlockMatchContext
 
 	std::vector<void *>threadPoolTaskHandle;
 
-	memory_allocator<int, malloc_type::values::memory> common_buffer; // index template
+	memory_allocator<int, memory_type::system> common_buffer; // index template
 	
 	struct WorkerContext
 	{
@@ -234,34 +365,34 @@ struct BlockMatchContext
 		std::unique_ptr<ExecutionContext<Type>> executionContext;
 	};
 	std::vector<WorkerContext> workerContext;
-
+	/*
 	struct OptionalPerThreadBuffer
 	{
-		system_memory_allocator<int> index_x_internal;
-		system_memory_allocator<int> index_y_internal;
+		memory_allocator<int, memory_type::system> index_x_internal;
+		memory_allocator<int, memory_type::system> index_y_internal;
 	};
 	std::vector<OptionalPerThreadBuffer> optionalPerThreadBuffer;
 
 	struct OptionalBuffer
 	{
-		system_memory_allocator<Type> matrixA_padded_internal;
-		system_memory_allocator<Type> matrixB_padded_internal;
+		memory_allocator<Type, memory_type::system> matrixA_padded_internal;
+		memory_allocator<Type, memory_type::system> matrixB_padded_internal;
 	};
 	std::vector<OptionalBuffer> optionalBuffer;
-
+	*/
 	struct PerThreadBuffer
 	{
-		page_locked_memory_allocator<Type> matrixA_buffer;
-		page_locked_memory_allocator<Type> matrixB_buffer;
-		page_locked_memory_allocator<Type> matrixC_buffer;
-		gpu_memory_allocator<Type> matrixA_deviceBuffer;
-		gpu_memory_allocator<Type> matrixB_deviceBuffer;
-		gpu_memory_allocator<Type> matrixC_deviceBuffer;
+		memory_allocator<Type, memory_type::page_locked> matrixA_buffer;
+		memory_allocator<Type, memory_type::page_locked> matrixB_buffer;
+		memory_allocator<Type, memory_type::page_locked> matrixC_buffer;
+		memory_allocator<Type, memory_type::gpu> matrixA_deviceBuffer;
+		memory_allocator<Type, memory_type::gpu> matrixB_deviceBuffer;
+		memory_allocator<Type, memory_type::gpu> matrixC_deviceBuffer;
 
-		system_memory_allocator<int> index_x_sorting_buffer;
-		system_memory_allocator<int> index_y_sorting_buffer;
+		memory_allocator<int, memory_type::system> index_x_sorting_buffer;
+		memory_allocator<int, memory_type::system> index_y_sorting_buffer;
 
-		system_memory_allocator<int> index_raw_sorting_buffer;
+		memory_allocator<int, memory_type::system> index_raw_sorting_buffer;
 	};
 	std::vector<PerThreadBuffer> perThreadBuffer;
 };
@@ -386,83 +517,6 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 	int *M_left, int *M_right, int *N_left, int *N_right);
 
 bool isInterruptPending();
-
-#ifndef DEBUG
-#define CALL_DBG __debugbreak();
-#else
-#define CALL_DBG
-#endif
-
-std::string getStackTrace();
-
-#include <sstream>
-
-class fatal_error_logging
-{
-public:
-	fatal_error_logging(const char* file, int line, const char* function);
-
-	fatal_error_logging(const char* file, int line, const char* function, const char* exp);
-
-	fatal_error_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
-
-	~fatal_error_logging() noexcept(false);
-
-	std::ostringstream& stream();
-private:
-	std::ostringstream str_stream;
-};
-
-class warning_logging
-{
-public:
-	warning_logging(const char* file, int line, const char* function);
-
-	warning_logging(const char* file, int line, const char* function, const char* exp);
-
-	warning_logging(const char* file, int line, const char* function, const char* exp1, const char* op, const char* exp2);
-
-	~warning_logging();
-
-	std::ostringstream& stream();
-private:
-	std::ostringstream str_stream;
-};
-
-template <typename T1, typename T2, typename Op>
-std::unique_ptr<std::pair<T1,T2>> check_impl(const T1 &a, const T2 &b, Op op) {
-	if (op(a, b))
-		return nullptr;
-	else
-		return std::make_unique<std::pair<T1, T2>>(a, b);
-}
-
-#define CHECK_POINT(val) \
-	if (!(val)) \
-fatal_error_logging(__FILE__, __LINE__, __func__, #val).stream()
-
-#define CHECK_POINT_OP(exp1, exp2, op, functional_op)  \
-	if (auto _rc = check_impl((exp1), (exp2), functional_op)) \
-fatal_error_logging(__FILE__, __LINE__, __func__, #exp1, #op, #exp2).stream() << '(' << _rc->first << " vs. " << _rc->second << ") "
-
-#define CHECK_POINT_EQ(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, ==, std::equal_to<>())
-#define CHECK_POINT_NE(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, !=, std::not_equal_to<>())
-#define CHECK_POINT_LE(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, <=, std::less_equal<>())
-#define CHECK_POINT_LT(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, <, std::less<>())
-#define CHECK_POINT_GE(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, >=, std::greater_equal<>())
-#define CHECK_POINT_GT(exp1, exp2) \
-	CHECK_POINT_OP(exp1, exp2, >, std::greater<>())
-
-#define CUDA_CHECK_POINT(cudaExp) \
-	CHECK_POINT_EQ(cudaExp, cudaSuccess) << "CUDA Error message: " << cudaGetErrorString(_rc->first)
-
-#define NOT_IMPLEMENTED_ERROR \
-	fatal_error_logging(__FILE__, __LINE__, __func__).stream() << "Unknown internal error. "
 
 void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
 

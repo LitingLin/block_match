@@ -170,7 +170,7 @@ inline void tryToIncludeLastBlock(int *indexA, int strideA, int indexA_end)
 	if (*indexA + 1 == indexA_end)
 		return;
 	if (*indexA + strideA >= indexA_end)
-		*indexA = indexA_end - strideA - 1;
+		*indexA = indexA_end - strideA - 1; // + strideA immediately later
 }
 
 inline void dummyCheckIsLastBlock(int *indexA, int strideA, int indexA_end)
@@ -227,14 +227,14 @@ template <typename Type,
 	if (!numberOfIndexRetain)
 		numberOfIndexRetain = numberOfBlockBPerBlockA;
 
-	int numberOfQueuedTasks = 0, indexOfIteration = 0;
+	int indexOfIteration = 0;
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 	
 	goto JumpIn;
 
 	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
 	{
-		for (/*indexA_N = indexA_N_begin*/; indexA_N < indexA_N_end; indexA_N += strideA_N)
+		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
 			copyBlock(c_bufferA, matrixA,
@@ -272,12 +272,11 @@ template <typename Type,
 				logger.critical("Internal logical error: sequenceBCount != numberOfBlockBPerBlockA");
 #endif
 			
-			++numberOfQueuedTasks;
-			numberOfBlockA += 1;
+			++numberOfBlockA;
 
 			c_bufferA += blockSize;
 
-			if (numberOfQueuedTasks == lengthOfGpuTaskQueue)
+			if (numberOfBlockA == lengthOfGpuTaskQueue)
 			{/*
 				if (checkIsInterruptPending())
 					return 2;*/
@@ -307,7 +306,6 @@ template <typename Type,
 				c_bufferB = matrixB_buffer;
 
 				numberOfBlockA = 0;
-				numberOfQueuedTasks = 0;
 			}
 			checkIsLastBlock(&indexA_N, strideA_N, indexA_N_end);
 

@@ -69,6 +69,8 @@ unsigned getNumberOfPhysicalProcessor()
 
 #endif
 
+#define LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE 1
+
 unsigned getNumberOfProcessor()
 {
 	unsigned numberOfThreads;
@@ -85,11 +87,10 @@ unsigned getNumberOfProcessor()
 	return numberOfThreads;
 }
 
-#define LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE 0
 
 GlobalContext::GlobalContext()
 	: numberOfThreads(getNumberOfProcessor()),
-	pool(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
+	exec_serv(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread)
 {
 }
 

@@ -8,9 +8,9 @@
 
 #if defined _WIN32
 #ifdef LIB_MATCH_BUILD_DLL
-#define LIB_MATCH_EXPORT __declspec(dllexport)
+#define LIB_MATCH_EXPORT 
 #else
-#define LIB_MATCH_EXPORT __declspec(dllimport)
+#define LIB_MATCH_EXPORT 
 #endif
 #else
 #ifdef LIB_MATCH_BUILD_DLL
@@ -83,10 +83,8 @@ template <typename Type>
 class BlockMatch
 {
 public:
-	BlockMatch();
-	~BlockMatch();
 	// SearchRegion size 0 for full search
-	void initialize(SearchType searchType,
+	BlockMatch(SearchType searchType,
 		LibMatchMeasureMethod measureMethod,
 		PadMethod padMethodA, PadMethod padMethodB,
 		BorderType sequenceABorderType,
@@ -101,16 +99,17 @@ public:
 		int matrixAPadding_N_pre, int matrixAPadding_N_post,
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,
 		int matrixBPadding_N_pre, int matrixBPadding_N_post,
-		int numberOfIndexRetain,
-		int *matrixC_M, int *matrixC_N, int *matrixC_X,
-		int *matrixA_padded_M = nullptr, int *matrixA_padded_N = nullptr,
-		int *matrixB_padded_M = nullptr, int *matrixB_padded_N = nullptr);
+		int numberOfIndexRetain);
+	~BlockMatch();
+	void initialize();
 	void execute(Type *A, Type *B,
 		Type *C,
 		Type *padded_A = nullptr, Type *padded_B = nullptr,
 		int *index_x = nullptr, int *index_y = nullptr);
 	void destroy();
-
+	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
+	void get_matrixA_padded_dimensions(int *m, int *n);
+	void get_matrixB_padded_dimensions(int *m, int *n);
 	class Diagnose
 	{
 	public:
@@ -248,30 +247,30 @@ private:
 	};
 };
 
-enum class malloc_type {
-	memory,
+enum class memory_type {
+	system,
 	page_locked,
 	gpu
 };
 
 LIB_MATCH_EXPORT
-std::string to_string(malloc_type type);
+std::string to_string(memory_type type);
 
 LIB_MATCH_EXPORT
 class memory_alloc_exception : public std::runtime_error
 {
 public:
 	memory_alloc_exception(const std::string& _Message,
-		malloc_type type,
+		memory_type type,
 		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
 
 	memory_alloc_exception(const char* _Message,
-		malloc_type type,
+		memory_type type,
 		size_t max_memory_size, size_t max_page_locked_memory_size, size_t max_gpu_memory_size,
 		size_t current_memory_size, size_t current_page_locked_memory_size, size_t current_gpu_memory_size);
 
-	malloc_type get_memory_allocation_type() const;
+	memory_type get_memory_allocation_type() const;
 
 	size_t get_max_memory_size() const;
 	size_t get_max_page_locked_memory_size() const;
@@ -281,7 +280,7 @@ public:
 	size_t get_current_gpu_memory_size() const;
 
 private:
-	malloc_type type;
+	memory_type type;
 	size_t max_memory_size;
 	size_t max_page_locked_memory_size;
 	size_t max_gpu_memory_size;

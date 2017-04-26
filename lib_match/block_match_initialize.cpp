@@ -7,11 +7,11 @@
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
 	int *numberOfSubmitThreadsPerProcessor, int *numberOfSubmitProcessors, int *numberOfIterations)
 {
-	double numberOfBlockAPerProcessor = (double)maxNumberOfGpuThreads / (double)numberOfBlockBPerBlockA;
+	double numberOfBlockAPerProcessor = static_cast<double>(maxNumberOfGpuThreads) / static_cast<double>(numberOfBlockBPerBlockA);
 	if (numberOfBlockAPerProcessor > 1.0)
 	{
-		int fixedNumberOfBlockAPerProcessor = (int)numberOfBlockAPerProcessor;
-		*numberOfSubmitThreadsPerProcessor = (int)numberOfBlockAPerProcessor * numberOfBlockBPerBlockA;
+		int fixedNumberOfBlockAPerProcessor = static_cast<int>(numberOfBlockAPerProcessor);
+		*numberOfSubmitThreadsPerProcessor = static_cast<int>(numberOfBlockAPerProcessor) * numberOfBlockBPerBlockA;
 		*numberOfSubmitProcessors = numberOfGpuProcessors;
 		*numberOfIterations = fixedNumberOfBlockAPerProcessor * numberOfGpuProcessors;
 	}
@@ -20,8 +20,8 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 		double numberOfProcessorPerBlockA = 1.0 / numberOfBlockAPerProcessor;
 		if (numberOfProcessorPerBlockA < numberOfGpuProcessors)
 		{
-			int _numberOfIterations = (int)((double)numberOfGpuProcessors / numberOfProcessorPerBlockA);
-			int _numberOfSubmitProcessors = (int)std::ceil(_numberOfIterations * numberOfProcessorPerBlockA);
+			int _numberOfIterations = static_cast<int>(static_cast<double>(numberOfGpuProcessors) / numberOfProcessorPerBlockA);
+			int _numberOfSubmitProcessors = static_cast<int>(std::ceil(_numberOfIterations * numberOfProcessorPerBlockA));
 			*numberOfSubmitThreadsPerProcessor = maxNumberOfGpuThreads;
 			*numberOfSubmitProcessors = _numberOfSubmitProcessors;
 			*numberOfIterations = _numberOfIterations;
@@ -29,7 +29,7 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 		else
 		{
 			*numberOfSubmitThreadsPerProcessor = maxNumberOfGpuThreads;
-			*numberOfSubmitProcessors = (int)std::ceil(numberOfProcessorPerBlockA);
+			*numberOfSubmitProcessors = static_cast<int>(std::ceil(numberOfProcessorPerBlockA));
 			*numberOfIterations = 1;
 		}
 	}
@@ -121,52 +121,51 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 		return getLength(matrixB, matrixBPadding_pre, matrixBPadding_post, block, strideB);
 	}
 }
+//
+//template <typename Type>
+//void resourceInitialize_GPU_sorting(BlockMatchContext<Type> *instance, const int numberOfBlockBPerBlockA, )
+//{
+//	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+//	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+//
+//	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
+//
+//	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
+//		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
+//
+//
+//	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
+//	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
+//
+//
+//	instance->workerContext.reserve(numberOfThreads);
+//	instance->threadPoolTaskHandle.reserve(numberOfThreads);
+//	instance->streams.resize(numberOfThreads);
+//	instance->perThreadBuffer.reserve(numberOfThreads);
+//
+//	for (int i = 0; i < numberOfThreads; ++i)
+//	{
+//		instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
+//			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_buffer
+//			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_buffer
+//			page_locked_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_buffer
+//			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
+//			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_deviceBuffer
+//			gpu_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+//			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
+//			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+//			system_memory_allocator<int>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
+//		});
+//	}
+//
+//	initializeInstanceWorkerContext(instance, sequenceABorderType);
+//
+//	instance->common_buffer.alloc();
+//	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
+//}
 
 template <typename Type>
-void resourceInitialize_GPU_sorting(BlockMatchContext<Type> *instance, const int numberOfBlockBPerBlockA, )
-{
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
-
-	determineGpuTaskConfiguration(numberOfGPUProcessorThread, numberOfGPUDeviceMultiProcessor, numberOfBlockBPerBlockA,
-		&numberOfSubmitThreadsPerProcessor, &numberOfSubmitProcessors, &sizeOfGpuTaskQueue);
-
-
-	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
-
-
-	instance->workerContext.reserve(numberOfThreads);
-	instance->threadPoolTaskHandle.reserve(numberOfThreads);
-	instance->streams.resize(numberOfThreads);
-	instance->perThreadBuffer.reserve(numberOfThreads);
-
-	for (int i = 0; i < numberOfThreads; ++i)
-	{
-		instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
-			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_buffer
-			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_buffer
-			page_locked_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_buffer
-			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
-			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_deviceBuffer
-			gpu_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
-			system_memory_allocator<int>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
-		});
-	}
-
-	initializeInstanceWorkerContext(instance, sequenceABorderType);
-
-	instance->common_buffer.alloc();
-	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
-}
-
-template <typename Type>
-void BlockMatch<Type>::initialize(
-	SearchType searchType,
+BlockMatch<Type>::BlockMatch(SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
@@ -181,11 +180,11 @@ void BlockMatch<Type>::initialize(
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfIndexRetain,
-	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_X),
-	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
-	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N))
+	int numberOfIndexRetain)
+	: m_instance(nullptr)
 {
+	CHECK_POINT(globalContext.hasGPU);
+
 	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_M,
 		matrixB_M, matrixBPadding_M_pre, matrixBPadding_M_post, block_M, strideB_M);
@@ -263,11 +262,11 @@ void BlockMatch<Type>::initialize(
 	ExecutionFunction<Type> *executionFunction = nullptr;
 
 	/*
-		if (sort && searchType == SearchType::local && measureMethod == LibMatchMeasureMethod::mse
-			&& numberOfIndexRetain && sequenceABorderType == BorderType::normal && searchFrom == SearchFrom::topLeft)
-		{
+	if (sort && searchType == SearchType::local && measureMethod == LibMatchMeasureMethod::mse
+	&& numberOfIndexRetain && sequenceABorderType == BorderType::normal && searchFrom == SearchFrom::topLeft)
+	{
 
-		}*/
+	}*/
 
 	if (sort) {
 		if (searchType == SearchType::local)
@@ -467,14 +466,14 @@ void BlockMatch<Type>::initialize(
 		numberOfThreads,
 		padFunctionA, padFunctionB , executionFunction,
 		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
-		{matrixC_M, matrixC_N, matrixC_X},
+		{ matrixC_M, matrixC_N, matrixC_X },
 		std::vector<cudaStream_guard>(), // streams
 		0, 0, 0, // numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue
 		std::vector<void *>(), // threadPoolTaskHandle
-		system_memory_allocator<int>(numberOfBlockBPerBlockA), // common_buffer
+		memory_allocator<int, memory_type::system>(0), // common_buffer
 		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
-		std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
-		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer
+		/*std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
+		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer */
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 
@@ -491,78 +490,81 @@ void BlockMatch<Type>::initialize(
 	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
 
 	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = perThreadMatrixCBufferSize * block_M * block_N;
+	const int perThreadMatrixABufferSize = sizeOfGpuTaskQueue * block_M * block_N;
+	const int perThreadMatrixBBufferSize = perThreadMatrixCBufferSize * block_M * block_N;
 
 	instance->workerContext.reserve(numberOfThreads);
-	instance->threadPoolTaskHandle.reserve(numberOfThreads);
+	instance->threadPoolTaskHandle.resize(numberOfThreads);
 	instance->streams.resize(numberOfThreads);
 	instance->perThreadBuffer.reserve(numberOfThreads);
 
-	for (int i = 0; i < numberOfThreads; ++i)
+	if (sort)
 	{
-		instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
-			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_buffer
-			page_locked_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_buffer
-			page_locked_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_buffer
-			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
-			gpu_memory_allocator<Type>(perThreadMatrixABufferSize), // matrixB_deviceBuffer
-			gpu_memory_allocator<Type>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-			system_memory_allocator<int>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
-			system_memory_allocator<int>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
-		});
+		instance->common_buffer.resize(numberOfBlockBPerBlockA);
+
+		for (int i = 0; i < numberOfThreads; ++i)
+		{
+			instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
+			});
+		}
+	}
+	else
+	{
+		for (int i = 0; i < numberOfThreads; ++i)
+		{
+			instance->perThreadBuffer.emplace_back(BlockMatchContext<Type>::PerThreadBuffer{
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
+				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
+			});
+		}
 	}
 
 	initializeInstanceWorkerContext(instance, sequenceABorderType);
-
-	instance->common_buffer.alloc();
-	generateIndexSequence(instance->common_buffer.get(), numberOfBlockBPerBlockA);
-
 	this->m_instance = instance;
+}
 
-	if (LIB_MATCH_OUT(matrixC_M) != nullptr)
+template <typename Type>
+void BlockMatch<Type>::initialize()
+{
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(m_instance);
+	instance->common_buffer.alloc();
+	if (instance->common_buffer.get())
+		generateIndexSequence(instance->common_buffer.get(), instance->numberOfBlockBPerBlockA);
+	
+	for (int indexOfThread = 0; indexOfThread != instance->numberOfThreads; ++indexOfThread)
 	{
-		*LIB_MATCH_OUT(matrixC_M) = matrixC_M;
-		*LIB_MATCH_OUT(matrixC_N) = matrixC_N;
-		*LIB_MATCH_OUT(matrixC_X) = matrixC_X;
-	}
-	if (LIB_MATCH_OUT(matrixA_padded_M) != nullptr)
-	{
-		*LIB_MATCH_OUT(matrixA_padded_M) = matrixA_padded_M;
-		*LIB_MATCH_OUT(matrixA_padded_N) = matrixA_padded_N;
-	}
-	if (LIB_MATCH_OUT(matrixB_padded_M) != nullptr)
-	{
-		*LIB_MATCH_OUT(matrixB_padded_M) = matrixB_padded_M;
-		*LIB_MATCH_OUT(matrixB_padded_N) = matrixB_padded_N;
+		typename BlockMatchContext<Type>::PerThreadBuffer &perThreadBuffer = instance->perThreadBuffer[indexOfThread];
+		perThreadBuffer.matrixA_buffer.alloc();
+		perThreadBuffer.matrixB_buffer.alloc();
+		perThreadBuffer.matrixC_buffer.alloc();
+		perThreadBuffer.matrixA_deviceBuffer.alloc();
+		perThreadBuffer.matrixB_deviceBuffer.alloc();
+		perThreadBuffer.matrixC_deviceBuffer.alloc();
+		perThreadBuffer.index_x_sorting_buffer.alloc();
+		perThreadBuffer.index_y_sorting_buffer.alloc();
+		perThreadBuffer.index_raw_sorting_buffer.alloc();
 	}
 }
 
-LIB_MATCH_EXPORT
 template
-void BlockMatch<float>::initialize(SearchType searchType,
-	LibMatchMeasureMethod measureMethod,
-	PadMethod padMethodA, PadMethod padMethodB,
-	BorderType sequenceABorderType,
-	SearchFrom searchFrom,
-	bool sort,
-	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
-	int searchRegion_M, int searchRegion_N,
-	int block_M, int block_N,
-	int strideA_M, int strideA_N,
-	int strideB_M, int strideB_N,
-	int matrixAPadding_M_pre, int matrixAPadding_M_post,
-	int matrixAPadding_N_pre, int matrixAPadding_N_post,
-	int matrixBPadding_M_pre, int matrixBPadding_M_post,
-	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfIndexRetain,
-	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
-	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
-	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
-
 LIB_MATCH_EXPORT
-template
-void BlockMatch<double>::initialize(
+BlockMatch<float>::BlockMatch(
 	SearchType searchType,
 	LibMatchMeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -578,7 +580,30 @@ void BlockMatch<double>::initialize(
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfIndexRetain,
-	int *LIB_MATCH_OUT(matrixC_M), int *LIB_MATCH_OUT(matrixC_N), int *LIB_MATCH_OUT(matrixC_O),
-	int *LIB_MATCH_OUT(matrixA_padded_M), int *LIB_MATCH_OUT(matrixA_padded_N),
-	int *LIB_MATCH_OUT(matrixB_padded_M), int *LIB_MATCH_OUT(matrixB_padded_N));
+	int numberOfIndexRetain);
+template
+LIB_MATCH_EXPORT
+BlockMatch<double>::BlockMatch(
+	SearchType searchType,
+	LibMatchMeasureMethod measureMethod,
+	PadMethod padMethodA, PadMethod padMethodB,
+	BorderType sequenceABorderType,
+	SearchFrom searchFrom,
+	bool sort,
+	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int searchRegion_M, int searchRegion_N,
+	int block_M, int block_N,
+	int strideA_M, int strideA_N,
+	int strideB_M, int strideB_N,
+	int matrixAPadding_M_pre, int matrixAPadding_M_post,
+	int matrixAPadding_N_pre, int matrixAPadding_N_post,
+	int matrixBPadding_M_pre, int matrixBPadding_M_post,
+	int matrixBPadding_N_pre, int matrixBPadding_N_post,
+	int numberOfIndexRetain);
+
+template
+LIB_MATCH_EXPORT
+void BlockMatch<float>::initialize();
+template
+LIB_MATCH_EXPORT
+void BlockMatch<double>::initialize();
