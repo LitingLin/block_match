@@ -71,13 +71,13 @@ void lib_match_mse_cpu_avx(double *block_A, double *block_B, int blockSize, doub
 }
 
 template <typename Type>
-void lib_match_mse_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result)
+void lib_match_mse_cpu_sse2(Type *block_A, Type *block_B, int blockSize, Type *result)
 {
 	static_assert("NOT IMPLEMENTED");
 }
 
 template <>
-void lib_match_mse_cpu_sse3(float *block_A, float *block_B, int blockSize, float *result)
+void lib_match_mse_cpu_sse2(float *block_A, float *block_B, int blockSize, float *result)
 {
 	__m128 t = _mm_setzero_ps();
 	for (int i = 0; i < blockSize; i += sizeof(__m128) / sizeof(float))
@@ -88,11 +88,11 @@ void lib_match_mse_cpu_sse3(float *block_A, float *block_B, int blockSize, float
 		a = _mm_mul_ps(a, a);
 		t = _mm_add_ps(a, t);
 	}
-	*result = sum4f_sse3(t) / blockSize;
+	*result = sum4f_sse2(t) / blockSize;
 }
 
 template <>
-void lib_match_mse_cpu_sse3(double *block_A, double *block_B, int blockSize, double *result)
+void lib_match_mse_cpu_sse2(double *block_A, double *block_B, int blockSize, double *result)
 {
 	__m128d t = _mm_setzero_pd();
 	for (int i = 0; i < blockSize; i += sizeof(__m128d) / sizeof(double))
@@ -103,7 +103,7 @@ void lib_match_mse_cpu_sse3(double *block_A, double *block_B, int blockSize, dou
 		a = _mm_mul_pd(a, a);
 		t = _mm_add_pd(a, t);
 	}
-	*result = sum2d_sse3(t) / blockSize;
+	*result = sum2d_sse2(t) / blockSize;
 }
 
 template <typename Type>

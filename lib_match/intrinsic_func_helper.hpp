@@ -25,14 +25,14 @@ double sum4d_avx(const __m256d val)
 }
 
 inline
-float sum4f_sse3(const __m128 val) {
+float sum4f_sse2(const __m128 val) {
 	const __m128 val02_13_20_31 = _mm_add_ps(val, _mm_movehl_ps(val, val));
 	const __m128 res = _mm_add_ss(val02_13_20_31, _mm_shuffle_ps(val02_13_20_31, val02_13_20_31, 1));
 	return _mm_cvtss_f32(res);
 }
 
 inline
-double sum2d_sse3(const __m128d val) {
+double sum2d_sse2(const __m128d val) {
 	const __m128d res = _mm_add_pd(val, _mm_shuffle_pd(val, val, 1));
 	return _mm_cvtsd_f64(res);
 }

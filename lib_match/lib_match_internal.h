@@ -216,12 +216,15 @@ memory_allocator<Type, malloc_type>::~memory_allocator()
 template <typename Type, memory_type malloc_type>
 Type *memory_allocator<Type, malloc_type>::alloc()
 {
-	ptr = raw_allocator<Type, malloc_type>::alloc(size);
-	if (ptr)
-		g_memory_allocator.allocated(size, malloc_type);
-	else
-		g_memory_allocator.trigger_error(size, malloc_type);
-	return static_cast<Type*>(ptr);
+	if (size) {
+		ptr = raw_allocator<Type, malloc_type>::alloc(size);
+		if (ptr)
+			g_memory_allocator.allocated(size, malloc_type);
+		else
+			g_memory_allocator.trigger_error(size, malloc_type);
+		return static_cast<Type*>(ptr);
+	}
+	return nullptr;
 }
 
 template <typename Type, memory_type malloc_type>
@@ -486,7 +489,7 @@ cudaError_t lib_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlo
 template <typename Type>
 void lib_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void lib_match_mse_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result);
+void lib_match_mse_cpu_sse2(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
 void lib_match_mse_cpu_avx(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
@@ -495,7 +498,7 @@ void lib_match_mse_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *r
 template <typename Type>
 void lib_match_cc_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
-void lib_match_cc_cpu_sse3(Type *block_A, Type *block_B, int blockSize, Type *result);
+void lib_match_cc_cpu_sse2(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>
 void lib_match_cc_cpu_avx(Type *block_A, Type *block_B, int blockSize, Type *result);
 template <typename Type>

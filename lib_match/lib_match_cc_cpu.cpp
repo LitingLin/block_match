@@ -25,10 +25,7 @@ double accumulate_avx(double *begin, double *end)
 }
 
 template <typename Type>
-void lib_match_cc_cpu_avx2(Type *, Type *, int, Type *)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_cc_cpu_avx2(Type *, Type *, int, Type *);
 
 template <>
 void lib_match_cc_cpu_avx2(float *block_A, float *block_B, int blockSize, float *result)
@@ -77,10 +74,7 @@ void lib_match_cc_cpu_avx2(double *block_A, double *block_B, int blockSize, doub
 }
 
 template <typename Type>
-void lib_match_cc_cpu_avx(Type *, Type *, int, Type *)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_cc_cpu_avx(Type *, Type *, int, Type *);
 
 template <>
 void lib_match_cc_cpu_avx(float *block_A, float *block_B, int blockSize, float *result)
@@ -128,7 +122,7 @@ void lib_match_cc_cpu_avx(double *block_A, double *block_B, int blockSize, doubl
 	*result = X_scalar / std::sqrt(Y_scalar * Z_scalar);
 }
 
-float accumulate_sse3(float *begin, float *end)
+float accumulate_sse2(float *begin, float *end)
 {
 	__m128 t = _mm_setzero_ps();
 	for (float * iter = begin; iter < end; iter += sizeof(__m128) / sizeof(float))
@@ -136,10 +130,10 @@ float accumulate_sse3(float *begin, float *end)
 		__m128 a = _mm_load_ps(iter);
 		t = _mm_add_ps(a, t);
 	}
-	return sum4f_sse3(t);
+	return sum4f_sse2(t);
 }
 
-double accumulate_sse3(double *begin, double *end)
+double accumulate_sse2(double *begin, double *end)
 {
 	__m128d t = _mm_setzero_pd();
 	for (double * iter = begin; iter < end; iter += sizeof(__m128d) / sizeof(double))
@@ -147,23 +141,20 @@ double accumulate_sse3(double *begin, double *end)
 		__m128d a = _mm_load_pd(iter);
 		t = _mm_add_pd(a, t);
 	}
-	return sum2d_sse3(t);
+	return sum2d_sse2(t);
 }
 
 template <typename Type>
-void lib_match_cc_cpu_sse3(Type *, Type *, int, Type *)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_cc_cpu_sse2(Type *, Type *, int, Type *);
 
 template <>
-void lib_match_cc_cpu_sse3(float *block_A, float *block_B, int blockSize, float *result)
+void lib_match_cc_cpu_sse2(float *block_A, float *block_B, int blockSize, float *result)
 {
 	__m128 X, Y, Z;
 	X = Y = Z = _mm_setzero_ps();
 
-	__m128 A_mean = _mm_set1_ps(accumulate_sse3(block_A, block_A + blockSize));
-	__m128 B_mean = _mm_set1_ps(accumulate_sse3(block_B, block_B + blockSize));
+	__m128 A_mean = _mm_set1_ps(accumulate_sse2(block_A, block_A + blockSize));
+	__m128 B_mean = _mm_set1_ps(accumulate_sse2(block_B, block_B + blockSize));
 
 	for (int i = 0; i < blockSize; i += sizeof(__m128) / sizeof(float))
 	{
@@ -175,18 +166,18 @@ void lib_match_cc_cpu_sse3(float *block_A, float *block_B, int blockSize, float 
 		Z = _mm_add_ps(_mm_mul_ps(N, N), Z);
 	}
 
-	float X_scalar = sum4f_sse3(X), Y_scalar = sum4f_sse3(Y), Z_scalar = sum4f_sse3(Z);
+	float X_scalar = sum4f_sse2(X), Y_scalar = sum4f_sse2(Y), Z_scalar = sum4f_sse2(Z);
 	*result = X_scalar / std::sqrt(Y_scalar * Z_scalar);
 }
 
 template <>
-void lib_match_cc_cpu_sse3(double *block_A, double *block_B, int blockSize, double *result)
+void lib_match_cc_cpu_sse2(double *block_A, double *block_B, int blockSize, double *result)
 {
 	__m128d X, Y, Z;
 	X = Y = Z = _mm_setzero_pd();
 
-	__m128d A_mean = _mm_set1_pd(accumulate_sse3(block_A, block_A + blockSize));
-	__m128d B_mean = _mm_set1_pd(accumulate_sse3(block_B, block_B + blockSize));
+	__m128d A_mean = _mm_set1_pd(accumulate_sse2(block_A, block_A + blockSize));
+	__m128d B_mean = _mm_set1_pd(accumulate_sse2(block_B, block_B + blockSize));
 
 	for (int i = 0; i < blockSize; i += sizeof(__m128d) / sizeof(double))
 	{
@@ -198,7 +189,7 @@ void lib_match_cc_cpu_sse3(double *block_A, double *block_B, int blockSize, doub
 		Z = _mm_add_pd(_mm_mul_pd(N, N), Z);
 	}
 
-	double X_scalar = sum2d_sse3(X), Y_scalar = sum2d_sse3(Y), Z_scalar = sum2d_sse3(Z);
+	double X_scalar = sum2d_sse2(X), Y_scalar = sum2d_sse2(Y), Z_scalar = sum2d_sse2(Z);
 	*result = X_scalar / std::sqrt(Y_scalar * Z_scalar);
 }
 
