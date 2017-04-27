@@ -27,6 +27,12 @@
     <ClCompile Include="test_case_4.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test_case_1.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="test_case_2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_common.h">

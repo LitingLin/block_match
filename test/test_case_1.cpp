@@ -23,8 +23,7 @@ BOOST_AUTO_TEST_CASE(test_case_1)
 		0, 0, 0, 0, 0, 0, 0, 0,
 		numberOfResultRetain);
 	match.initialize();
-	int n_matrixC_dims;
-	match.get_matrixC_dimensions(&n_matrixC_dims, &matrixC_M, &matrixC_N, &matrixC_O);
+	match.get_matrixC_dimensions(&matrixC_M, &matrixC_N, &matrixC_O);
 	match.get_matrixA_padded_dimensions(&matrixA_padded_M, &matrixA_padded_N);
 	match.get_matrixB_padded_dimensions(&matrixB_padded_M, &matrixB_padded_N);
 

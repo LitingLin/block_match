@@ -69,6 +69,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="test_case_1.cpp" />
+    <ClCompile Include="test_case_2.cpp" />
     <ClCompile Include="test_case_3.cpp" />
     <ClCompile Include="test_case_4.cpp" />
     <ClCompile Include="test_case_5.cpp" />
