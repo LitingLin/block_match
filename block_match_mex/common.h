@@ -5,7 +5,7 @@
 
 struct BlockMatchMexContext
 {
-	LibMatchMeasureMethod method;
+	MeasureMethod method;
 	SearchType searchType;
 	PadMethod padMethodA;
 	PadMethod padMethodB;

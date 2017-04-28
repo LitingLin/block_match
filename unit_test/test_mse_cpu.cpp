@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_double_avx)
 }
 
 
-BOOST_AUTO_TEST_CASE(test_mse_cpu_float_sse3)
+BOOST_AUTO_TEST_CASE(test_mse_cpu_float_sse2)
 {
 	float a[] = { 1.7339f,3.9094f,8.3138f,8.0336f,0.6047f,3.9926f,5.2688f,
 		4.1680f,6.5686f,6.2797f,2.9198f,4.3165f,0.1549f,9.8406f,1.6717f,1.0622f,3.7241f,1.9812f,4.8969f,3.3949f };
@@ -94,11 +94,11 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_float_sse3)
 	float *aligned_b = (float*)aligned_block_malloc(sizeof(b), 16);
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
-	lib_match_mse_cpu_sse3(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	lib_match_mse_cpu_sse2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
 	BOOST_CHECK_SMALL(result - 18.1079f, singleFloatingPointErrorTolerance);
 }
 
-BOOST_AUTO_TEST_CASE(test_mse_cpu_double_sse3)
+BOOST_AUTO_TEST_CASE(test_mse_cpu_double_sse2)
 {
 	double a[] = { 1.7339,3.9094,8.3138,8.0336,0.6047,3.9926,5.2688,
 		4.1680,6.5686,6.2797,2.9198,4.3165,0.1549,9.8406,1.6717,1.0622,3.7241,1.9812,4.8969,3.3949 };
@@ -109,6 +109,6 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_double_sse3)
 	double *aligned_b = (double*)aligned_block_malloc(sizeof(b), 16);
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
-	lib_match_mse_cpu_sse3(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	lib_match_mse_cpu_sse2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
 	BOOST_CHECK_SMALL(result - 18.1079, doubleFloatingPointErrorTolerance);
 }

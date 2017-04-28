@@ -111,10 +111,10 @@ struct GlobalContext
 
 extern GlobalContext globalContext;
 
-class memory_allocation_counter
+class memory_allocation_statistic
 {
 public:
-	memory_allocation_counter();
+	memory_allocation_statistic();
 	void register_allocator(size_t size, memory_type type);
 	void unregister_allocator(size_t size, memory_type type);
 	void allocated(size_t size, memory_type type);
@@ -129,7 +129,7 @@ private:
 	size_t current_memory_size;
 	size_t current_page_locked_memory_size;
 	size_t current_gpu_memory_size;
-} extern g_memory_allocator;
+} extern g_memory_statistic;
 
 template <typename Type, memory_type malloc_type>
 struct raw_allocator {
@@ -210,7 +210,7 @@ memory_allocator<Type, malloc_type>::~memory_allocator()
 	if (ptr)
 		release();
 
-	g_memory_allocator.unregister_allocator(size, malloc_type);
+	g_memory_statistic.unregister_allocator(size, malloc_type);
 }
 
 template <typename Type, memory_type malloc_type>
@@ -219,9 +219,9 @@ Type *memory_allocator<Type, malloc_type>::alloc()
 	if (size) {
 		ptr = raw_allocator<Type, malloc_type>::alloc(size);
 		if (ptr)
-			g_memory_allocator.allocated(size, malloc_type);
+			g_memory_statistic.allocated(size, malloc_type);
 		else
-			g_memory_allocator.trigger_error(size, malloc_type);
+			g_memory_statistic.trigger_error(size, malloc_type);
 		return static_cast<Type*>(ptr);
 	}
 	return nullptr;
@@ -231,7 +231,7 @@ template <typename Type, memory_type malloc_type>
 void memory_allocator<Type, malloc_type>::release()
 {
 	raw_allocator<Type, malloc_type>::free(ptr);
-	g_memory_allocator.released(size, malloc_type);
+	g_memory_statistic.released(size, malloc_type);
 	ptr = nullptr;
 }
 
@@ -246,9 +246,9 @@ void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 {
 	if (ptr)
 		release();
-	g_memory_allocator.unregister_allocator(size, malloc_type);
+	g_memory_statistic.unregister_allocator(size, malloc_type);
 	size = elem_size * sizeof(Type);
-	g_memory_allocator.register_allocator(size, malloc_type);
+	g_memory_statistic.register_allocator(size, malloc_type);
 }
 
 /*
@@ -282,8 +282,7 @@ struct ExecutionContext
 		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
 };
 
-template <typename Type>
-using PadFunction = void(const Type *old_ptr, Type *new_ptr,
+using PadFunction = void(const void *old_ptr, void *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
@@ -303,6 +302,8 @@ private:
 template <typename Type>
 struct BlockMatchContext
 {
+	std::type_index sourceDataType;
+	std::type_index destinationDataType;
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -342,8 +343,8 @@ struct BlockMatchContext
 
 	int numberOfThreads;
 
-	PadFunction<Type> *padMethodA;
-	PadFunction<Type> *padMethodB;
+	PadFunction *padMethodA;
+	PadFunction *padMethodB;
 	ExecutionFunction<Type> *executionMethod;
 
 	int numberOfBlockBPerBlockA_M;

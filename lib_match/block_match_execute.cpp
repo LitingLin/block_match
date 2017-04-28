@@ -1,7 +1,7 @@
 #include "block_match_execute.hpp"
 
 template <typename Type>
-void BlockMatch<Type>::execute(Type *A, Type *B,
+void BlockMatchImpl<Type>::execute(Type *A, Type *B,
 	Type *C,
 	Type *padded_A, Type *padded_B,
 	int *index_x, int *index_y)
@@ -97,14 +97,14 @@ void BlockMatch<Type>::execute(Type *A, Type *B,
 
 template
 LIB_MATCH_EXPORT
-void BlockMatch<float>::execute(float *A, float *B,
+void BlockMatchImpl<float>::execute(float *A, float *B,
 	float *C,
 	float *padded_A, float *padded_B,
 	int *index_x, int *index_y);
 
 template
 LIB_MATCH_EXPORT
-void BlockMatch<double>::execute(double *A, double *B,
+void BlockMatchImpl<double>::execute(double *A, double *B,
 	double *C,
 	double *padded_A, double *padded_B,
 	int *index_x, int *index_y);

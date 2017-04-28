@@ -1,14 +1,14 @@
 #include "lib_match_internal.h"
 
 template <typename Type>
-BlockMatch<Type>::~BlockMatch()
+BlockMatchImpl<Type>::~BlockMatchImpl()
 {
 	if (m_instance)
 		destroy();
 }
 
 template <typename Type>
-void BlockMatch<Type>::destroy()
+void BlockMatchImpl<Type>::destroy()
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(m_instance);
 	delete instance;
@@ -18,14 +18,14 @@ void BlockMatch<Type>::destroy()
 
 template
 LIB_MATCH_EXPORT
-BlockMatch<float>::~BlockMatch();
+BlockMatchImpl<float>::~BlockMatch();
 template
 LIB_MATCH_EXPORT
-BlockMatch<double>::~BlockMatch();
+BlockMatchImpl<double>::~BlockMatch();
 
 template
 LIB_MATCH_EXPORT
-void BlockMatch<float>::destroy();
+void BlockMatchImpl<float>::destroy();
 template
 LIB_MATCH_EXPORT
-void BlockMatch<double>::destroy();
+void BlockMatchImpl<double>::destroy();

@@ -12,9 +12,9 @@ LibMatchMexError parseMeasureMethod(ArrayMatchMexContext *context,
 		return error;
 
 	if (strncmp(buffer, "mse", 4) == 0)
-		context->method = LibMatchMeasureMethod::mse;
+		context->method = MeasureMethod::mse;
 	else if (strncmp(buffer, "cc", 4) == 0)
-		context->method = LibMatchMeasureMethod::cc;
+		context->method = MeasureMethod::cc;
 	else
 		return LibMatchMexError::errorInvalidValue;
 

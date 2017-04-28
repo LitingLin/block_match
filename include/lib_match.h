@@ -5,6 +5,7 @@
 #include <vector>
 #include <bitset>
 #include <array>
+#include <typeindex>
 
 #if defined _WIN32
 #ifdef LIB_MATCH_BUILD_DLL
@@ -20,7 +21,7 @@
 #endif
 #endif
 
-enum class LibMatchMeasureMethod { mse, cc };
+enum class MeasureMethod { mse, cc };
 
 enum class LibMatchErrorCode
 {
@@ -63,7 +64,7 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
 
 LIB_MATCH_EXPORT
-LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatchMeasureMethod method,
+LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, MeasureMethod method,
 	float **result);
 
 LIB_MATCH_EXPORT
@@ -79,13 +80,21 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
 */
 
+LIB_MATCH_EXPORT
+class LibMatchDiagnose
+{
+public:
+	static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
+};
+
 template <typename Type>
-class BlockMatch
+class BlockMatchImpl
 {
 public:
 	// SearchRegion size 0 for full search
-	BlockMatch(SearchType searchType,
-		LibMatchMeasureMethod measureMethod,
+	BlockMatchImpl(std::type_index sourceDataType, std::type_index destinationDataType,
+		SearchType searchType,
+		MeasureMethod measureMethod,
 		PadMethod padMethodA, PadMethod padMethodB,
 		BorderType sequenceABorderType,
 		SearchFrom searchFrom,
@@ -100,21 +109,16 @@ public:
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,
 		int matrixBPadding_N_pre, int matrixBPadding_N_post,
 		int numberOfIndexRetain);
-	~BlockMatch();
+	~BlockMatchImpl();
 	void initialize();
 	void execute(Type *A, Type *B,
 		Type *C,
-		Type *padded_A = nullptr, Type *padded_B = nullptr,
-		int *index_x = nullptr, int *index_y = nullptr);
+		Type *padded_A, Type *padded_B,
+		int *index_x, int *index_y);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
 	void get_matrixA_padded_dimensions(int *m, int *n);
 	void get_matrixB_padded_dimensions(int *m, int *n);
-	class Diagnose
-	{
-	public:
-		static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
-	};
 private:
 	void *m_instance;
 };
@@ -288,3 +292,5 @@ private:
 	size_t current_page_locked_memory_size;
 	size_t current_gpu_memory_size;
 };
+
+#include "lib_match_impl.h"

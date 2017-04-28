@@ -5,7 +5,7 @@
 
 #include "lib_match_internal.h"
 
-memory_allocation_counter g_memory_allocator;
+memory_allocation_statistic g_memory_statistic;
 
 std::string to_string(memory_type type)
 {
@@ -26,13 +26,13 @@ std::string to_string(memory_type type)
 	}
 }
 
-memory_allocation_counter::memory_allocation_counter()
+memory_allocation_statistic::memory_allocation_statistic()
 	: max_memory_size(0), max_page_locked_memory_size(0), max_gpu_memory_size(0),
 	current_memory_size(0), current_page_locked_memory_size(0), current_gpu_memory_size(0)
 {
 }
 
-void memory_allocation_counter::register_allocator(size_t size, memory_type type)
+void memory_allocation_statistic::register_allocator(size_t size, memory_type type)
 {
 	switch (type)
 	{
@@ -49,7 +49,7 @@ void memory_allocation_counter::register_allocator(size_t size, memory_type type
 	}
 }
 
-void memory_allocation_counter::unregister_allocator(size_t size, memory_type type)
+void memory_allocation_statistic::unregister_allocator(size_t size, memory_type type)
 {
 	switch (type)
 	{
@@ -66,7 +66,7 @@ void memory_allocation_counter::unregister_allocator(size_t size, memory_type ty
 	}
 }
 
-void memory_allocation_counter::allocated(size_t size, memory_type type)
+void memory_allocation_statistic::allocated(size_t size, memory_type type)
 {
 	switch (type)
 	{
@@ -83,7 +83,7 @@ void memory_allocation_counter::allocated(size_t size, memory_type type)
 	}
 }
 
-void memory_allocation_counter::released(size_t size, memory_type type)
+void memory_allocation_statistic::released(size_t size, memory_type type)
 {
 	switch (type)
 	{
@@ -100,7 +100,7 @@ void memory_allocation_counter::released(size_t size, memory_type type)
 	}
 }
 
-void memory_allocation_counter::trigger_error(size_t size, memory_type type) const
+void memory_allocation_statistic::trigger_error(size_t size, memory_type type) const
 {
 	throw memory_alloc_exception(fmt::format(
 		"{} system allocation failed with {} bytes.\n"
@@ -118,7 +118,7 @@ void memory_allocation_counter::trigger_error(size_t size, memory_type type) con
 		current_memory_size, current_page_locked_memory_size, current_gpu_memory_size);
 }
 
-void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size_, size_t* max_page_locked_memory_size_,
+void memory_allocation_statistic::get_max_memory_required(size_t* max_memory_size_, size_t* max_page_locked_memory_size_,
 	size_t* max_gpu_memory_size_) const
 {
 	*max_memory_size_ = this->max_memory_size;
@@ -126,20 +126,12 @@ void memory_allocation_counter::get_max_memory_required(size_t* max_memory_size_
 	*max_gpu_memory_size_ = this->max_gpu_memory_size;
 }
 
-template <typename Type>
-void BlockMatch<Type>::Diagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size,
+void LibMatchDiagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size,
 	size_t* max_gpu_memory_size)
 {
-	g_memory_allocator.get_max_memory_required(max_memory_size,
+	g_memory_statistic.get_max_memory_required(max_memory_size,
 		max_page_locked_memory_size, max_gpu_memory_size);
 }
-
-template
-LIB_MATCH_EXPORT
-void BlockMatch<float>::Diagnose::getMaxMemoryUsage(size_t*, size_t*, size_t*);
-template
-LIB_MATCH_EXPORT
-void BlockMatch<double>::Diagnose::getMaxMemoryUsage(size_t*, size_t* , size_t*);
 
 memory_alloc_exception::memory_alloc_exception(const std::string& _Message,
 	memory_type type,

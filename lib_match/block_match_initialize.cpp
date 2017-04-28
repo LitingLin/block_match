@@ -165,8 +165,9 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 //}
 
 template <typename Type>
-BlockMatch<Type>::BlockMatch(SearchType searchType,
-	LibMatchMeasureMethod measureMethod,
+BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_index destinationDataType,
+	SearchType searchType,
+	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
 	SearchFrom searchFrom,
@@ -257,12 +258,12 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 	// In case number of threads > size of A
 	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M, matrixC_N, globalContext.numberOfThreads);
 
-	PadFunction<Type> *padFunctionA = nullptr;
-	PadFunction<Type> *padFunctionB = nullptr;
+	PadFunction *padFunctionA = nullptr;
+	PadFunction *padFunctionB = nullptr;
 	ExecutionFunction<Type> *executionFunction = nullptr;
 
 	/*
-	if (sort && searchType == SearchType::local && measureMethod == LibMatchMeasureMethod::mse
+	if (sort && searchType == SearchType::local && measureMethod == MeasureMethod::mse
 	&& numberOfIndexRetain && sequenceABorderType == BorderType::normal && searchFrom == SearchFrom::topLeft)
 	{
 
@@ -271,7 +272,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 	if (sort) {
 		if (searchType == SearchType::local)
 		{
-			if (measureMethod == LibMatchMeasureMethod::mse)
+			if (measureMethod == MeasureMethod::mse)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
@@ -302,7 +303,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
 							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
-			else if (measureMethod == LibMatchMeasureMethod::cc)
+			else if (measureMethod == MeasureMethod::cc)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
@@ -336,7 +337,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 		}
 		else if (searchType == SearchType::global)
 		{
-			if (measureMethod == LibMatchMeasureMethod::mse) {
+			if (measureMethod == MeasureMethod::mse) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
@@ -352,7 +353,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 						executionFunction = processWorker<Type, determineBlockB_index_full,
 						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			}
-			else if (measureMethod == LibMatchMeasureMethod::cc) {
+			else if (measureMethod == MeasureMethod::cc) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
@@ -376,14 +377,14 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 	{
 		if (searchType == SearchType::local)
 		{
-			if (measureMethod == LibMatchMeasureMethod::mse)
+			if (measureMethod == MeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
 					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_local,
 					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
-			else if (measureMethod == LibMatchMeasureMethod::cc)
+			else if (measureMethod == MeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
 					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
@@ -395,14 +396,14 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 		}
 		else if (searchType == SearchType::global)
 		{
-			if (measureMethod == LibMatchMeasureMethod::mse)
+			if (measureMethod == MeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
 					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_full,
 					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
-			else if (measureMethod == LibMatchMeasureMethod::cc)
+			else if (measureMethod == MeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
 					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
@@ -454,6 +455,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
+		sourceDataType, destinationDataType,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
@@ -540,7 +542,7 @@ BlockMatch<Type>::BlockMatch(SearchType searchType,
 }
 
 template <typename Type>
-void BlockMatch<Type>::initialize()
+void BlockMatchImpl<Type>::initialize()
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(m_instance);
 	instance->common_buffer.alloc();
@@ -564,9 +566,10 @@ void BlockMatch<Type>::initialize()
 
 template
 LIB_MATCH_EXPORT
-BlockMatch<float>::BlockMatch(
+BlockMatchImpl<float>::BlockMatch(
+	std::type_index, std::type_index,
 	SearchType searchType,
-	LibMatchMeasureMethod measureMethod,
+	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
 	SearchFrom searchFrom,
@@ -583,9 +586,10 @@ BlockMatch<float>::BlockMatch(
 	int numberOfIndexRetain);
 template
 LIB_MATCH_EXPORT
-BlockMatch<double>::BlockMatch(
+BlockMatchImpl<double>::BlockMatch(
+	std::type_index, std::type_index,
 	SearchType searchType,
-	LibMatchMeasureMethod measureMethod,
+	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
 	SearchFrom searchFrom,
@@ -603,7 +607,7 @@ BlockMatch<double>::BlockMatch(
 
 template
 LIB_MATCH_EXPORT
-void BlockMatch<float>::initialize();
+void BlockMatchImpl<float>::initialize();
 template
 LIB_MATCH_EXPORT
-void BlockMatch<double>::initialize();
+void BlockMatchImpl<double>::initialize();
