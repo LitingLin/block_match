@@ -1,10 +1,7 @@
 #include "intrinsic_func_helper.hpp"
 
 template <typename Type>
-void lib_match_mse_cpu_avx2(Type *, Type *, int, Type *)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_mse_cpu_avx2(Type *, Type *, int, Type *);
 
 template <>
 void lib_match_mse_cpu_avx2(float *block_A, float *block_B, int blockSize, float *result)
@@ -35,10 +32,7 @@ void lib_match_mse_cpu_avx2(double *block_A, double *block_B, int blockSize, dou
 }
 
 template <typename Type>
-void lib_match_mse_cpu_avx(Type *, Type *, int, Type *)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_mse_cpu_avx(Type *, Type *, int, Type *);
 
 template <>
 void lib_match_mse_cpu_avx(float *block_A, float *block_B, int blockSize, float *result)
@@ -71,10 +65,7 @@ void lib_match_mse_cpu_avx(double *block_A, double *block_B, int blockSize, doub
 }
 
 template <typename Type>
-void lib_match_mse_cpu_sse2(Type *block_A, Type *block_B, int blockSize, Type *result)
-{
-	static_assert("NOT IMPLEMENTED");
-}
+void lib_match_mse_cpu_sse2(Type *, Type *, int, Type *);
 
 template <>
 void lib_match_mse_cpu_sse2(float *block_A, float *block_B, int blockSize, float *result)

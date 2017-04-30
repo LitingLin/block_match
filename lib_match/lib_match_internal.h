@@ -506,6 +506,14 @@ template <typename Type>
 void lib_match_cc_cpu_avx2(Type *block_A, Type *block_B, int blockSize, Type *result);
 
 template <typename Type>
+void lib_match_sort(Type *value, int size);
+template <typename Type>
+void lib_match_sort_partial(Type *value, int size, int retain);
+template <typename Type>
+void lib_match_sort_descend(Type *value, int size);
+template <typename Type>
+void lib_match_sort_partial_descend(Type *value, int size, int retain);
+template <typename Type>
 void lib_match_sort(int *index, Type *value, int size);
 template <typename Type>
 void lib_match_sort_partial(int *index, Type *value, int size, int retain);

@@ -165,7 +165,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 //}
 
 template <typename Type>
-BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_index destinationDataType,
+BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
 	SearchType searchType,
 	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -415,19 +415,41 @@ BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_i
 		}
 	}
 
+#define RuntimeTypeInference(type, exp) \
+	if (type == typeid(uint8_t)) \
+		exp<uint8_t>; \
+	else if (type == typeid(int8_t)) \
+		exp<int8_t>; \
+	else if (type == typeid(uint16_t)) \
+		exp<uint16_t>; \
+	else if (type == typeid(int16_t)) \
+		exp<int16_t>; \
+	else if (type == typeid(uint32_t)) \
+		exp<uint32_t>; \
+	else if (type == typeid(int32_t)) \
+		exp<int32_t>; \
+	else if (type == typeid(uint64_t)) \
+		exp<uint64_t>; \
+	else if (type == typeid(int64_t)) \
+		exp<int64_t>; \
+	else if (type == typeid(float)) \
+		exp<float>; \
+	else if (type == typeid(double)) \
+		exp<double>
+
 	switch (padMethodA)
 	{
 	case PadMethod::zero:
-		padFunctionA = zeroPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)zeroPadding);
 		break;
 	case PadMethod::circular:
-		padFunctionA = circularPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)circularPadding);
 		break;
 	case PadMethod::replicate:
-		padFunctionA = replicatePadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)replicatePadding);
 		break;
 	case PadMethod::symmetric:
-		padFunctionA = symmetricPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)symmetricPadding);
 		break;
 	default: break;
 	}
@@ -435,16 +457,16 @@ BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_i
 	switch (padMethodB)
 	{
 	case PadMethod::zero:
-		padFunctionB = zeroPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)zeroPadding);
 		break;
 	case PadMethod::circular:
-		padFunctionB = circularPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)circularPadding);
 		break;
 	case PadMethod::replicate:
-		padFunctionB = replicatePadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)replicatePadding);
 		break;
 	case PadMethod::symmetric:
-		padFunctionB = symmetricPadding<Type>;
+		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)symmetricPadding);
 		break;
 	default: break;
 	}
@@ -455,7 +477,7 @@ BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_i
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
-		sourceDataType, destinationDataType,
+		inputDataType, outputDataType,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
@@ -542,7 +564,7 @@ BlockMatchImpl<Type>::BlockMatchImpl(std::type_index sourceDataType, std::type_i
 }
 
 template <typename Type>
-void BlockMatchImpl<Type>::initialize()
+void BlockMatch<Type>::initialize()
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(m_instance);
 	instance->common_buffer.alloc();
@@ -566,7 +588,7 @@ void BlockMatchImpl<Type>::initialize()
 
 template
 LIB_MATCH_EXPORT
-BlockMatchImpl<float>::BlockMatch(
+BlockMatch<float>::BlockMatch(
 	std::type_index, std::type_index,
 	SearchType searchType,
 	MeasureMethod measureMethod,
@@ -586,7 +608,7 @@ BlockMatchImpl<float>::BlockMatch(
 	int numberOfIndexRetain);
 template
 LIB_MATCH_EXPORT
-BlockMatchImpl<double>::BlockMatch(
+BlockMatch<double>::BlockMatch(
 	std::type_index, std::type_index,
 	SearchType searchType,
 	MeasureMethod measureMethod,
@@ -607,7 +629,7 @@ BlockMatchImpl<double>::BlockMatch(
 
 template
 LIB_MATCH_EXPORT
-void BlockMatchImpl<float>::initialize();
+void BlockMatch<float>::initialize();
 template
 LIB_MATCH_EXPORT
-void BlockMatchImpl<double>::initialize();
+void BlockMatch<double>::initialize();

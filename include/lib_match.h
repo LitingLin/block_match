@@ -88,11 +88,11 @@ public:
 };
 
 template <typename Type>
-class BlockMatchImpl
+class BlockMatch
 {
 public:
 	// SearchRegion size 0 for full search
-	BlockMatchImpl(std::type_index sourceDataType, std::type_index destinationDataType,
+	BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
 		SearchType searchType,
 		MeasureMethod measureMethod,
 		PadMethod padMethodA, PadMethod padMethodB,
@@ -109,11 +109,21 @@ public:
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,
 		int matrixBPadding_N_pre, int matrixBPadding_N_post,
 		int numberOfIndexRetain);
-	~BlockMatchImpl();
+	~BlockMatch();
 	void initialize();
-	void execute(Type *A, Type *B,
-		Type *C,
-		Type *padded_A, Type *padded_B,
+	template <typename InputDataType, typename OutputDataType>
+	void execute(InputDataType *A, InputDataType *B,
+		OutputDataType *C,
+		InputDataType *padded_A, InputDataType *padded_B,
+		int *index_x, int *index_y)
+	{
+		execute(static_cast<void*>(A), static_cast<void*>(B), 
+			static_cast<void*>(C), 
+			static_cast<void*>(padded_A), static_cast<void*>(padded_B), index_x, index_y);
+	}
+	void execute(void *A, void *B,
+		void *C,
+		void *padded_A, void *padded_B,
 		int *index_x, int *index_y);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
