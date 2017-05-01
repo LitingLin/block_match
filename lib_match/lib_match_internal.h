@@ -575,3 +575,228 @@ void *aligned_block_malloc(size_t size, size_t alignment);
 void aligned_free(void *ptr);
 
 int getTypeSize(std::type_index type);
+
+
+#define RuntimeTypeInference(type, exp) \
+	if (type == typeid(uint8_t)) \
+		exp(uint8_t); \
+	else if (type == typeid(int8_t)) \
+		exp(int8_t); \
+	else if (type == typeid(uint16_t)) \
+		exp(uint16_t); \
+	else if (type == typeid(int16_t)) \
+		exp(int16_t); \
+	else if (type == typeid(uint32_t)) \
+		exp(uint32_t); \
+	else if (type == typeid(int32_t)) \
+		exp(int32_t); \
+	else if (type == typeid(uint64_t)) \
+		exp(uint64_t); \
+	else if (type == typeid(int64_t)) \
+		exp(int64_t); \
+	else if (type == typeid(float)) \
+		exp(float); \
+	else if (type == typeid(double)) \
+		exp(double)
+
+#define RuntimeTypeInference2(type1, type2, exp) \
+	if (type1 == typeid(uint8_t) && type2 == typeid(uint8_t)) \
+		exp(uint8_t, uint8_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(int8_t)) \
+		exp(uint8_t, int8_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(uint16_t)) \
+		exp(uint8_t, uint16_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(int16_t)) \
+		exp(uint8_t, int16_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(uint32_t)) \
+		exp(uint8_t, uint32_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(int32_t)) \
+		exp(uint8_t, int32_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(uint64_t)) \
+		exp(uint8_t, uint64_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(int64_t)) \
+		exp(uint8_t, int64_t); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(float)) \
+		exp(uint8_t, float); \
+	else if (type1 == typeid(uint8_t) && type2 == typeid(double)) \
+		exp(uint8_t, double); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(uint8_t)) \
+		exp(int8_t, uint8_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(int8_t)) \
+		exp(int8_t, int8_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(uint16_t)) \
+		exp(int8_t, uint16_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(int16_t)) \
+		exp(int8_t, int16_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(uint32_t)) \
+		exp(int8_t, uint32_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(int32_t)) \
+		exp(int8_t, int32_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(uint64_t)) \
+		exp(int8_t, uint64_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(int64_t)) \
+		exp(int8_t, int64_t); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(float)) \
+		exp(int8_t, float); \
+	else if (type1 == typeid(int8_t) && type2 == typeid(double)) \
+		exp(int8_t, double); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(uint8_t)) \
+		exp(uint16_t, uint8_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(int8_t)) \
+		exp(uint16_t, int8_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(uint16_t)) \
+		exp(uint16_t, uint16_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(int16_t)) \
+		exp(uint16_t, int16_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(uint32_t)) \
+		exp(uint16_t, uint32_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(int32_t)) \
+		exp(uint16_t, int32_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(uint64_t)) \
+		exp(uint16_t, uint64_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(int64_t)) \
+		exp(uint16_t, int64_t); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(float)) \
+		exp(uint16_t, float); \
+	else if (type1 == typeid(uint16_t) && type2 == typeid(double)) \
+		exp(uint16_t, double); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(uint8_t)) \
+		exp(int16_t, uint8_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(int8_t)) \
+		exp(int16_t, int8_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(uint16_t)) \
+		exp(int16_t, uint16_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(int16_t)) \
+		exp(int16_t, int16_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(uint32_t)) \
+		exp(int16_t, uint32_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(int32_t)) \
+		exp(int16_t, int32_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(uint64_t)) \
+		exp(int16_t, uint64_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(int64_t)) \
+		exp(int16_t, int64_t); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(float)) \
+		exp(int16_t, float); \
+	else if (type1 == typeid(int16_t) && type2 == typeid(double)) \
+		exp(int16_t, double); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(uint8_t)) \
+		exp(uint32_t, uint8_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(int8_t)) \
+		exp(uint32_t, int8_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(uint16_t)) \
+		exp(uint32_t, uint16_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(int16_t)) \
+		exp(uint32_t, int16_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(uint32_t)) \
+		exp(uint32_t, uint32_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(int32_t)) \
+		exp(uint32_t, int32_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(uint64_t)) \
+		exp(uint32_t, uint64_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(int64_t)) \
+		exp(uint32_t, int64_t); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(float)) \
+		exp(uint32_t, float); \
+	else if (type1 == typeid(uint32_t) && type2 == typeid(double)) \
+		exp(uint32_t, double); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(uint8_t)) \
+		exp(int32_t, uint8_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(int8_t)) \
+		exp(int32_t, int8_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(uint16_t)) \
+		exp(int32_t, uint16_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(int16_t)) \
+		exp(int32_t, int16_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(uint32_t)) \
+		exp(int32_t, uint32_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(int32_t)) \
+		exp(int32_t, int32_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(uint64_t)) \
+		exp(int32_t, uint64_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(int64_t)) \
+		exp(int32_t, int64_t); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(float)) \
+		exp(int32_t, float); \
+	else if (type1 == typeid(int32_t) && type2 == typeid(double)) \
+		exp(int32_t, double); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(uint8_t)) \
+		exp(uint64_t, uint8_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(int8_t)) \
+		exp(uint64_t, int8_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(uint16_t)) \
+		exp(uint64_t, uint16_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(int16_t)) \
+		exp(uint64_t, int16_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(uint32_t)) \
+		exp(uint64_t, uint32_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(int32_t)) \
+		exp(uint64_t, int32_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(uint64_t)) \
+		exp(uint64_t, uint64_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(int64_t)) \
+		exp(uint64_t, int64_t); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(float)) \
+		exp(uint64_t, float); \
+	else if (type1 == typeid(uint64_t) && type2 == typeid(double)) \
+		exp(uint64_t, double); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(uint8_t)) \
+		exp(int64_t, uint8_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(int8_t)) \
+		exp(int64_t, int8_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(uint16_t)) \
+		exp(int64_t, uint16_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(int16_t)) \
+		exp(int64_t, int16_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(uint32_t)) \
+		exp(int64_t, uint32_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(int32_t)) \
+		exp(int64_t, int32_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(uint64_t)) \
+		exp(int64_t, uint64_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(int64_t)) \
+		exp(int64_t, int64_t); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(float)) \
+		exp(int64_t, float); \
+	else if (type1 == typeid(int64_t) && type2 == typeid(double)) \
+		exp(int64_t, double); \
+	else if (type1 == typeid(float) && type2 == typeid(uint8_t)) \
+		exp(float, uint8_t); \
+	else if (type1 == typeid(float) && type2 == typeid(int8_t)) \
+		exp(float, int8_t); \
+	else if (type1 == typeid(float) && type2 == typeid(uint16_t)) \
+		exp(float, uint16_t); \
+	else if (type1 == typeid(float) && type2 == typeid(int16_t)) \
+		exp(float, int16_t); \
+	else if (type1 == typeid(float) && type2 == typeid(uint32_t)) \
+		exp(float, uint32_t); \
+	else if (type1 == typeid(float) && type2 == typeid(int32_t)) \
+		exp(float, int32_t); \
+	else if (type1 == typeid(float) && type2 == typeid(uint64_t)) \
+		exp(float, uint64_t); \
+	else if (type1 == typeid(float) && type2 == typeid(int64_t)) \
+		exp(float, int64_t); \
+	else if (type1 == typeid(float) && type2 == typeid(float)) \
+		exp(float, float); \
+	else if (type1 == typeid(float) && type2 == typeid(double)) \
+		exp(float, double); \
+	else if (type1 == typeid(double) && type2 == typeid(uint8_t)) \
+		exp(double, uint8_t); \
+	else if (type1 == typeid(double) && type2 == typeid(int8_t)) \
+		exp(double, int8_t); \
+	else if (type1 == typeid(double) && type2 == typeid(uint16_t)) \
+		exp(double, uint16_t); \
+	else if (type1 == typeid(double) && type2 == typeid(int16_t)) \
+		exp(double, int16_t); \
+	else if (type1 == typeid(double) && type2 == typeid(uint32_t)) \
+		exp(double, uint32_t); \
+	else if (type1 == typeid(double) && type2 == typeid(int32_t)) \
+		exp(double, int32_t); \
+	else if (type1 == typeid(double) && type2 == typeid(uint64_t)) \
+		exp(double, uint64_t); \
+	else if (type1 == typeid(double) && type2 == typeid(int64_t)) \
+		exp(double, int64_t); \
+	else if (type1 == typeid(double) && type2 == typeid(float)) \
+		exp(double, float); \
+	else if (type1 == typeid(double) && type2 == typeid(double)) \
+		exp(double, double)

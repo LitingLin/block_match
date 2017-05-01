@@ -276,37 +276,73 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	{
 
 	}*/
-
-#define RuntimeTypeInference(type) \
-	if (type == typeid(uint8_t)) \
-		exp(uint8_t); \
-	else if (type == typeid(int8_t)) \
-		exp(int8_t); \
-	else if (type == typeid(uint16_t)) \
-		exp(uint16_t); \
-	else if (type == typeid(int16_t)) \
-		exp(int16_t); \
-	else if (type == typeid(uint32_t)) \
-		exp(uint32_t); \
-	else if (type == typeid(int32_t)) \
-		exp(int32_t); \
-	else if (type == typeid(uint64_t)) \
-		exp(uint64_t); \
-	else if (type == typeid(int64_t)) \
-		exp(int64_t); \
-	else if (type == typeid(float)) \
-		exp(float); \
-	else if (type == typeid(double)) \
-		exp(double)
-
+	
 	if (sort)
 	{
-		if (indexDataType == typeid(nullptr))
+		if (indexDataType == typeid(nullptr)) 
+		{
 			if (measureMethod == MeasureMethod::mse && numberOfIndexRetain)
+			{
 #define exp(type) \
-	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, ##type, sortPartialAscend<Type>);
-				RuntimeTypeInference(indexDataType);
+	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>>
+				RuntimeTypeInference(inputDataType, exp);
 #undef exp
+			}
+			else if (measureMethod == MeasureMethod::mse && !numberOfIndexRetain)
+			{
+#define exp(type) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>>
+				RuntimeTypeInference(inputDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && numberOfIndexRetain)
+			{
+#define exp(type) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>>
+				RuntimeTypeInference(inputDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && !numberOfIndexRetain)
+			{
+#define exp(type) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>>
+				RuntimeTypeInference(inputDataType, exp);
+#undef exp
+			}
+			else
+				NOT_IMPLEMENTED_ERROR;
+		}
+		else
+		{
+			if (measureMethod == MeasureMethod::mse && numberOfIndexRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>>
+				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::mse && !numberOfIndexRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>>
+				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && numberOfIndexRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>>
+				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && !numberOfIndexRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>>
+				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+#undef exp
+			}
+		}
 	}
 
 	if (sort) {
@@ -454,42 +490,32 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 				NOT_IMPLEMENTED_ERROR;
 		}
 	}
-
-#define RuntimeTypeInference(type, exp) \
-	if (type == typeid(uint8_t)) \
-		exp<uint8_t>; \
-	else if (type == typeid(int8_t)) \
-		exp<int8_t>; \
-	else if (type == typeid(uint16_t)) \
-		exp<uint16_t>; \
-	else if (type == typeid(int16_t)) \
-		exp<int16_t>; \
-	else if (type == typeid(uint32_t)) \
-		exp<uint32_t>; \
-	else if (type == typeid(int32_t)) \
-		exp<int32_t>; \
-	else if (type == typeid(uint64_t)) \
-		exp<uint64_t>; \
-	else if (type == typeid(int64_t)) \
-		exp<int64_t>; \
-	else if (type == typeid(float)) \
-		exp<float>; \
-	else if (type == typeid(double)) \
-		exp<double>
-
+	
 	switch (padMethodA)
 	{
 	case PadMethod::zero:
-		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)zeroPadding);
+#define exp(type) \
+	padFunctionA = (PadFunction*)zeroPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	case PadMethod::circular:
-		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)circularPadding);
+#define exp(type) \
+	padFunctionA = (PadFunction*)circularPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	case PadMethod::replicate:
-		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)replicatePadding);
+#define exp(type) \
+	padFunctionA = (PadFunction*)replicatePadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	case PadMethod::symmetric:
-		RuntimeTypeInference(inputDataType, padFunctionA = (PadFunction*)symmetricPadding);
+#define exp(type) \
+	padFunctionA = (PadFunction*)symmetricPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	default: break;
 	}
@@ -497,20 +523,32 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	switch (padMethodB)
 	{
 	case PadMethod::zero:
+#define exp(type) \
+	padFunctionB = (PadFunction*)zeroPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)zeroPadding);
 		break;
 	case PadMethod::circular:
-		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)circularPadding);
+#define exp(type) \
+	padFunctionB = (PadFunction*)circularPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	case PadMethod::replicate:
-		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)replicatePadding);
+#define exp(type) \
+	padFunctionB = (PadFunction*)replicatePadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	case PadMethod::symmetric:
-		RuntimeTypeInference(inputDataType, padFunctionB = (PadFunction*)symmetricPadding);
+#define exp(type) \
+	padFunctionB = (PadFunction*)symmetricPadding<type>
+		RuntimeTypeInference(inputDataType, exp);
+#undef exp
 		break;
 	default: break;
 	}
-#undef RuntimeTypeInference
 	const int numberOfBlockBPerBlockA = numberOfBlockBPerBlockA_M * numberOfBlockBPerBlockA_N;
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
