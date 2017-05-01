@@ -40,43 +40,28 @@ void type_convert(TypeA *a, TypeB *b, size_t n)
 		a[i] = b[i];
 }
 
-size_t arrayMatchPerThreadASize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray)
+int getTypeSize(std::type_index type)
 {
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread * lengthOfArray;
-}
-
-size_t arrayMatchPerThreadBSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray)
-{
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread * lengthOfArray;
-}
-
-size_t arrayMatchPerThreadCSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray)
-{
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread * lengthOfArray;
-}
-
-size_t arrayMatchPerThreadDeviceBufferASize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray)
-{
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread * lengthOfArray;
-}
-
-size_t arrayMatchPerThreadDeviceBufferBSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread,
-	const int lengthOfArray)
-{
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread * lengthOfArray;
-}
-
-size_t arrayMatchPerThreadDeviceBufferCSize(const int numberOfGpuDeviceMultiProcessor,
-	const int numberOfGpuProcessorThread)
-{
-	return numberOfGpuDeviceMultiProcessor * numberOfGpuProcessorThread;
+	if (type == typeid(uint8_t))
+		return sizeof(uint8_t);
+	else if (type == typeid(int8_t))
+		return sizeof(int8_t);
+	else if (type == typeid(uint16_t))
+		return sizeof(uint16_t);
+	else if (type == typeid(int16_t))
+		return sizeof(int16_t);
+	else if (type == typeid(uint32_t))
+		return sizeof(uint32_t);
+	else if (type == typeid(int32_t))
+		return sizeof(int32_t);
+	else if (type == typeid(uint64_t))
+		return sizeof(uint64_t);
+	else if (type == typeid(int64_t))
+		return sizeof(int64_t);
+	else if (type == typeid(float))
+		return sizeof(float);
+	else if (type == typeid(double))
+		return sizeof(double);
+	else
+		NOT_IMPLEMENTED_ERROR;
 }

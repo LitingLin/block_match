@@ -1,5 +1,72 @@
 #include "block_match_execute.hpp"
 
+void tryToIncludeLastBlock(int *indexA, int strideA, int indexA_end)
+{
+	if (*indexA + 1 == indexA_end)
+		return;
+	if (*indexA + strideA >= indexA_end)
+		*indexA = indexA_end - strideA - 1; // + strideA immediately later
+}
+
+void noIndexPostProcess(int *indexA, int strideA, int indexA_end)
+{
+}
+
+void recordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
+{
+	*index_x_buffer = index_x;
+	*index_y_buffer = index_y;
+}
+
+void dummyRecordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
+{
+}
+
+void determineBlockB_index_local(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A)
+{
+	*indexB_begin = index_A - neighbour / 2;
+	*indexB_end = index_A - neighbour / 2 + neighbour;
+}
+
+void determineBlockB_index_local_topLeft(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A)
+{
+	*indexB_begin = index_A;
+	*indexB_end = index_A + neighbour;
+}
+
+void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour, int index_A)
+{
+	*indexB_begin = 0;
+	*indexB_end = determineEndOfIndex(matB, block);
+}
+
+class ContiguousMemoryIterator : public Iterator
+{
+public:
+	ContiguousMemoryIterator(void *ptr, int elem_size)
+		: ptr(static_cast<char*>(ptr)), elem_size(elem_size)
+	{		
+	}
+	void next() override
+	{
+		ptr += elem_size;
+	}
+	void* get() override
+	{
+		return static_cast<void*>(ptr);
+	}
+	std::unique_ptr<Iterator> clone(size_t pos) override
+	{
+		return std::make_unique<ContiguousMemoryIterator>(ptr + pos * elem_size, elem_size);
+	}
+private:
+	char *ptr;
+	int elem_size;
+};
+
 template <typename Type>
 void BlockMatch<Type>::execute(void *A, void *B,
 	void *C,
@@ -7,6 +74,30 @@ void BlockMatch<Type>::execute(void *A, void *B,
 	void *index_x, void *index_y)
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
+	ContiguousMemoryIterator iterator_C(C, getTypeSize(instance->outputDataType) * instance->C_dimensions[2]);
+	if (index_x) {
+		ContiguousMemoryIterator iterator_index_x(index_x, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
+		ContiguousMemoryIterator iterator_index_y(index_y, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
+
+		execute(A, B, &iterator_C, padded_A, padded_B, &iterator_index_x, &iterator_index_y);
+	}
+	else
+		execute(A, B, &iterator_C, padded_A, padded_B, nullptr, nullptr);
+}
+
+template <typename Type>
+void BlockMatch<Type>::execute(void *A, void *B,
+	Iterator *C,
+	void *padded_A, void *padded_B,
+	Iterator *index_x, Iterator *index_y)
+{
+	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
+
+	if (instance->indexDataType == typeid(nullptr)) {
+		if (index_x)
+			throw std::runtime_error("index_x and index_y should be null, as indexDataType is nullptr");
+	}
+
 
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
@@ -21,6 +112,18 @@ void BlockMatch<Type>::execute(void *A, void *B,
 		B_N_padPre = instance->matrixBPadding_N_pre,
 		B_N_padPost = instance->matrixBPadding_N_post,
 		numberOfThreads = instance->numberOfThreads;
+
+	if (!padded_A)
+	{
+		if (!instance->optionalBuffer.matrixA_padded_internal.allocated())
+		{
+			instance->optionalBuffer.matrixA_padded_internal.alloc();
+			instance->optionalBuffer.matrixB_padded_internal.alloc();
+		}
+
+		padded_A = instance->optionalBuffer.matrixA_padded_internal.get();
+		padded_B = instance->optionalBuffer.matrixB_padded_internal.get();
+	}
 
 	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
 	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
@@ -39,8 +142,10 @@ void BlockMatch<Type>::execute(void *A, void *B,
 		executionContext->matrixA = padded_A;
 		executionContext->matrixB = padded_B;
 		executionContext->numberOfIteration = instance->workerContext[i].numberOfIteration;
-		executionContext->index_x = index_x + instance->workerContext[i].rawMatrixCIndex_begin * instance->C_dimensions[2];
-		executionContext->index_y = index_y + instance->workerContext[i].rawMatrixCIndex_begin * instance->C_dimensions[2];
+		if (index_x) {
+			executionContext->index_x = index_x->clone(instance->workerContext[i].rawMatrixCIndex_begin);
+			executionContext->index_y = index_y->clone(instance->workerContext[i].rawMatrixCIndex_begin);
+		}
 		executionContext->index_x_buffer = instance->perThreadBuffer[i].index_x_sorting_buffer.get();
 		executionContext->index_y_buffer = instance->perThreadBuffer[i].index_y_sorting_buffer.get();
 		executionContext->numberOfIndexRetain = instance->numberOfIndexRetain;
@@ -70,7 +175,7 @@ void BlockMatch<Type>::execute(void *A, void *B,
 		executionContext->strideA_N = instance->strideA_N;
 		executionContext->strideB_M = instance->strideB_M;
 		executionContext->strideB_N = instance->strideB_N;
-		executionContext->matrixC = C + instance->workerContext[i].rawMatrixCIndex_begin * instance->C_dimensions[2];
+		executionContext->matrixC = C->clone(instance->workerContext[i].rawMatrixCIndex_begin);
 
 		instance->threadPoolTaskHandle[i] = exec_serv.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
 			static_cast<void*>(executionContext));
@@ -93,8 +198,8 @@ void BlockMatch<Type>::execute(void *A, void *B,
 
 	if (isFailed)
 		throw std::runtime_error(error_message);
+	
 }
-
 template
 LIB_MATCH_EXPORT
 void BlockMatch<float>::execute(float *A, float *B,

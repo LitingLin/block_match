@@ -190,6 +190,7 @@ public:
 	memory_allocator(size_t elem_size = 0);
 	~memory_allocator();
 	Type *alloc();
+	bool allocated() const;
 	void release();
 	Type *get();
 	void resize(size_t elem_size);
@@ -228,6 +229,12 @@ Type *memory_allocator<Type, malloc_type>::alloc()
 }
 
 template <typename Type, memory_type malloc_type>
+bool memory_allocator<Type, malloc_type>::allocated() const
+{
+	return ptr;
+}
+
+template <typename Type, memory_type malloc_type>
 void memory_allocator<Type, malloc_type>::release()
 {
 	raw_allocator<Type, malloc_type>::free(ptr);
@@ -257,7 +264,7 @@ void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 */
 
 using DataPostProcessingMethod = 
-void(void *index_x, void *index_y, void *result,
+void(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, void *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort);
@@ -274,12 +281,13 @@ void(int*, int*, int, int);
 template <typename Type>
 struct ExecutionContext
 {
-	void *matrixA, *matrixB, *matrixC;
+	void *matrixA, *matrixB;
+	std::unique_ptr<Iterator> matrixC;
 	Type *matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
 		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
 	int matrixA_M, matrixA_N,
 		matrixB_M, matrixB_N;
-	void *index_x, *index_y;
+	std::unique_ptr<Iterator> index_x, index_y;
 	int *index_x_buffer, *index_y_buffer,
 		*rawIndexTemplate, *rawIndexBuffer,
 		block_M, block_N,
@@ -324,8 +332,9 @@ private:
 template <typename Type>
 struct BlockMatchContext
 {
-	std::type_index sourceDataType;
-	std::type_index destinationDataType;
+	std::type_index inputDataType;
+	std::type_index outputDataType;
+	std::type_index indexDataType;
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -369,6 +378,12 @@ struct BlockMatchContext
 	PadFunction *padMethodB;
 	ExecutionFunction<Type> *executionMethod;
 
+	DataPostProcessingMethod *dataPostProcessing;
+	BlockCopyMethod *blockCopy;
+	DetermineBlockBRangeMethod *determineBlockBRange;
+	IterationIndexPostProcessMethod *iterationIndexPostProcess;
+	IndexRecordMethod *indexRecord;
+
 	int numberOfBlockBPerBlockA_M;
 	int numberOfBlockBPerBlockA_N;
 	int numberOfBlockBPerBlockA;
@@ -399,13 +414,15 @@ struct BlockMatchContext
 	};
 	std::vector<OptionalPerThreadBuffer> optionalPerThreadBuffer;
 
+	*/
+
 	struct OptionalBuffer
 	{
 		memory_allocator<Type, memory_type::system> matrixA_padded_internal;
 		memory_allocator<Type, memory_type::system> matrixB_padded_internal;
 	};
-	std::vector<OptionalBuffer> optionalBuffer;
-	*/
+	OptionalBuffer optionalBuffer;
+
 	struct PerThreadBuffer
 	{
 		memory_allocator<Type, memory_type::page_locked> matrixA_buffer;
@@ -556,3 +573,5 @@ void convert(void *src, std::type_index src_type, void *dst, std::type_index dst
 
 void *aligned_block_malloc(size_t size, size_t alignment);
 void aligned_free(void *ptr);
+
+int getTypeSize(std::type_index type);

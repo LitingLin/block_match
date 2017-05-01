@@ -2,6 +2,7 @@
 
 #include <cuda_runtime.h>
 
+#include "block_match_execute.h"
 #include "block_match_execute.hpp"
 
 void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int numberOfGpuProcessors, const int numberOfBlockBPerBlockA,
@@ -166,6 +167,7 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 
 template <typename Type>
 BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
+	std::type_index indexDataType,
 	SearchType searchType,
 	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
@@ -262,12 +264,50 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	PadFunction *padFunctionB = nullptr;
 	ExecutionFunction<Type> *executionFunction = nullptr;
 
+	DataPostProcessingMethod *dataPostProcessing;
+	BlockCopyMethod *blockCopy;
+	DetermineBlockBRangeMethod *determineBlockBRange;
+	IterationIndexPostProcessMethod *iterationIndexPostProcess;
+	IndexRecordMethod *indexRecord;
+
 	/*
 	if (sort && searchType == SearchType::local && measureMethod == MeasureMethod::mse
 	&& numberOfIndexRetain && sequenceABorderType == BorderType::normal && searchFrom == SearchFrom::topLeft)
 	{
 
 	}*/
+
+#define RuntimeTypeInference(type) \
+	if (type == typeid(uint8_t)) \
+		exp(uint8_t); \
+	else if (type == typeid(int8_t)) \
+		exp(int8_t); \
+	else if (type == typeid(uint16_t)) \
+		exp(uint16_t); \
+	else if (type == typeid(int16_t)) \
+		exp(int16_t); \
+	else if (type == typeid(uint32_t)) \
+		exp(uint32_t); \
+	else if (type == typeid(int32_t)) \
+		exp(int32_t); \
+	else if (type == typeid(uint64_t)) \
+		exp(uint64_t); \
+	else if (type == typeid(int64_t)) \
+		exp(int64_t); \
+	else if (type == typeid(float)) \
+		exp(float); \
+	else if (type == typeid(double)) \
+		exp(double)
+
+	if (sort)
+	{
+		if (indexDataType == typeid(nullptr))
+			if (measureMethod == MeasureMethod::mse && numberOfIndexRetain)
+#define exp(type) \
+	dataPostProcessing = (DataPostProcessingMethod*)sort_noRecordIndex<Type, ##type, sortPartialAscend<Type>);
+				RuntimeTypeInference(indexDataType);
+#undef exp
+	}
 
 	if (sort) {
 		if (searchType == SearchType::local)
@@ -470,7 +510,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 		break;
 	default: break;
 	}
-
+#undef RuntimeTypeInference
 	const int numberOfBlockBPerBlockA = numberOfBlockBPerBlockA_M * numberOfBlockBPerBlockA_N;
 
 	if (numberOfIndexRetain > numberOfBlockBPerBlockA)
@@ -498,6 +538,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
 		/*std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
 		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer */
+		{matrixA_padded_M*matrixA_padded_N, matrixB_padded_M * matrixB_padded_N},
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 

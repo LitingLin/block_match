@@ -6,6 +6,7 @@
 #include <bitset>
 #include <array>
 #include <typeindex>
+#include <memory>
 
 #if defined _WIN32
 #ifdef LIB_MATCH_BUILD_DLL
@@ -80,6 +81,15 @@ LIB_MATCH_EXPORT
 size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
 */
 
+class Iterator
+{
+public:
+	virtual ~Iterator() = default;
+	virtual void next() = 0;
+	virtual void *get() = 0;
+	virtual std::unique_ptr<Iterator> clone(size_t pos) = 0;
+};
+
 LIB_MATCH_EXPORT
 class LibMatchDiagnose
 {
@@ -93,6 +103,7 @@ class BlockMatch
 public:
 	// SearchRegion size 0 for full search
 	BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
+		std::type_index indexDataType,
 		SearchType searchType,
 		MeasureMethod measureMethod,
 		PadMethod padMethodA, PadMethod padMethodB,
@@ -114,8 +125,8 @@ public:
 	template <typename InputDataType, typename OutputDataType, typename IndexDataType>
 	void execute(InputDataType *A, InputDataType *B,
 		OutputDataType *C,
-		InputDataType *padded_A, InputDataType *padded_B,
-		IndexDataType *index_x, IndexDataType *index_y)
+		InputDataType *padded_A = nullptr, InputDataType *padded_B = nullptr,
+		IndexDataType *index_x = nullptr, IndexDataType *index_y = nullptr)
 	{
 		execute(static_cast<void*>(A), static_cast<void*>(B), 
 			static_cast<void*>(C), 
@@ -124,8 +135,13 @@ public:
 	}
 	void execute(void *A, void *B,
 		void *C,
-		void *padded_A, void *padded_B,
-		void *index_x, void *index_y);
+		void *padded_A = nullptr, void *padded_B = nullptr,
+		void *index_x = nullptr, void *index_y = nullptr);
+
+	void execute(void *A, void *B,
+		Iterator *C,
+		void *padded_A = nullptr, void *padded_B = nullptr,
+		Iterator *index_x = nullptr, Iterator *index_y = nullptr);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
 	void get_matrixA_padded_dimensions(int *m, int *n);

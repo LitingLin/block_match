@@ -80,150 +80,108 @@ void sortPartialDescend(Type *value, int size, int retain)
 {
 	lib_match_sort_partial_descend(value, size, retain);
 }
-/*
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType>
-using DataPostProcessingMethod =
-void(IndexDataType *index_x, IndexDataType *index_y, ResultDataType *result,
-	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
-	const int *index_buffer, int *index_buffer_sort);
-	*/
+
 template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, RawSortMethod_WithIndex<ComputingDataType> sortType>
 inline void
-sort_recordIndex(IndexDataType **index_x, IndexDataType **index_y, ResultDataType **result,
+sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
-	IndexDataType *c_index_x = *index_x;
-	IndexDataType *c_index_y = *index_y;
-	ResultDataType *c_result = *result;
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
 		memcpy(index_buffer_sort, index_buffer, numberOfBlockBPerBlockA * sizeof(*index_buffer_sort));
 
 		sortType(index_buffer_sort, result_buffer, numberOfBlockBPerBlockA, retain);
 
+		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
+		IndexDataType *index_x_ptr = static_cast<IndexDataType *>(index_x->get());
+		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*c_result++ = result_buffer[index_buffer_sort[j]];
+			*result_ptr++ = result_buffer[index_buffer_sort[j]];
 
-			*c_index_x++ = index_x_buffer[index_buffer_sort[j]];
-			*c_index_y++ = index_y_buffer[index_buffer_sort[j]];
+			*index_x_ptr++ = index_x_buffer[index_buffer_sort[j]];
+			*index_y_ptr++ = index_y_buffer[index_buffer_sort[j]];
 		}
+		result->next();
+		index_x->next();
+		index_y->next();
 
 		index_x_buffer += numberOfBlockBPerBlockA;
 		index_y_buffer += numberOfBlockBPerBlockA;
 		result_buffer += numberOfBlockBPerBlockA;
 	}
-
-	*index_x = c_index_x;
-	*index_y = c_index_y;
-	*result = *c_result;
 }
 
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, RawSortMethod<ComputingDataType> sortType>
+template <typename ComputingDataType, typename ResultDataType, RawSortMethod<ComputingDataType> sortType>
 inline void
-sort_noRecordIndex(IndexDataType **index_x, IndexDataType **index_y, ResultDataType **result,
+sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
-	ResultDataType *c_result = *result;
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
 		sortType(result_buffer, numberOfBlockBPerBlockA, retain);
 
+		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*c_result++ = *result_buffer++;
+			*result_ptr++ = *result_buffer++;
 		}
+		result->next();
 
 		result_buffer += numberOfBlockBPerBlockA;
 	}
-	*result = *c_result;
 }
 
 template <typename ComputingDataType, typename ResultDataType, typename IndexDataType>
 inline void
-noSort_recordIndex(IndexDataType **index_x, IndexDataType **index_y, ResultDataType **result,
+noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
-	IndexDataType *c_index_x = *index_x;
-	IndexDataType *c_index_y = *index_y;
-	ResultDataType *c_result = *result;
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
+		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
+		IndexDataType *index_x_ptr = static_cast<IndexDataType *>(index_x->get());
+		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*c_result++ = *result_buffer++;
+			*result_ptr++ = *result_buffer++;
 
-			*c_index_x++ = *index_x_buffer++;
-			*c_index_y++ = *index_y_buffer++;
+			*index_x_ptr++ = *index_x_buffer++;
+			*index_y_ptr++ = *index_y_buffer++;
 		}
+		result->next();
+		index_x->next();
+		index_y->next();
 	}
-
-	*index_x = c_index_x;
-	*index_y = c_index_y;
-	*result = *c_result;
 }
 
 
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType>
+template <typename ComputingDataType, typename ResultDataType>
 inline void
-noSort_noRecordIndex(IndexDataType **index_x, IndexDataType **index_y, ResultDataType **result,
+noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
+		ResultDataType *result_ptr = static_cast<ResultDataType*>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result++ = *result_buffer++;
+			*result_ptr++ = *result_buffer++;
 		}
+		result->next();
 	}
 }
 
 typedef void RecordIndex(int*, int*, int, int);
 
-inline
-void recordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
-{
-	*index_x_buffer = index_x;
-	*index_y_buffer = index_y;
-}
-
-inline
-void dummyRecordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
-{
-}
-
-inline
-void determineBlockB_index_local(int *indexB_begin, int *indexB_end, int matB, int block,
-	int neighbour, int index_A)
-{
-	*indexB_begin = index_A - neighbour / 2;
-	*indexB_end = index_A - neighbour / 2 + neighbour;
-}
-
-inline
-void determineBlockB_index_local_topLeft(int *indexB_begin, int *indexB_end, int matB, int block,
-	int neighbour, int index_A)
-{
-	*indexB_begin = index_A;
-	*indexB_end = index_A + neighbour;
-}
-
-inline
-void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block,
-	int neighbour, int index_A)
-{
-	*indexB_begin = 0;
-	*indexB_end = determineEndOfIndex(matB, block);
-}
 
 inline
 bool indexA_M_outOfIndexError()
@@ -234,33 +192,21 @@ bool indexA_M_outOfIndexError()
 	return false;
 }
 
-inline void tryToIncludeLastBlock(int *indexA, int strideA, int indexA_end)
-{
-	if (*indexA + 1 == indexA_end)
-		return;
-	if (*indexA + strideA >= indexA_end)
-		*indexA = indexA_end - strideA - 1; // + strideA immediately later
-}
-
-inline void noIndexPostProcess(int *indexA, int strideA, int indexA_end)
-{
-}
-
 // TODO: Fix busy waiting gpu tasks
 template <typename Type,
 	ProcessFunction<Type> processFunction>
 	unsigned processWorker(ExecutionContext<Type> *executionContext)
 {
-	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
-		*matrixC = executionContext->matrixC;
+	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB;
+	Iterator *matrixC = executionContext->matrixC.get();
 	Type *matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
 		*matrixC_buffer = executionContext->matrixC_buffer,
 		*matrixA_deviceBuffer = executionContext->matrixA_deviceBuffer, *matrixB_deviceBuffer = executionContext->matrixB_deviceBuffer,
 		*matrixC_deviceBuffer = executionContext->matrixC_deviceBuffer;
 	int matrixA_M = executionContext->matrixA_M, matrixA_N = executionContext->matrixA_N,
 		matrixB_M = executionContext->matrixB_M, matrixB_N = executionContext->matrixB_N;
-	int *index_x = executionContext->index_x, *index_y = executionContext->index_y,
-		*index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
+	Iterator *index_x = executionContext->index_x.get(), *index_y = executionContext->index_y.get();
+	int *index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
 		*rawIndexTemplate = executionContext->rawIndexTemplate, *rawIndexBuffer = executionContext->rawIndexBuffer,
 		block_M = executionContext->block_M, block_N = executionContext->block_N,
 		strideA_M = executionContext->strideA_M, strideA_N = executionContext->strideA_N,
@@ -282,8 +228,6 @@ template <typename Type,
 	int blockSize = executionContext->block_M * executionContext->block_N;
 	Type *c_bufferA = executionContext->matrixA_buffer;
 	Type *c_bufferB = executionContext->matrixB_buffer;
-	void *c_result = executionContext->matrixC;
-	void *c_index_x = executionContext->index_x, *c_index_y = executionContext->index_y;
 	int *c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
 
 	int numberOfBlockA = 0;
@@ -362,7 +306,7 @@ template <typename Type,
 				c_index_x_buffer = index_x_buffer;
 				c_index_y_buffer = index_y_buffer;
 
-				dataPostProcessing(&c_index_x, &c_index_y, &c_result, index_x_buffer, index_y_buffer,
+				dataPostProcessing(index_x, index_y, matrixC, index_x_buffer, index_y_buffer,
 					matrixC_buffer,
 					numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
 					rawIndexTemplate, rawIndexBuffer);
@@ -401,7 +345,7 @@ JumpOut:
 
 		CUDA_CHECK_POINT(cudaStreamSynchronize(stream));
 
-		dataPostProcessing(&c_index_x, &c_index_y, &c_result, index_x_buffer, index_y_buffer, matrixC_buffer,
+		dataPostProcessing(index_x, index_y, matrixC, index_x_buffer, index_y_buffer, matrixC_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
 			rawIndexTemplate, rawIndexBuffer);
 	}
@@ -414,15 +358,15 @@ template <typename Type,
 	ProcessFunctionCPU<Type> processFunction>
 	unsigned processWorker_cpu(ExecutionContext<Type> *executionContext)
 {
-	Type *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB,
-		*matrixC = executionContext->matrixC,
-		*matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
+	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB;
+	Iterator *matrixC = executionContext->matrixC.get();
+	Type *matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
 		*matrixC_buffer = executionContext->matrixC_buffer;
 
 	int matrixA_M = executionContext->matrixA_M, matrixA_N = executionContext->matrixA_N,
 		matrixB_M = executionContext->matrixB_M, matrixB_N = executionContext->matrixB_N;
-	int *index_x = executionContext->index_x, *index_y = executionContext->index_y,
-		*index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
+	Iterator *index_x = executionContext->index_x.get(), *index_y = executionContext->index_y.get();
+	int	*index_x_buffer = executionContext->index_x_buffer, *index_y_buffer = executionContext->index_y_buffer,
 		*rawIndexTemplate = executionContext->rawIndexTemplate, *rawIndexBuffer = executionContext->rawIndexBuffer,
 		block_M = executionContext->block_M, block_N = executionContext->block_N,
 		strideA_M = executionContext->strideA_M, strideA_N = executionContext->strideA_N,
@@ -435,10 +379,9 @@ template <typename Type,
 		startIndexOfMatrixA_M = executionContext->startIndexOfMatrixA_M, startIndexOfMatrixA_N = executionContext->startIndexOfMatrixA_N;
 
 	int blockSize = executionContext->block_M * executionContext->block_N;
-	int *c_index_x = executionContext->index_x, *c_index_y = executionContext->index_y,
-		*c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
+	int *c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
 
-	Type *c_matrixC = matrixC, c_matrixC_buffer = matrixC_buffer;
+	Type *c_matrixC_buffer = matrixC_buffer;
 
 	if (!numberOfIndexRetain)
 		numberOfIndexRetain = numberOfBlockBPerBlockA;
@@ -449,10 +392,11 @@ template <typename Type,
 	BlockCopyMethod *blockCopy = executionContext->blockCopy;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRange;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcess;
+	IndexRecordMethod *indexRecord = executionContext->indexRecord;
 
 	goto JumpIn;
 
-	for (indexA_M = indexA_M_begin; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
+	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
 	{
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
@@ -478,7 +422,7 @@ template <typename Type,
 					blockCopy(matrixB_buffer, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
-					recordIndex(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
+					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 
 					processFunction(matrixA_buffer, matrixB_buffer, blockSize, c_matrixC_buffer++);
 
@@ -496,15 +440,11 @@ template <typename Type,
 			c_index_x_buffer = index_x_buffer;
 			c_index_y_buffer = index_y_buffer;
 
-			dataPostProcessing(c_index_x, c_index_y, c_matrixC, index_x_buffer, index_y_buffer,
+			dataPostProcessing(index_x, index_y, matrixC, index_x_buffer, index_y_buffer,
 				matrixC_buffer,
 				1, numberOfBlockBPerBlockA, numberOfIndexRetain,
 				rawIndexTemplate, rawIndexBuffer);
-
-			c_index_x += numberOfIndexRetain;
-			c_index_y += numberOfIndexRetain;
-			c_matrixC += numberOfIndexRetain;
-
+			
 			iterationIndexPostProcess(&indexA_N, strideA_N, indexA_N_end);
 		}
 		iterationIndexPostProcess(&indexA_M, strideA_M, indexA_M_end);
