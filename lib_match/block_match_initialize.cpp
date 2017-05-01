@@ -277,63 +277,63 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, sortPartialAscend<Type>>, noIndexPostProcess>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, sortPartialAscend<Type>>, noIndexPostProcess>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, noIndexPostProcess>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, noIndexPostProcess>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+							lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			else if (measureMethod == MeasureMethod::cc)
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, noIndexPostProcess>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, noIndexPostProcess>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, noIndexPostProcess>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, noIndexPostProcess>;
 					else
 						if (searchFrom == SearchFrom::topLeft)
 							executionFunction = processWorker<Type, determineBlockB_index_local_topLeft,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 						else
 							executionFunction = processWorker<Type, determineBlockB_index_local,
-							lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+							lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 		}
 		else if (searchType == SearchType::global)
 		{
@@ -341,33 +341,33 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, noIndexPostProcess>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
+						lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialAscend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, noIndexPostProcess>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_mse_check_border, sortWithIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
+						lib_match_mse_check_border, sort_recordIndex<Type, SortMethodProxy::sortAscend<Type>>, tryToIncludeLastBlock>;
 			}
 			else if (measureMethod == MeasureMethod::cc) {
 				if (numberOfIndexRetain)
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, noIndexPostProcess>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
+						lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortPartialDescend<Type>>, tryToIncludeLastBlock>;
 				else
 					if (sequenceABorderType == BorderType::normal)
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, dummyCheckIsLastBlock>;
+						lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, noIndexPostProcess>;
 					else
 						executionFunction = processWorker<Type, determineBlockB_index_full,
-						lib_match_cc_check_border, sortWithIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
+						lib_match_cc_check_border, sort_recordIndex<Type, SortMethodProxy::sortDescend<Type>>, tryToIncludeLastBlock>;
 			}
 			else
 				NOT_IMPLEMENTED_ERROR;
@@ -380,17 +380,17 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 			if (measureMethod == MeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_mse_check_border, noSort_recordIndex, noIndexPostProcess>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_mse_check_border, noSort_recordIndex, tryToIncludeLastBlock>;
 			else if (measureMethod == MeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_cc_check_border, noSort_recordIndex, noIndexPostProcess>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_local,
-					lib_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_cc_check_border, noSort_recordIndex, tryToIncludeLastBlock>;
 			else
 				NOT_IMPLEMENTED_ERROR;
 		}
@@ -399,17 +399,17 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 			if (measureMethod == MeasureMethod::mse)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					lib_match_mse_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_mse_check_border, noSort_recordIndex, noIndexPostProcess>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					lib_match_mse_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_mse_check_border, noSort_recordIndex, tryToIncludeLastBlock>;
 			else if (measureMethod == MeasureMethod::cc)
 				if (sequenceABorderType == BorderType::normal)
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					lib_match_cc_check_border, dummySort, dummyCheckIsLastBlock>;
+					lib_match_cc_check_border, noSort_recordIndex, noIndexPostProcess>;
 				else
 					executionFunction = processWorker<Type, determineBlockB_index_full,
-					lib_match_cc_check_border, dummySort, tryToIncludeLastBlock>;
+					lib_match_cc_check_border, noSort_recordIndex, tryToIncludeLastBlock>;
 			else
 				NOT_IMPLEMENTED_ERROR;
 		}

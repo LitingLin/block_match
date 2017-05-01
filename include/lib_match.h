@@ -111,20 +111,21 @@ public:
 		int numberOfIndexRetain);
 	~BlockMatch();
 	void initialize();
-	template <typename InputDataType, typename OutputDataType>
+	template <typename InputDataType, typename OutputDataType, typename IndexDataType>
 	void execute(InputDataType *A, InputDataType *B,
 		OutputDataType *C,
 		InputDataType *padded_A, InputDataType *padded_B,
-		int *index_x, int *index_y)
+		IndexDataType *index_x, IndexDataType *index_y)
 	{
 		execute(static_cast<void*>(A), static_cast<void*>(B), 
 			static_cast<void*>(C), 
-			static_cast<void*>(padded_A), static_cast<void*>(padded_B), index_x, index_y);
+			static_cast<void*>(padded_A), static_cast<void*>(padded_B),
+			static_cast<void*>(index_x), static_cast<void*>(index_y));
 	}
 	void execute(void *A, void *B,
 		void *C,
 		void *padded_A, void *padded_B,
-		int *index_x, int *index_y);
+		void *index_x, void *index_y);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
 	void get_matrixA_padded_dimensions(int *m, int *n);

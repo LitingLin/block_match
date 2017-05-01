@@ -4,7 +4,7 @@ template <typename Type>
 void BlockMatch<Type>::execute(void *A, void *B,
 	void *C,
 	void *padded_A, void *padded_B,
-	int *index_x, int *index_y)
+	void *index_x, void *index_y)
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
 

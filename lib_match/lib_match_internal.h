@@ -256,15 +256,31 @@ void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 ** So, two dimensions is assumed
 */
 
+using DataPostProcessingMethod = 
+void(void *index_x, void *index_y, void *result,
+	int *index_x_buffer, int *index_y_buffer, void *result_buffer,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	const int *index_buffer, int *index_buffer_sort);
+
+using BlockCopyMethod =
+void(void *buf, void *input, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+using DetermineBlockBRangeMethod = 
+void(int *, int *, int, int, int, int);
+using IterationIndexPostProcessMethod =
+void(int*, int, int);
+using IndexRecordMethod = 
+void(int*, int*, int, int);
+
 template <typename Type>
 struct ExecutionContext
 {
-	Type *matrixA, *matrixB, *matrixC,
-		*matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
+	void *matrixA, *matrixB, *matrixC;
+	Type *matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
 		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
 	int matrixA_M, matrixA_N,
 		matrixB_M, matrixB_N;
-	int *index_x, *index_y, *index_x_buffer, *index_y_buffer,
+	void *index_x, *index_y;
+	int *index_x_buffer, *index_y_buffer,
 		*rawIndexTemplate, *rawIndexBuffer,
 		block_M, block_N,
 		strideA_M, strideA_N,
@@ -275,7 +291,13 @@ struct ExecutionContext
 		indexA_M_begin, indexA_N_begin,
 		indexA_M_end, indexA_N_end,
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
-	
+
+	DataPostProcessingMethod *dataPostProcessing;
+	BlockCopyMethod *blockCopy;
+	DetermineBlockBRangeMethod *determineBlockBRange;
+	IterationIndexPostProcessMethod *iterationIndexPostProcess;
+	IndexRecordMethod *indexRecord;
+
 	/* Gpu Stuff */
 	cudaStream_t stream; // TODO: Double buffering
 	int maxNumberOfThreadsPerProcessor,
