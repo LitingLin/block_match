@@ -102,7 +102,8 @@ class BlockMatch
 {
 public:
 	// SearchRegion size 0 for full search
-	BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
+	BlockMatch(std::type_index inputADataType, std::type_index inputBDataType,
+		std::type_index outputDataType,
 		std::type_index indexDataType,
 		SearchType searchType,
 		MeasureMethod measureMethod,
@@ -127,13 +128,14 @@ public:
 		Iterator *C,
 		void *padded_A = nullptr, void *padded_B = nullptr,
 		Iterator *index_x = nullptr, Iterator *index_y = nullptr);
-	template <typename InputDataType, typename OutputDataType, typename IndexDataType>
-	void execute(InputDataType *A, InputDataType *B,
+	template <typename InputADataType, typename InputBDataType, typename OutputDataType, typename IndexDataType>
+	void execute(InputADataType *A, InputBDataType *B,
 		OutputDataType *C,
-		InputDataType *padded_A = nullptr, InputDataType *padded_B = nullptr,
+		InputADataType *padded_A = nullptr, InputBDataType *padded_B = nullptr,
 		IndexDataType *index_x = nullptr, IndexDataType *index_y = nullptr)
 	{
-		if (inputDataType != typeid(InputDataType) || outputDataType != typeid(OutputDataType)
+		if (inputADataType != typeid(InputADataType) || inputBDataType != typeid(InputBDataType)
+			|| outputDataType != typeid(OutputDataType)
 			|| (index_x && indexDataType != typeid(IndexDataType)))
 			throw std::runtime_error("Type check failed");
 		execute(static_cast<void*>(A), static_cast<void*>(B),
@@ -151,7 +153,8 @@ public:
 	void get_matrixB_padded_dimensions(int *m, int *n);
 private:
 	void *m_instance;
-	std::type_index inputDataType;
+	std::type_index inputADataType;
+	std::type_index inputBDataType;
 	std::type_index outputDataType;
 	std::type_index indexDataType;
 };

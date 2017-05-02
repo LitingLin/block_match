@@ -16,6 +16,7 @@ struct BlockMatchMexContext
 	std::type_index sourceBType = typeid(nullptr);
 	std::type_index intermediateType = typeid(nullptr);
 	std::type_index resultType = typeid(nullptr);
+	std::type_index indexDataType = typeid(nullptr);
 
 	int sequenceMatrixNumberOfDimensions;
 
@@ -25,24 +26,24 @@ struct BlockMatchMexContext
 	int sequenceBMatrixDimensions[4];
 	void *sequenceBMatrixPointer;
 
-	int blockWidth;
-	int blockHeight;
-	int searchRegionWidth;
-	int searchRegionHeight;
+	int block_M;
+	int block_N;
+	int searchRegion_M;
+	int searchRegion_N;
 
-	int sequenceAStrideWidth;
-	int sequenceAStrideHeight;
-	int sequenceBStrideWidth;
-	int sequenceBStrideHeight;
+	int sequenceAStride_M;
+	int sequenceAStride_N;
+	int sequenceBStride_M;
+	int sequenceBStride_N;
 
-	int sequenceAPaddingWidthPre;
-	int sequenceAPaddingWidthPost;
-	int sequenceAPaddingHeightPre;
-	int sequenceAPaddingHeightPost;
-	int sequenceBPaddingWidthPre;
-	int sequenceBPaddingWidthPost;
-	int sequenceBPaddingHeightPre;
-	int sequenceBPaddingHeightPost;
+	int sequenceAPadding_M_Pre;
+	int sequenceAPadding_M_Post;
+	int sequenceAPadding_N_Pre;
+	int sequenceAPadding_N_Post;
+	int sequenceBPadding_M_Pre;
+	int sequenceBPadding_M_Post;
+	int sequenceBPadding_N_Pre;
+	int sequenceBPadding_N_Post;
 
 	bool sort;
 	int retain;

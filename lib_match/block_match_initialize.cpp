@@ -124,7 +124,8 @@ int determineNumberOfBlockBPerBlockA(SearchType searchType, int searchRegion,
 }
 
 template <typename Type>
-BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outputDataType,
+BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
 	MeasureMethod measureMethod,
@@ -143,7 +144,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
 	int numberOfResultRetain)
 	: m_instance(nullptr), 
-		inputDataType(inputDataType), outputDataType(outputDataType), indexDataType(indexDataType)
+		inputADataType(inputADataType), inputBDataType(inputBDataType),
+		outputDataType(outputDataType), indexDataType(indexDataType)
 {
 	CHECK_POINT(globalContext.hasGPU);
 
@@ -224,7 +226,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	ExecutionFunction<Type> *executionFunction = nullptr;
 
 	DataPostProcessingMethod *dataPostProcessingFunction = nullptr;
-	BlockCopyMethod *blockCopyingFunction = nullptr;
+	BlockCopyMethod *blockCopyingAFunction = nullptr;
+	BlockCopyMethod *blockCopyingBFunction = nullptr;
 	DetermineBlockBRangeMethod *determineBlockBRangeFunction = nullptr;
 	IterationIndexPostProcessMethod *iterationIndexPostProcessFunction = nullptr;
 	IndexRecordMethod *indexRecordFunction = nullptr;
@@ -237,28 +240,28 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 			{
 #define exp(type) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>>
-				RuntimeTypeInference(inputDataType, exp);
+				RuntimeTypeInference(outputDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
 			{
 #define exp(type) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>>
-				RuntimeTypeInference(inputDataType, exp);
+				RuntimeTypeInference(outputDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
 			{
 #define exp(type) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>>
-				RuntimeTypeInference(inputDataType, exp);
+				RuntimeTypeInference(outputDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
 			{
 #define exp(type) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>>
-				RuntimeTypeInference(inputDataType, exp);
+				RuntimeTypeInference(outputDataType, exp);
 #undef exp
 			}
 			else
@@ -270,28 +273,28 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 			{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>>
-				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
 			{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>>
-				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
 			{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>>
-				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
 			}
 			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
 			{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>>
-				RuntimeTypeInference2(inputDataType, indexDataType, exp);
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
 			}
 		}
@@ -302,23 +305,28 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 		{
 #define exp(type) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_noRecordIndex<Type, type>
-				RuntimeTypeInference(inputDataType, exp);
+				RuntimeTypeInference(outputDataType, exp);
 #undef exp
 		}
 		else
 		{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2>
-			RuntimeTypeInference2(inputDataType, indexDataType, exp);
+			RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
 		}
 	}
 
 #define EXP(type) \
-	blockCopyingFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
-	RuntimeTypeInference(inputDataType, EXP);
+	blockCopyingAFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	RuntimeTypeInference(inputADataType, EXP);
 #undef EXP
-	
+
+#define EXP(type) \
+	blockCopyingBFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	RuntimeTypeInference(inputBDataType, EXP);
+#undef EXP
+
 	if (searchType == SearchType::global)
 	{
 		determineBlockBRangeFunction = determineBlockB_index_full;
@@ -366,25 +374,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	case PadMethod::zero:
 #define exp(type) \
 	padFunctionA = (PadFunction*)zeroPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
 	padFunctionA = (PadFunction*)circularPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
 	padFunctionA = (PadFunction*)replicatePadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
 	padFunctionA = (PadFunction*)symmetricPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	default: break;
@@ -395,25 +403,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 	case PadMethod::zero:
 #define exp(type) \
 	padFunctionB = (PadFunction*)zeroPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
 	padFunctionB = (PadFunction*)circularPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
 	padFunctionB = (PadFunction*)replicatePadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
 	padFunctionB = (PadFunction*)symmetricPadding<type>
-		RuntimeTypeInference(inputDataType, exp);
+		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	default: break;
@@ -424,7 +432,6 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
-		inputDataType, outputDataType, indexDataType,
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
@@ -436,7 +443,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputDataType, std::type_index outp
 		numberOfResultRetain,
 		numberOfThreads,
 		padFunctionA, padFunctionB , executionFunction,
-		dataPostProcessingFunction, blockCopyingFunction, determineBlockBRangeFunction, iterationIndexPostProcessFunction, indexRecordFunction,
+		dataPostProcessingFunction, blockCopyingAFunction, blockCopyingBFunction,
+		determineBlockBRangeFunction, iterationIndexPostProcessFunction, indexRecordFunction,
 		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
 		{ matrixC_M, matrixC_N, matrixC_X },
 		std::vector<cudaStream_guard>(), // streams
@@ -558,7 +566,8 @@ void BlockMatch<Type>::initialize()
 template
 LIB_MATCH_EXPORT
 BlockMatch<float>::BlockMatch(
-	std::type_index inputDataType, std::type_index outputDataType,
+	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
 	MeasureMethod measureMethod,
@@ -579,7 +588,8 @@ BlockMatch<float>::BlockMatch(
 template
 LIB_MATCH_EXPORT
 BlockMatch<double>::BlockMatch(
-	std::type_index inputDataType, std::type_index outputDataType,
+	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
 	MeasureMethod measureMethod,

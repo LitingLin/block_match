@@ -126,8 +126,6 @@ LibMatchMexError parse4ElementNonNegativeIntegerParameter(const mxArray *pa,
 	return LibMatchMexError::success;
 }
 
-// Update: won't fix
-// TODO: int to size_t
 LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 	void **pointer,
 	int *size_M, int *size_N)
@@ -150,8 +148,8 @@ LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 	if (dimensions[0] > INT_MAX || dimensions[1] > INT_MAX)
 		return LibMatchMexError::errorOverFlow;
 
-	*size_M = static_cast<int>(dimensions[0]);
-	*size_N = static_cast<int>(dimensions[1]);
+	*size_M = static_cast<int>(dimensions[1]);
+	*size_N = static_cast<int>(dimensions[0]);
 
 	*pointer = mxGetData(pa);
 

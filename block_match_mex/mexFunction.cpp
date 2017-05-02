@@ -3,76 +3,20 @@
 #include <string.h>
 
 template <typename IntermidateType>
-class LibBlockMatchWarper
-{
-public:
-	LibBlockMatchWarper()
-		: m_isDestroyed(true)
-	{
-	}
-	void init(BlockMatchMexContext *context)
-	{
-		blockMatchInitialize<IntermidateType>(&instance,
-			context->searchType,
-			context->method,
-			context->padMethodA, context->padMethodB,
-			context->sequenceABorderType,
-			context->searchFrom,
-			context->sort,
-			context->sequenceAMatrixDimensions[1], context->sequenceAMatrixDimensions[0], context->sequenceBMatrixDimensions[1], context->sequenceBMatrixDimensions[0],
-			context->searchRegionWidth, context->searchRegionHeight,
-			context->blockWidth, context->blockHeight,
-			context->sequenceAStrideWidth, context->sequenceAStrideHeight,
-			context->sequenceBStrideWidth, context->sequenceBStrideHeight,
-			context->sequenceAPaddingWidthPre, context->sequenceAPaddingWidthPost,
-			context->sequenceAPaddingHeightPre, context->sequenceAPaddingHeightPost,
-			context->sequenceBPaddingWidthPre, context->sequenceBPaddingWidthPost,
-			context->sequenceBPaddingHeightPre, context->sequenceBPaddingHeightPost,
-			context->retain,
-			&matrixC_M, &matrixC_N, &matrixC_O,
-			&matrixA_padded_M, &matrixA_padded_N,
-			&matrixB_padded_M, &matrixB_padded_N);
-		m_isDestroyed = false;
-	}
-	void execute(system_memory_allocator<IntermidateType> &sequenceAPointer_converted, system_memory_allocator<IntermidateType> &sequenceBPointer_converted,
-		system_memory_allocator<IntermidateType> &matrixC,
-		system_memory_allocator<IntermidateType> &matrixA_padded, system_memory_allocator<IntermidateType> &matrixB_padded,
-		system_memory_allocator<int> &index_x, system_memory_allocator<int> &index_y)
-	{
-		blockMatchExecute(instance, sequenceAPointer_converted.get(), sequenceBPointer_converted.get(),
-			matrixC.get(), matrixA_padded.get(), matrixB_padded.get(), index_x.get(), index_y.get());
-	}
-	~LibBlockMatchWarper()
-	{
-		if (!m_isDestroyed)
-			blockMatchFinalize<IntermidateType>(instance);
-	}
-	void destroy()
-	{
-		blockMatchFinalize<IntermidateType>(instance);
-		m_isDestroyed = true;
-	}
-	bool isDestroyed()
-	{
-		return m_isDestroyed;
-	}
-
-	bool m_isDestroyed;
-	void *instance;
-	int matrixC_M;
-	int matrixC_N;
-	int matrixC_O;
-	int matrixA_padded_M;
-	int matrixA_padded_N;
-	int matrixB_padded_M;
-	int matrixB_padded_N;
-};
-
-template <typename IntermidateType, typename ResultType>
 void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 {
 	int sequenceASize = context->sequenceAMatrixDimensions[0] * context->sequenceAMatrixDimensions[1];
 	int sequenceBSize = context->sequenceBMatrixDimensions[0] * context->sequenceBMatrixDimensions[1];
+	BlockMatch<IntermidateType> blockMatch(context->sourceAType, context->sourceBType,
+		context->resultType, context->indexDataType,
+		context->searchType, context->method,
+		context->padMethodA, context->padMethodB,
+		context->sequenceABorderType, context->searchFrom,
+		context->sort,
+		context->sequenceAMatrixDimensions[0], context->sequenceAMatrixDimensions[1],
+		context->sequenceBMatrixDimensions[0], context->sequenceBMatrixDimensions[1],
+		context->searchRegion_M
+		);
 	LibBlockMatchWarper<IntermidateType> libMatchWarper;
 	try {
 		libMatchWarper.init(context);
@@ -163,23 +107,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
-
-	/*errorMessage = validateParameter(&context);
-
-	if (errorMessage.error != LibMatchMexError::success)
-	{
-		mexErrMsgTxt(errorMessage.message);
-		return;
-	}*/
-
-	if (context.intermediateType == typeid(float) && context.resultType == typeid(double))
-		process<float, double>(&context, nlhs, plhs);
-	else if (context.intermediateType == typeid(float) && context.resultType == typeid(float))
-		process<float, float>(&context, nlhs, plhs);
-	else if (context.intermediateType == typeid(double) && context.resultType == typeid(float))
-		process<double, float>(&context, nlhs, plhs);
-	else if (context.intermediateType == typeid(double) && context.resultType == typeid(double))
-		process<double, double>(&context, nlhs, plhs);
+	
+	if (context.intermediateType == typeid(float))
+		process<float>(&context, nlhs, plhs);
+	else if (context.intermediateType == typeid(double))
+		process<double>(&context, nlhs, plhs);
 	else
 		mexErrMsgTxt("Processing data type can only be float or double");
 }

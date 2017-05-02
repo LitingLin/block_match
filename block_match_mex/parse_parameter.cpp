@@ -5,8 +5,8 @@
 LibMatchMexError recheckSearchRegion(BlockMatchMexContext *context)
 {
 	if (context->searchType == SearchType::local)
-		if (context->sequenceAMatrixDimensions[0] - context->blockWidth < context->searchRegionWidth ||
-			context->sequenceAMatrixDimensions[1] - context->blockHeight < context->searchRegionHeight)
+		if (context->sequenceAMatrixDimensions[0] - context->block_M < context->searchRegion_M ||
+			context->sequenceAMatrixDimensions[1] - context->block_N < context->searchRegion_N)
 		{
 			return LibMatchMexError::errorSizeOfArray;
 		}
@@ -31,25 +31,25 @@ void recheckSequenceBPadding(BlockMatchMexContext *context)
 {
 	if (context->searchType == SearchType::global)
 	{
-		if (context->sequenceBPaddingHeightPre == -1 || context->sequenceBPaddingHeightPre == -2)
+		if (context->sequenceBPadding_N_Pre == -1 || context->sequenceBPadding_N_Pre == -2)
 		{
-			context->sequenceBPaddingHeightPre = context->sequenceBPaddingHeightPost
-				= context->sequenceBPaddingWidthPre = context->sequenceBPaddingWidthPost = 0;
+			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post
+				= context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = 0;
 		}
 	}
 	else
 	{
-		if (context->sequenceBPaddingHeightPre == -1)
+		if (context->sequenceBPadding_N_Pre == -1)
 		{
-			context->sequenceBPaddingHeightPre = context->searchRegionHeight / 2;
-			context->sequenceBPaddingHeightPost = context->searchRegionHeight - context->searchRegionHeight / 2;
-			context->sequenceBPaddingWidthPre = context->searchRegionWidth / 2;
-			context->sequenceBPaddingWidthPost = context->searchRegionWidth - context->searchRegionWidth / 2;
+			context->sequenceBPadding_N_Pre = context->searchRegion_N / 2;
+			context->sequenceBPadding_N_Post = context->searchRegion_N - context->searchRegion_N / 2;
+			context->sequenceBPadding_M_Pre = context->searchRegion_M / 2;
+			context->sequenceBPadding_M_Post = context->searchRegion_M - context->searchRegion_M / 2;
 		}
-		else if (context->sequenceBPaddingHeightPre == -2)
+		else if (context->sequenceBPadding_N_Pre == -2)
 		{
-			context->sequenceBPaddingHeightPre = context->sequenceBPaddingHeightPost = context->searchRegionHeight;
-			context->sequenceBPaddingWidthPre = context->sequenceBPaddingWidthPost = context->searchRegionWidth;
+			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post = context->searchRegion_N;
+			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M;
 		}
 	}
 }
@@ -83,6 +83,43 @@ LibMatchMexError parseSequenceABorderType(BlockMatchMexContext *context,
 	return LibMatchMexError::success;
 }
 
+LibMatchMexError parseIndexDataType(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	char buffer[8];
+	LibMatchMexError error;
+	error = getStringFromMxArray(pa, buffer, 8);
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (strncmp(buffer, "single", 6) == 0)
+		context->indexDataType = typeid(float);
+	else if (strncmp(buffer, "double", 7) == 0)
+		context->indexDataType = typeid(double);
+	else if (strncmp(buffer, "logical", 8) == 0)
+		context->indexDataType = typeid(bool);
+	else if (strncmp(buffer, "uint8", 6) == 0)
+		context->indexDataType = typeid(uint8_t);
+	else if (strncmp(buffer, "int8", 5) == 0)
+		context->indexDataType = typeid(int8_t);
+	else if (strncmp(buffer, "uint16", 7) == 0)
+		context->indexDataType = typeid(uint16_t);
+	else if (strncmp(buffer, "int16", 6) == 0)
+		context->indexDataType = typeid(int16_t);
+	else if (strncmp(buffer, "uint32", 7) == 0)
+		context->indexDataType = typeid(uint32_t);
+	else if (strncmp(buffer, "int32", 6) == 0)
+		context->indexDataType = typeid(int32_t);
+	else if (strncmp(buffer, "uint64", 7) == 0)
+		context->indexDataType = typeid(uint64_t);
+	else if (strncmp(buffer, "int64", 6) == 0)
+		context->indexDataType = typeid(int64_t);
+	else if (strncmp(buffer, "auto", 5) != 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
 LibMatchMexError parseIntermediateType(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -105,16 +142,34 @@ LibMatchMexError parseIntermediateType(BlockMatchMexContext *context,
 LibMatchMexError parseResultDataType(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	char buffer[7];
+	char buffer[8];
 	LibMatchMexError error;
-	error = getStringFromMxArray(pa, buffer, 7);
+	error = getStringFromMxArray(pa, buffer, 8);
 	if (error != LibMatchMexError::success)
 		return error;
 
-	if (strncmp(buffer, "float", 6) == 0)
+	if (strncmp(buffer, "single", 6) == 0)
 		context->resultType = typeid(float);
 	else if (strncmp(buffer, "double", 7) == 0)
 		context->resultType = typeid(double);
+	else if (strncmp(buffer, "logical", 8) == 0)
+		context->resultType = typeid(bool);
+	else if (strncmp(buffer, "uint8", 6) == 0)
+		context->resultType = typeid(uint8_t);
+	else if (strncmp(buffer, "int8", 5) == 0)
+		context->resultType = typeid(int8_t);
+	else if (strncmp(buffer, "uint16", 7) == 0)
+		context->resultType = typeid(uint16_t);
+	else if (strncmp(buffer, "int16", 6) == 0)
+		context->resultType = typeid(int16_t);
+	else if (strncmp(buffer, "uint32", 7) == 0)
+		context->resultType = typeid(uint32_t);
+	else if (strncmp(buffer, "int32", 6) == 0)
+		context->resultType = typeid(int32_t);
+	else if (strncmp(buffer, "uint64", 7) == 0)
+		context->resultType = typeid(uint64_t);
+	else if (strncmp(buffer, "int64", 6) == 0)
+		context->resultType = typeid(int64_t);
 	else if (strncmp(buffer, "same", 5) != 0)
 		return LibMatchMexError::errorInvalidValue;
 
@@ -244,8 +299,8 @@ LibMatchMexError parseSequenceAPaddingSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
 	return parse4ElementNonNegativeIntegerParameter(pa,
-		&context->sequenceAPaddingHeightPre, &context->sequenceAPaddingHeightPost,
-		&context->sequenceAPaddingWidthPre, &context->sequenceAPaddingWidthPost);
+		&context->sequenceAPadding_N_Pre, &context->sequenceAPadding_N_Post,
+		&context->sequenceAPadding_M_Pre, &context->sequenceAPadding_M_Post);
 }
 
 LibMatchMexError parseSequenceBPaddingSize(BlockMatchMexContext *context,
@@ -259,9 +314,9 @@ LibMatchMexError parseSequenceBPaddingSize(BlockMatchMexContext *context,
 			return error;
 
 		if (strncmp(buffer, "same", 5) == 0)
-			context->sequenceBPaddingHeightPre = -1;
+			context->sequenceBPadding_N_Pre = -1;
 		else if (strncmp(buffer, "full", 5) == 0)
-			context->sequenceBPaddingHeightPre = -2;
+			context->sequenceBPadding_N_Pre = -2;
 		else
 			return LibMatchMexError::errorInvalidValue;
 
@@ -269,28 +324,26 @@ LibMatchMexError parseSequenceBPaddingSize(BlockMatchMexContext *context,
 	}
 	else
 		return parse4ElementNonNegativeIntegerParameter(pa,
-			&context->sequenceBPaddingHeightPre, &context->sequenceBPaddingHeightPost,
-			&context->sequenceBPaddingWidthPre, &context->sequenceBPaddingWidthPost);
+			&context->sequenceBPadding_N_Pre, &context->sequenceBPadding_N_Post,
+			&context->sequenceBPadding_M_Pre, &context->sequenceBPadding_M_Post);
 }
 
 LibMatchMexError parseSequenceAStrideSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementPositiveIntegerParameter(pa, &context->sequenceAStrideHeight, &context->sequenceAStrideWidth);
+	return parse2ElementPositiveIntegerParameter(pa, &context->sequenceAStride_N, &context->sequenceAStride_M);
 }
 
 LibMatchMexError parseSequenceBStrideSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	return parse2ElementPositiveIntegerParameter(pa, &context->sequenceBStrideHeight, &context->sequenceBStrideWidth);
+	return parse2ElementPositiveIntegerParameter(pa, &context->sequenceBStride_N, &context->sequenceBStride_M);
 }
 
 // SearchRegion size 0 for full search
 LibMatchMexError parseSearchRegion(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	int searchRegionWidth, searchRegionHeight;
-
 	char buffer[6];
 
 	if (getStringFromMxArray(pa, buffer, 6) == LibMatchMexError::success)
@@ -298,32 +351,32 @@ LibMatchMexError parseSearchRegion(BlockMatchMexContext *context,
 		if (strncmp(buffer, "full", 6) != 0)
 			return LibMatchMexError::errorInvalidValue;
 
-		context->searchRegionWidth = context->searchRegionHeight = 0;
+		context->searchRegion_M = context->searchRegion_N = 0;
 		context->searchType = SearchType::global;
 		return LibMatchMexError::success;
 	}
 	else
 	{
 		context->searchType = SearchType::local;
-		return parse2ElementPositiveIntegerParameter(pa, &context->searchRegionHeight, &context->searchRegionWidth);
+		return parse2ElementPositiveIntegerParameter(pa, &context->searchRegion_N, &context->searchRegion_M);
 	}
 }
 
 LibMatchMexError parseBlockSize(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	int blockWidth, blockHeight;
-	LibMatchMexError error = parse2ElementPositiveIntegerParameter(pa, &blockHeight, &blockWidth);
+	int block_M, block_N;
+	LibMatchMexError error = parse2ElementPositiveIntegerParameter(pa, &block_N, &block_M);
 	if (error != LibMatchMexError::success)
 		return error;
 
-	if (context->sequenceAMatrixDimensions[0] < blockWidth || context->sequenceAMatrixDimensions[1] < blockHeight)
+	if (context->sequenceAMatrixDimensions[0] < block_M || context->sequenceAMatrixDimensions[1] < block_N)
 	{
 		return LibMatchMexError::errorSizeOfArray;
 	}
 
-	context->blockWidth = blockWidth;
-	context->blockHeight = blockHeight;
+	context->block_M = block_M;
+	context->block_N = block_N;
 
 	return LibMatchMexError::success;
 }
@@ -333,7 +386,7 @@ LibMatchMexError parseSequenceB(BlockMatchMexContext *context,
 {
 	context->sourceBType = getTypeIndex(mxGetClassID(pa));
 
-	if (context->sourceBType != typeid(double) || context->sourceBType != typeid(double))
+	if (context->sourceBType == typeid(nullptr))
 		return LibMatchMexError::errorTypeOfArgument;
 
 	return parse2DMatrixParameter(pa, &context->sequenceBMatrixPointer,
@@ -351,7 +404,7 @@ LibMatchMexError parseSequenceA(BlockMatchMexContext *context,
 
 	context->sourceAType = getTypeIndex(mxGetClassID(pa));
 
-	if (context->sourceAType != typeid(double) || context->sourceAType != typeid(double))
+	if (context->sourceAType == typeid(nullptr))
 		return LibMatchMexError::errorTypeOfArgument;
 
 	return error;
@@ -412,7 +465,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	error = parseSequenceA(context, prhs[index]);
 	if (error == LibMatchMexError::errorTypeOfArgument)
 	{
-		return generateErrorMessage(error, "Type of Matrix A must be float or double\n");
+		return generateErrorMessage(error, "Type of Matrix A must be numeric\n");
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
@@ -424,7 +477,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	error = parseSequenceB(context, prhs[index]);
 	if (error == LibMatchMexError::errorTypeOfArgument)
 	{
-		return generateErrorMessage(error, "Type of Matrix B must be float or double\n");
+		return generateErrorMessage(error, "Type of Matrix B must be numeric\n");
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
@@ -578,7 +631,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		{
 			error = parseSort(context, prhs[index]);
 			if (error == LibMatchMexError::errorTypeOfArgument)
-				return generateErrorMessage(error, "Argument Sort must be logical(boolean)\n");
+				return generateErrorMessage(error, "Argument Sort must be logical\n");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}
@@ -609,6 +662,16 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		else if (strncmp(buffer, "IntermediateDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseIntermediateType(context, prhs[index]);
+			if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument IntermediateDataType must be string.");
+			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Invalid value of argument IntermediateDataType.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "IndexDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseIndexDataType(context, prhs[index]);
 			if (error == LibMatchMexError::errorTypeOfArgument)
 				return generateErrorMessage(error, "Argument IntermediateDataType must be string.");
 			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray)

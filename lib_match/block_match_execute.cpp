@@ -97,8 +97,7 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		if (index_x)
 			throw std::runtime_error("index_x and index_y should be null, as indexDataType is nullptr");
 	}
-
-
+	
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
 		B_M = instance->matrixB_M,
@@ -177,7 +176,8 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->strideB_N = instance->strideB_N;
 		executionContext->matrixC = C->clone(instance->workerContext[i].rawMatrixCIndex_begin);
 		executionContext->dataPostProcessingFunction = instance->dataPostProcessingFunction;
-		executionContext->blockCopyingFunction = instance->blockCopyingFunction;
+		executionContext->blockCopyingAFunction = instance->blockCopyingAFunction;
+		executionContext->blockCopyingBFunction = instance->blockCopyingBFunction;
 		executionContext->determineBlockBRangeFunction = instance->determineBlockBRangeFunction;
 		executionContext->iterationIndexPostProcessFunction = instance->iterationIndexPostProcessFunction;
 		executionContext->indexRecordFunction = instance->indexRecordFunction;
@@ -207,17 +207,17 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 }
 template
 LIB_MATCH_EXPORT
-void BlockMatch<float>::execute(float *A, float *B,
-	float *C,
-	float *padded_A, float *padded_B,
-	int *index_x, int *index_y);
+void BlockMatch<float>::execute(void *A, void *B,
+	void *C,
+	void *padded_A, void *padded_B,
+	void *index_x, void *index_y);
 
 template
 LIB_MATCH_EXPORT
-void BlockMatch<double>::execute(double *A, double *B,
-	double *C,
-	double *padded_A, double *padded_B,
-	int *index_x, int *index_y);
+void BlockMatch<double>::execute(void *A, void *B,
+	void *C,
+	void *padded_A, void *padded_B,
+	void *index_x, void *index_y);
 template
 LIB_MATCH_EXPORT
 void BlockMatch<float>::executev2(void *A, void *B,

@@ -300,7 +300,8 @@ struct ExecutionContext
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
 
 	DataPostProcessingMethod *dataPostProcessingFunction;
-	BlockCopyMethod *blockCopyingFunction;
+	BlockCopyMethod *blockCopyingAFunction;
+	BlockCopyMethod *blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecordFunction;
@@ -331,10 +332,6 @@ private:
 template <typename Type>
 struct BlockMatchContext
 {
-	std::type_index inputDataType;
-	std::type_index outputDataType;
-	std::type_index indexDataType;
-
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -379,7 +376,8 @@ struct BlockMatchContext
 	ExecutionFunction<Type> *executionMethod;
 
 	DataPostProcessingMethod *dataPostProcessingFunction;
-	BlockCopyMethod *blockCopyingFunction;
+	BlockCopyMethod *blockCopyingAFunction;
+	BlockCopyMethod *blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecordFunction;

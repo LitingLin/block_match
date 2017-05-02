@@ -236,7 +236,8 @@ template <typename Type,
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
 	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
-	BlockCopyMethod *blockCopy = executionContext->blockCopyingFunction;
+	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
+	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
@@ -248,7 +249,7 @@ template <typename Type,
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
-			blockCopy(c_bufferA, matrixA,
+			blockCopyA(c_bufferA, matrixA,
 				matrixA_M, matrixA_N,
 				indexA_M, indexA_N, block_M, block_N);
 
@@ -266,7 +267,7 @@ template <typename Type,
 					matrixB_N, block_N, neighbour_N, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					blockCopy(c_bufferB, matrixB,
+					blockCopyB(c_bufferB, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
 					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
@@ -387,7 +388,8 @@ template <typename Type,
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
 	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
-	BlockCopyMethod *blockCopy = executionContext->blockCopyingFunction;
+	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
+	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
@@ -399,7 +401,7 @@ template <typename Type,
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
-			blockCopy(matrixA_buffer, matrixA,
+			blockCopyA(matrixA_buffer, matrixA,
 				matrixA_M, matrixA_N,
 				indexA_M, indexA_N, block_M, block_N);
 
@@ -417,7 +419,7 @@ template <typename Type,
 					matrixB_N, block_N, neighbour_N, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					blockCopy(matrixB_buffer, matrixB,
+					blockCopyB(matrixB_buffer, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
 					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);

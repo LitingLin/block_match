@@ -42,7 +42,9 @@ void type_convert(TypeA *a, TypeB *b, size_t n)
 
 int getTypeSize(std::type_index type)
 {
-	if (type == typeid(uint8_t))
+	if (type == typeid(bool))
+		return sizeof(bool);
+	else if (type == typeid(uint8_t))
 		return sizeof(uint8_t);
 	else if (type == typeid(int8_t))
 		return sizeof(int8_t);
