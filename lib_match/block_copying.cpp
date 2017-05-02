@@ -1,16 +1,40 @@
 #include <memory>
+#include <type_traits>
+#include "template_instantiate_helper.h"
 
-template <typename Type>
-void copyBlock(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
+template <typename Type1, typename Type2,
+	typename std::enable_if<std::is_same<Type1, Type2>::value>::type* = nullptr>
+void copyBlock_helper(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
 {
-	Type *c_buf = buf;
-	const Type *c_src = src + index_x * mat_N + index_y;
+	Type1 *c_buf = buf;
+	const Type2 *c_src = src + index_x * mat_N + index_y;
 	for (int i = 0; i < block_M; ++i)
 	{
-		memcpy(c_buf, c_src, block_N * sizeof(Type));
+		memcpy(c_buf, c_src, block_N * sizeof(Type1));
 		c_buf += block_N;
 		c_src += mat_N;
 	}
+}
+
+template <typename Type1, typename Type2,
+	typename std::enable_if<!std::is_same<Type1, Type2>::value>::type* = nullptr>
+void copyBlock_helper(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
+{
+	Type1 *c_buf = buf;
+	const Type2 *c_src = src + index_x * mat_N + index_y;
+	for (int i = 0; i < block_M; ++i)
+	{
+		for (int j = 0; j < block_N; ++j)
+			*c_buf++ = static_cast<Type1>(*c_src++);
+		c_src += (mat_N - block_N);
+	}
+}
+
+// Workaround: MSVC SFINAE function point type cast bug
+template <typename Type1, typename Type2>
+void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
+{
+	copyBlock_helper(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
 }
 
 void determineIndexPreMat(int index, int mat_length, int block_length, int &index_pre_begin, int &index_pre_end)
@@ -22,8 +46,8 @@ void determineIndexPreMat(int index, int mat_length, int block_length, int &inde
 	}
 
 	index_pre_begin = -index;
-	if (index + (int)block_length < 0) {
-		index_pre_end = -(index + (int)block_length);
+	if (index + block_length < 0) {
+		index_pre_end = -(index + block_length);
 	}
 	else {
 		index_pre_end = 0;
@@ -157,10 +181,12 @@ void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int ma
 	}
 }
 
-template
-void copyBlock(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-template
-void copyBlock(double *buf, const double *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+#define exp(type1, type2) \
+template \
+void copyBlock(type1 *buf, const type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+InstantiateTemplate2(exp);
+#undef exp
+
 template
 void copyBlockWithSymmetricPadding(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template

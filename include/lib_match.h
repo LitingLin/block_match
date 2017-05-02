@@ -122,14 +122,22 @@ public:
 		int numberOfIndexRetain);
 	~BlockMatch();
 	void initialize();
+
+	void executev2(void *A, void *B,
+		Iterator *C,
+		void *padded_A = nullptr, void *padded_B = nullptr,
+		Iterator *index_x = nullptr, Iterator *index_y = nullptr);
 	template <typename InputDataType, typename OutputDataType, typename IndexDataType>
 	void execute(InputDataType *A, InputDataType *B,
 		OutputDataType *C,
 		InputDataType *padded_A = nullptr, InputDataType *padded_B = nullptr,
 		IndexDataType *index_x = nullptr, IndexDataType *index_y = nullptr)
 	{
-		execute(static_cast<void*>(A), static_cast<void*>(B), 
-			static_cast<void*>(C), 
+		if (inputDataType != typeid(InputDataType) || outputDataType != typeid(OutputDataType)
+			|| (index_x && indexDataType != typeid(IndexDataType)))
+			throw std::runtime_error("Type check failed");
+		execute(static_cast<void*>(A), static_cast<void*>(B),
+			static_cast<void*>(C),
 			static_cast<void*>(padded_A), static_cast<void*>(padded_B),
 			static_cast<void*>(index_x), static_cast<void*>(index_y));
 	}
@@ -137,17 +145,15 @@ public:
 		void *C,
 		void *padded_A = nullptr, void *padded_B = nullptr,
 		void *index_x = nullptr, void *index_y = nullptr);
-
-	void execute(void *A, void *B,
-		Iterator *C,
-		void *padded_A = nullptr, void *padded_B = nullptr,
-		Iterator *index_x = nullptr, Iterator *index_y = nullptr);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
 	void get_matrixA_padded_dimensions(int *m, int *n);
 	void get_matrixB_padded_dimensions(int *m, int *n);
 private:
 	void *m_instance;
+	std::type_index inputDataType;
+	std::type_index outputDataType;
+	std::type_index indexDataType;
 };
 
 LIB_MATCH_EXPORT
@@ -319,5 +325,3 @@ private:
 	size_t current_page_locked_memory_size;
 	size_t current_gpu_memory_size;
 };
-
-#include "lib_match_impl.h"

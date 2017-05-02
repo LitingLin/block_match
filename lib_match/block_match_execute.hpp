@@ -99,10 +99,10 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = result_buffer[index_buffer_sort[j]];
+			*result_ptr++ = static_cast<ResultDataType>(result_buffer[index_buffer_sort[j]]);
 
-			*index_x_ptr++ = index_x_buffer[index_buffer_sort[j]];
-			*index_y_ptr++ = index_y_buffer[index_buffer_sort[j]];
+			*index_x_ptr++ = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
+			*index_y_ptr++ = static_cast<IndexDataType>(index_y_buffer[index_buffer_sort[j]]);
 		}
 		result->next();
 		index_x->next();
@@ -128,11 +128,9 @@ sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = *result_buffer++;
+			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
 		}
 		result->next();
-
-		result_buffer += numberOfBlockBPerBlockA;
 	}
 }
 
@@ -150,10 +148,10 @@ noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = *result_buffer++;
+			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
 
-			*index_x_ptr++ = *index_x_buffer++;
-			*index_y_ptr++ = *index_y_buffer++;
+			*index_x_ptr++ = static_cast<IndexDataType>(*index_x_buffer++);
+			*index_y_ptr++ = static_cast<IndexDataType>(*index_y_buffer++);
 		}
 		result->next();
 		index_x->next();
@@ -174,7 +172,7 @@ noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType*>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = *result_buffer++;
+			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
 		}
 		result->next();
 	}
@@ -237,11 +235,11 @@ template <typename Type,
 	int indexOfIteration = 0;
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessing;
-	BlockCopyMethod *blockCopy = executionContext->blockCopy;
-	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRange;
-	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcess;
-	IndexRecordMethod *indexRecord = executionContext->indexRecord;
+	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
+	BlockCopyMethod *blockCopy = executionContext->blockCopyingFunction;
+	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
+	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
+	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
 
 	goto JumpIn;
 	
@@ -388,11 +386,11 @@ template <typename Type,
 
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessing;
-	BlockCopyMethod *blockCopy = executionContext->blockCopy;
-	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRange;
-	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcess;
-	IndexRecordMethod *indexRecord = executionContext->indexRecord;
+	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
+	BlockCopyMethod *blockCopy = executionContext->blockCopyingFunction;
+	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
+	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
+	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
 
 	goto JumpIn;
 

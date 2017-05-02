@@ -33,8 +33,8 @@ void lib_match_cc_cpu_avx2(float *block_A, float *block_B, int blockSize, float 
 	__m256 X, Y, Z;
 	X = Y = Z = _mm256_setzero_ps();
 
-	__m256 A_mean = _mm256_set1_ps(accumulate_avx(block_A, block_A + blockSize));
-	__m256 B_mean = _mm256_set1_ps(accumulate_avx(block_B, block_B + blockSize));
+	__m256 A_mean = _mm256_set1_ps(accumulate_avx(block_A, block_A + blockSize) / blockSize);
+	__m256 B_mean = _mm256_set1_ps(accumulate_avx(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
 	{
@@ -56,8 +56,8 @@ void lib_match_cc_cpu_avx2(double *block_A, double *block_B, int blockSize, doub
 	__m256d X, Y, Z;
 	X = Y = Z = _mm256_setzero_pd();
 
-	__m256d A_mean = _mm256_set1_pd(accumulate_avx(block_A, block_A + blockSize));
-	__m256d B_mean = _mm256_set1_pd(accumulate_avx(block_B, block_B + blockSize));
+	__m256d A_mean = _mm256_set1_pd(accumulate_avx(block_A, block_A + blockSize) / blockSize);
+	__m256d B_mean = _mm256_set1_pd(accumulate_avx(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
 	{
@@ -82,8 +82,8 @@ void lib_match_cc_cpu_avx(float *block_A, float *block_B, int blockSize, float *
 	__m256 X, Y, Z;
 	X = Y = Z = _mm256_setzero_ps();
 
-	__m256 A_mean = _mm256_set1_ps(accumulate_avx(block_A, block_A + blockSize));
-	__m256 B_mean = _mm256_set1_ps(accumulate_avx(block_B, block_B + blockSize));
+	__m256 A_mean = _mm256_set1_ps(accumulate_avx(block_A, block_A + blockSize) / blockSize);
+	__m256 B_mean = _mm256_set1_ps(accumulate_avx(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m256) / sizeof(float))
 	{
@@ -105,8 +105,8 @@ void lib_match_cc_cpu_avx(double *block_A, double *block_B, int blockSize, doubl
 	__m256d X, Y, Z;
 	X = Y = Z = _mm256_setzero_pd();
 
-	__m256d A_mean = _mm256_set1_pd(accumulate_avx(block_A, block_A + blockSize));
-	__m256d B_mean = _mm256_set1_pd(accumulate_avx(block_B, block_B + blockSize));
+	__m256d A_mean = _mm256_set1_pd(accumulate_avx(block_A, block_A + blockSize) / blockSize);
+	__m256d B_mean = _mm256_set1_pd(accumulate_avx(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m256d) / sizeof(double))
 	{
@@ -153,8 +153,8 @@ void lib_match_cc_cpu_sse2(float *block_A, float *block_B, int blockSize, float 
 	__m128 X, Y, Z;
 	X = Y = Z = _mm_setzero_ps();
 
-	__m128 A_mean = _mm_set1_ps(accumulate_sse2(block_A, block_A + blockSize));
-	__m128 B_mean = _mm_set1_ps(accumulate_sse2(block_B, block_B + blockSize));
+	__m128 A_mean = _mm_set1_ps(accumulate_sse2(block_A, block_A + blockSize) / blockSize);
+	__m128 B_mean = _mm_set1_ps(accumulate_sse2(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m128) / sizeof(float))
 	{
@@ -176,8 +176,8 @@ void lib_match_cc_cpu_sse2(double *block_A, double *block_B, int blockSize, doub
 	__m128d X, Y, Z;
 	X = Y = Z = _mm_setzero_pd();
 
-	__m128d A_mean = _mm_set1_pd(accumulate_sse2(block_A, block_A + blockSize));
-	__m128d B_mean = _mm_set1_pd(accumulate_sse2(block_B, block_B + blockSize));
+	__m128d A_mean = _mm_set1_pd(accumulate_sse2(block_A, block_A + blockSize) / blockSize);
+	__m128d B_mean = _mm_set1_pd(accumulate_sse2(block_B, block_B + blockSize) / blockSize);
 
 	for (int i = 0; i < blockSize; i += sizeof(__m128d) / sizeof(double))
 	{

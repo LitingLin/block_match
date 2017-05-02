@@ -64,4 +64,6 @@ int getTypeSize(std::type_index type)
 		return sizeof(double);
 	else
 		NOT_IMPLEMENTED_ERROR;
+
+	return 0;
 }

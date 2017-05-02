@@ -138,7 +138,7 @@ struct raw_allocator {
 };
 
 template <typename Type>
-struct raw_allocator <Type, memory_type::system>{
+struct raw_allocator <Type, memory_type::system> {
 	static Type *alloc(size_t size)
 	{
 		return static_cast<Type*>(::malloc(size));
@@ -231,7 +231,7 @@ Type *memory_allocator<Type, malloc_type>::alloc()
 template <typename Type, memory_type malloc_type>
 bool memory_allocator<Type, malloc_type>::allocated() const
 {
-	return ptr;
+	return ptr != nullptr;
 }
 
 template <typename Type, memory_type malloc_type>
@@ -263,19 +263,18 @@ void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 ** So, two dimensions is assumed
 */
 
-using DataPostProcessingMethod = 
+using DataPostProcessingMethod =
 void(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, void *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
 	const int *index_buffer, int *index_buffer_sort);
-
 using BlockCopyMethod =
-void(void *buf, void *input, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-using DetermineBlockBRangeMethod = 
+void(void *, const void *, int, int, int, int, int, int);
+using DetermineBlockBRangeMethod =
 void(int *, int *, int, int, int, int);
 using IterationIndexPostProcessMethod =
 void(int*, int, int);
-using IndexRecordMethod = 
+using IndexRecordMethod =
 void(int*, int*, int, int);
 
 template <typename Type>
@@ -300,11 +299,11 @@ struct ExecutionContext
 		indexA_M_end, indexA_N_end,
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
 
-	DataPostProcessingMethod *dataPostProcessing;
-	BlockCopyMethod *blockCopy;
-	DetermineBlockBRangeMethod *determineBlockBRange;
-	IterationIndexPostProcessMethod *iterationIndexPostProcess;
-	IndexRecordMethod *indexRecord;
+	DataPostProcessingMethod *dataPostProcessingFunction;
+	BlockCopyMethod *blockCopyingFunction;
+	DetermineBlockBRangeMethod *determineBlockBRangeFunction;
+	IterationIndexPostProcessMethod *iterationIndexPostProcessFunction;
+	IndexRecordMethod *indexRecordFunction;
 
 	/* Gpu Stuff */
 	cudaStream_t stream; // TODO: Double buffering
@@ -335,6 +334,7 @@ struct BlockMatchContext
 	std::type_index inputDataType;
 	std::type_index outputDataType;
 	std::type_index indexDataType;
+
 	int matrixA_M;
 	int matrixA_N;
 	int matrixB_M;
@@ -378,11 +378,11 @@ struct BlockMatchContext
 	PadFunction *padMethodB;
 	ExecutionFunction<Type> *executionMethod;
 
-	DataPostProcessingMethod *dataPostProcessing;
-	BlockCopyMethod *blockCopy;
-	DetermineBlockBRangeMethod *determineBlockBRange;
-	IterationIndexPostProcessMethod *iterationIndexPostProcess;
-	IndexRecordMethod *indexRecord;
+	DataPostProcessingMethod *dataPostProcessingFunction;
+	BlockCopyMethod *blockCopyingFunction;
+	DetermineBlockBRangeMethod *determineBlockBRangeFunction;
+	IterationIndexPostProcessMethod *iterationIndexPostProcessFunction;
+	IndexRecordMethod *indexRecordFunction;
 
 	int numberOfBlockBPerBlockA_M;
 	int numberOfBlockBPerBlockA_N;
@@ -396,7 +396,7 @@ struct BlockMatchContext
 	std::vector<void *>threadPoolTaskHandle;
 
 	memory_allocator<int, memory_type::system> common_buffer; // index template
-	
+
 	struct WorkerContext
 	{
 		int numberOfIteration;
@@ -452,7 +452,7 @@ struct ArrayMatchExecutionContext
 	Type *deviceBufferB;
 	Type *deviceBufferC;
 	int numberOfArrayA;
-	int numberOfArrayB;	
+	int numberOfArrayB;
 	int lengthOfArray;
 	int startIndexA;
 	int numberOfIteration;
@@ -508,19 +508,19 @@ int determineEndOfIndex(int matSize, int blockSize);
 int determineEndOfIndex(int matSize, int paddingSize, int blockSize);
 void generateIndexSequence(int *index, int size);
 
-template <typename Type>
-void copyBlock(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type1, typename Type2>
+void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template <typename Type>
 void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 
 template <typename Type>
-cudaError_t lib_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A,
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
-cudaError_t lib_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
 	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
-cudaError_t lib_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A, 
+cudaError_t lib_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A,
 	int block_B_blockSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
 cudaError_t lib_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
@@ -576,227 +576,4 @@ void aligned_free(void *ptr);
 
 int getTypeSize(std::type_index type);
 
-
-#define RuntimeTypeInference(type, exp) \
-	if (type == typeid(uint8_t)) \
-		exp(uint8_t); \
-	else if (type == typeid(int8_t)) \
-		exp(int8_t); \
-	else if (type == typeid(uint16_t)) \
-		exp(uint16_t); \
-	else if (type == typeid(int16_t)) \
-		exp(int16_t); \
-	else if (type == typeid(uint32_t)) \
-		exp(uint32_t); \
-	else if (type == typeid(int32_t)) \
-		exp(int32_t); \
-	else if (type == typeid(uint64_t)) \
-		exp(uint64_t); \
-	else if (type == typeid(int64_t)) \
-		exp(int64_t); \
-	else if (type == typeid(float)) \
-		exp(float); \
-	else if (type == typeid(double)) \
-		exp(double)
-
-#define RuntimeTypeInference2(type1, type2, exp) \
-	if (type1 == typeid(uint8_t) && type2 == typeid(uint8_t)) \
-		exp(uint8_t, uint8_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(int8_t)) \
-		exp(uint8_t, int8_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(uint16_t)) \
-		exp(uint8_t, uint16_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(int16_t)) \
-		exp(uint8_t, int16_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(uint32_t)) \
-		exp(uint8_t, uint32_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(int32_t)) \
-		exp(uint8_t, int32_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(uint64_t)) \
-		exp(uint8_t, uint64_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(int64_t)) \
-		exp(uint8_t, int64_t); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(float)) \
-		exp(uint8_t, float); \
-	else if (type1 == typeid(uint8_t) && type2 == typeid(double)) \
-		exp(uint8_t, double); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(uint8_t)) \
-		exp(int8_t, uint8_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(int8_t)) \
-		exp(int8_t, int8_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(uint16_t)) \
-		exp(int8_t, uint16_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(int16_t)) \
-		exp(int8_t, int16_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(uint32_t)) \
-		exp(int8_t, uint32_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(int32_t)) \
-		exp(int8_t, int32_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(uint64_t)) \
-		exp(int8_t, uint64_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(int64_t)) \
-		exp(int8_t, int64_t); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(float)) \
-		exp(int8_t, float); \
-	else if (type1 == typeid(int8_t) && type2 == typeid(double)) \
-		exp(int8_t, double); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(uint8_t)) \
-		exp(uint16_t, uint8_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(int8_t)) \
-		exp(uint16_t, int8_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(uint16_t)) \
-		exp(uint16_t, uint16_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(int16_t)) \
-		exp(uint16_t, int16_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(uint32_t)) \
-		exp(uint16_t, uint32_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(int32_t)) \
-		exp(uint16_t, int32_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(uint64_t)) \
-		exp(uint16_t, uint64_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(int64_t)) \
-		exp(uint16_t, int64_t); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(float)) \
-		exp(uint16_t, float); \
-	else if (type1 == typeid(uint16_t) && type2 == typeid(double)) \
-		exp(uint16_t, double); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(uint8_t)) \
-		exp(int16_t, uint8_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(int8_t)) \
-		exp(int16_t, int8_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(uint16_t)) \
-		exp(int16_t, uint16_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(int16_t)) \
-		exp(int16_t, int16_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(uint32_t)) \
-		exp(int16_t, uint32_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(int32_t)) \
-		exp(int16_t, int32_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(uint64_t)) \
-		exp(int16_t, uint64_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(int64_t)) \
-		exp(int16_t, int64_t); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(float)) \
-		exp(int16_t, float); \
-	else if (type1 == typeid(int16_t) && type2 == typeid(double)) \
-		exp(int16_t, double); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(uint8_t)) \
-		exp(uint32_t, uint8_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(int8_t)) \
-		exp(uint32_t, int8_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(uint16_t)) \
-		exp(uint32_t, uint16_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(int16_t)) \
-		exp(uint32_t, int16_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(uint32_t)) \
-		exp(uint32_t, uint32_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(int32_t)) \
-		exp(uint32_t, int32_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(uint64_t)) \
-		exp(uint32_t, uint64_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(int64_t)) \
-		exp(uint32_t, int64_t); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(float)) \
-		exp(uint32_t, float); \
-	else if (type1 == typeid(uint32_t) && type2 == typeid(double)) \
-		exp(uint32_t, double); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(uint8_t)) \
-		exp(int32_t, uint8_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(int8_t)) \
-		exp(int32_t, int8_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(uint16_t)) \
-		exp(int32_t, uint16_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(int16_t)) \
-		exp(int32_t, int16_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(uint32_t)) \
-		exp(int32_t, uint32_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(int32_t)) \
-		exp(int32_t, int32_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(uint64_t)) \
-		exp(int32_t, uint64_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(int64_t)) \
-		exp(int32_t, int64_t); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(float)) \
-		exp(int32_t, float); \
-	else if (type1 == typeid(int32_t) && type2 == typeid(double)) \
-		exp(int32_t, double); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(uint8_t)) \
-		exp(uint64_t, uint8_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(int8_t)) \
-		exp(uint64_t, int8_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(uint16_t)) \
-		exp(uint64_t, uint16_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(int16_t)) \
-		exp(uint64_t, int16_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(uint32_t)) \
-		exp(uint64_t, uint32_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(int32_t)) \
-		exp(uint64_t, int32_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(uint64_t)) \
-		exp(uint64_t, uint64_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(int64_t)) \
-		exp(uint64_t, int64_t); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(float)) \
-		exp(uint64_t, float); \
-	else if (type1 == typeid(uint64_t) && type2 == typeid(double)) \
-		exp(uint64_t, double); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(uint8_t)) \
-		exp(int64_t, uint8_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(int8_t)) \
-		exp(int64_t, int8_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(uint16_t)) \
-		exp(int64_t, uint16_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(int16_t)) \
-		exp(int64_t, int16_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(uint32_t)) \
-		exp(int64_t, uint32_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(int32_t)) \
-		exp(int64_t, int32_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(uint64_t)) \
-		exp(int64_t, uint64_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(int64_t)) \
-		exp(int64_t, int64_t); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(float)) \
-		exp(int64_t, float); \
-	else if (type1 == typeid(int64_t) && type2 == typeid(double)) \
-		exp(int64_t, double); \
-	else if (type1 == typeid(float) && type2 == typeid(uint8_t)) \
-		exp(float, uint8_t); \
-	else if (type1 == typeid(float) && type2 == typeid(int8_t)) \
-		exp(float, int8_t); \
-	else if (type1 == typeid(float) && type2 == typeid(uint16_t)) \
-		exp(float, uint16_t); \
-	else if (type1 == typeid(float) && type2 == typeid(int16_t)) \
-		exp(float, int16_t); \
-	else if (type1 == typeid(float) && type2 == typeid(uint32_t)) \
-		exp(float, uint32_t); \
-	else if (type1 == typeid(float) && type2 == typeid(int32_t)) \
-		exp(float, int32_t); \
-	else if (type1 == typeid(float) && type2 == typeid(uint64_t)) \
-		exp(float, uint64_t); \
-	else if (type1 == typeid(float) && type2 == typeid(int64_t)) \
-		exp(float, int64_t); \
-	else if (type1 == typeid(float) && type2 == typeid(float)) \
-		exp(float, float); \
-	else if (type1 == typeid(float) && type2 == typeid(double)) \
-		exp(float, double); \
-	else if (type1 == typeid(double) && type2 == typeid(uint8_t)) \
-		exp(double, uint8_t); \
-	else if (type1 == typeid(double) && type2 == typeid(int8_t)) \
-		exp(double, int8_t); \
-	else if (type1 == typeid(double) && type2 == typeid(uint16_t)) \
-		exp(double, uint16_t); \
-	else if (type1 == typeid(double) && type2 == typeid(int16_t)) \
-		exp(double, int16_t); \
-	else if (type1 == typeid(double) && type2 == typeid(uint32_t)) \
-		exp(double, uint32_t); \
-	else if (type1 == typeid(double) && type2 == typeid(int32_t)) \
-		exp(double, int32_t); \
-	else if (type1 == typeid(double) && type2 == typeid(uint64_t)) \
-		exp(double, uint64_t); \
-	else if (type1 == typeid(double) && type2 == typeid(int64_t)) \
-		exp(double, int64_t); \
-	else if (type1 == typeid(double) && type2 == typeid(float)) \
-		exp(double, float); \
-	else if (type1 == typeid(double) && type2 == typeid(double)) \
-		exp(double, double)
+#include "template_instantiate_helper.h"

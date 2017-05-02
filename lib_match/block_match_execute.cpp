@@ -18,7 +18,7 @@ void recordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int inde
 	*index_y_buffer = index_y;
 }
 
-void dummyRecordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
+void noRecordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
 {
 }
 
@@ -79,14 +79,14 @@ void BlockMatch<Type>::execute(void *A, void *B,
 		ContiguousMemoryIterator iterator_index_x(index_x, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
 		ContiguousMemoryIterator iterator_index_y(index_y, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
 
-		execute(A, B, &iterator_C, padded_A, padded_B, &iterator_index_x, &iterator_index_y);
+		executev2(A, B, &iterator_C, padded_A, padded_B, &iterator_index_x, &iterator_index_y);
 	}
 	else
-		execute(A, B, &iterator_C, padded_A, padded_B, nullptr, nullptr);
+		executev2(A, B, &iterator_C, padded_A, padded_B, nullptr, nullptr);
 }
 
 template <typename Type>
-void BlockMatch<Type>::execute(void *A, void *B,
+void BlockMatch<Type>::executev2(void *A, void *B,
 	Iterator *C,
 	void *padded_A, void *padded_B,
 	Iterator *index_x, Iterator *index_y)
@@ -176,6 +176,11 @@ void BlockMatch<Type>::execute(void *A, void *B,
 		executionContext->strideB_M = instance->strideB_M;
 		executionContext->strideB_N = instance->strideB_N;
 		executionContext->matrixC = C->clone(instance->workerContext[i].rawMatrixCIndex_begin);
+		executionContext->dataPostProcessingFunction = instance->dataPostProcessingFunction;
+		executionContext->blockCopyingFunction = instance->blockCopyingFunction;
+		executionContext->determineBlockBRangeFunction = instance->determineBlockBRangeFunction;
+		executionContext->iterationIndexPostProcessFunction = instance->iterationIndexPostProcessFunction;
+		executionContext->indexRecordFunction = instance->indexRecordFunction;
 
 		instance->threadPoolTaskHandle[i] = exec_serv.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
 			static_cast<void*>(executionContext));
@@ -213,3 +218,15 @@ void BlockMatch<double>::execute(double *A, double *B,
 	double *C,
 	double *padded_A, double *padded_B,
 	int *index_x, int *index_y);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<float>::executev2(void *A, void *B,
+	Iterator *C,
+	void *padded_A, void *padded_B,
+	Iterator *index_x, Iterator *index_y);
+template
+LIB_MATCH_EXPORT
+void BlockMatch<double>::executev2(void *A, void *B,
+	Iterator *C,
+	void *padded_A, void *padded_B,
+	Iterator *index_x, Iterator *index_y);

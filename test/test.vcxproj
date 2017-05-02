@@ -74,6 +74,8 @@
     <ClCompile Include="test_case_3.cpp" />
     <ClCompile Include="test_case_4.cpp" />
     <ClCompile Include="test_case_5.cpp" />
+    <ClCompile Include="test_case_6.cpp" />
+    <ClCompile Include="test_case_7.cpp" />
     <ClCompile Include="test_main.cpp" />
   </ItemGroup>
   <ItemGroup>

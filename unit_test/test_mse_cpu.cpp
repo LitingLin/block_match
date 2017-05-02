@@ -34,6 +34,8 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_float_avx2)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_avx2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079f, singleFloatingPointErrorTolerance);
 }
 
@@ -49,6 +51,8 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_double_avx2)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_avx2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079, doubleFloatingPointErrorTolerance);
 }
 
@@ -64,6 +68,8 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_float_avx)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_avx(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079f, singleFloatingPointErrorTolerance);
 }
 
@@ -79,6 +85,8 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_double_avx)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_avx(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079, doubleFloatingPointErrorTolerance);
 }
 
@@ -95,6 +103,8 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_float_sse2)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_sse2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079f, singleFloatingPointErrorTolerance);
 }
 
@@ -110,5 +120,7 @@ BOOST_AUTO_TEST_CASE(test_mse_cpu_double_sse2)
 	memcpy(aligned_a, a, sizeof(a));
 	memcpy(aligned_b, b, sizeof(b));
 	lib_match_mse_cpu_sse2(aligned_a, aligned_b, sizeof(a) / sizeof(*a), &result);
+	aligned_free(aligned_a);
+	aligned_free(aligned_b);
 	BOOST_CHECK_SMALL(result - 18.1079, doubleFloatingPointErrorTolerance);
 }

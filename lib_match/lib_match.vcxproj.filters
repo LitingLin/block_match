@@ -34,9 +34,6 @@
     <ClCompile Include="lib_match_internal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="block_copying.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="block_padding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -79,6 +76,9 @@
     <ClCompile Include="block_match.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="block_copying.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\lib_match.h">
@@ -96,10 +96,10 @@
     <ClInclude Include="intrinsic_func_helper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib_match_impl.h">
+    <ClInclude Include="block_match_execute.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="block_match_execute.h">
+    <ClInclude Include="template_instantiate_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

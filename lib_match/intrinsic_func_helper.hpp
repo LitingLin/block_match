@@ -7,9 +7,9 @@ float sum8f_avx(const __m256 val) {
 	const __m128 vallower = _mm256_extractf128_ps(val, 0);
 	_mm256_zeroupper();
 	const __m128 valval = _mm_add_ps(valupper,
-		vallower);
+		vallower); 
 	__m128 valsum = _mm_add_ps(_mm_permute_ps(valval, 0x1B), valval);
-	__m128 res = _mm_add_ps(_mm_permute_ps(valsum, 0xB1), valval);
+	__m128 res = _mm_add_ps(_mm_permute_ps(valsum, 0xB1), valsum);
 	return _mm_cvtss_f32(res);
 }
 
