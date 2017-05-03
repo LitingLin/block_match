@@ -120,7 +120,7 @@ public:
 		int matrixAPadding_N_pre, int matrixAPadding_N_post,
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,
 		int matrixBPadding_N_pre, int matrixBPadding_N_post,
-		int numberOfIndexRetain);
+		int numberOfResultsRetain);
 	~BlockMatch();
 	void initialize();
 

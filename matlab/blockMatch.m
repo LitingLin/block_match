@@ -1,4 +1,4 @@
-function [Result, SequenceAPadded, SequenceBPadded] = blockMatch(SequenceA, SequenceB, BlockSize, Options)
+function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(SequenceA, SequenceB, BlockSize, Options)
 %% Parameter Description
 % Input:
 %  SequenceA:
@@ -95,7 +95,7 @@ SequenceBPaddingMethod = 'symmetric';
 %  scalar
 Threshold = 0;
 % Sort result, can be
-%  boolean
+%  logical
 Sort = true;
 % After sorting the result, retain specified number of blocks, can be
 %  scalar
@@ -105,17 +105,21 @@ Retain = 'all';
 %% Data type
 % Data type of result, can be
 %  'same': the same as input
-%  'double', 'float',
-%  'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64': NOT IMPLEMENTED
+%  'double', 'single',
+%  'logical', 'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64'
 ResultDataType = 'same';
 % Data type in computation, can be
 %  'same': the same as input
-%  'double', 'float',
-%  'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64': NOT IMPLEMENTED
-IntermediateDataType = 'float';
+%  'double', 'single'
+IntermediateDataType = 'single';
+% Data type of index, can be
+%  'auto': the minimal type fit for the result
+%  'double', 'single',
+%  'logical', 'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64'
+IndexDataType = 'auto';
 % Sparse or not, can be
 %  'auto': depends on results,
-%  boolean
+%  logical
 Sparse = 'auto';
 
 %% Parse option parameter
@@ -167,6 +171,9 @@ if nargin == 4
     if isfield(Options, 'IntermediateDataType')
         IntermediateDataType = Options.IntermediateDataType;
     end
+    if isfield(Options, 'IndexDataType')
+        IndexDataType = Options.IndexDataType;
+    end
     if isfield(Options, 'Sparse')
         Sparse = Options.Sparse;
     end
@@ -176,9 +183,7 @@ if nargin == 4
 end
 
 %% Call mex
-if ~exist('SearchRegion', 'var') ...
-        || ischar(SearchRegion)
-    [Result, SequenceAPadded, SequenceBPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
+[Result, Index, SequenceAPadded, SequenceBPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
     'SearchRegion', SearchRegion, ...
     'SearchFrom', SearchFrom, ...
     'SequenceAStride', SequenceAStride, ...
@@ -192,22 +197,5 @@ if ~exist('SearchRegion', 'var') ...
     'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
+    'IndexDataType', IndexDataType, ...
     'Sparse', Sparse);
-else
-    [Result, SequenceAPadded, SequenceBPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
-    'SearchRegion', SearchRegion, ...
-    'SearchFrom', SearchFrom, ...
-    'SequenceAStride', SequenceAStride, ...
-    'SequenceBStride', SequenceBStride, ...
-    'SequenceABorder', SequenceABorder, ...
-    'MeasureMethod', MeasureMethod, ...
-    'SequenceAPadding', SequenceAPadding, ...
-    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
-    'SequenceBPadding', SequenceBPadding, ...
-    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
-    'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
-    'ResultDataType', ResultDataType, ...
-    'IntermediateDataType', IntermediateDataType, ...
-    'Sparse', Sparse);
-end
-end
