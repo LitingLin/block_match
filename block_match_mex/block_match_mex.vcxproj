@@ -86,7 +86,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="generate_result.cpp" />
     <ClCompile Include="mexFunction.cpp" />
     <ClCompile Include="parse_parameter.cpp" />
     <ClCompile Include="utils.cpp" />

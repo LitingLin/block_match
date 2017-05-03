@@ -195,6 +195,9 @@ void symmetricPadding(const T *src_ptr, T *dst_ptr,
 
 template
 LIB_MATCH_EXPORT
+void zeroPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
+template
+LIB_MATCH_EXPORT
 void zeroPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
 template
 LIB_MATCH_EXPORT
@@ -223,6 +226,9 @@ void zeroPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t,
 template
 LIB_MATCH_EXPORT
 void zeroPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
+template
+LIB_MATCH_EXPORT
+void circularPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
 template
 LIB_MATCH_EXPORT
 void circularPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
@@ -255,6 +261,9 @@ LIB_MATCH_EXPORT
 void circularPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
 template
 LIB_MATCH_EXPORT
+void replicatePadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
+template
+LIB_MATCH_EXPORT
 void replicatePadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
 template
 LIB_MATCH_EXPORT
@@ -283,6 +292,9 @@ void replicatePadding(const float *, float *, size_t, size_t, size_t, size_t, si
 template
 LIB_MATCH_EXPORT
 void replicatePadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
+template
+LIB_MATCH_EXPORT
+void symmetricPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
 template
 LIB_MATCH_EXPORT
 void symmetricPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);

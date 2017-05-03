@@ -81,6 +81,9 @@ void sortPartialDescend(Type *value, int size, int retain)
 	lib_match_sort_partial_descend(value, size, retain);
 }
 
+#ifdef _MSC_VER
+#pragma warning( disable : 4800 )  
+#endif
 template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, RawSortMethod_WithIndex<ComputingDataType> sortType>
 inline void
 sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
@@ -177,6 +180,10 @@ noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		result->next();
 	}
 }
+
+#ifdef _MSC_VER
+#pragma warning( default : 4800 )  
+#endif
 
 typedef void RecordIndex(int*, int*, int, int);
 

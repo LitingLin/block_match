@@ -357,7 +357,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 	else
 	{
-		indexRecordFunction = recordIndex;
+		indexRecordFunction = recordIndexPlusOne;
 	}
 
 	if (measureMethod == MeasureMethod::mse)

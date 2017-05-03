@@ -91,6 +91,19 @@ public:
 };
 
 LIB_MATCH_EXPORT
+class ContiguousMemoryIterator : public Iterator
+{
+public:
+	ContiguousMemoryIterator(void* ptr, int elem_size);
+	void next() override;
+	void* get() override;
+	std::unique_ptr<Iterator> clone(size_t pos) override;
+private:
+	char *ptr;
+	int elem_size;
+};
+
+LIB_MATCH_EXPORT
 class LibMatchDiagnose
 {
 public:
@@ -328,3 +341,5 @@ private:
 	size_t current_page_locked_memory_size;
 	size_t current_gpu_memory_size;
 };
+
+int getTypeSize(std::type_index type);

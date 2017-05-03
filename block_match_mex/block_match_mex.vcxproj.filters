@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="generate_result.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mexFunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

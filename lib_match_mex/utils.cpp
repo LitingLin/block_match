@@ -13,7 +13,7 @@ LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char me
 	va_end(args);
 	return errorWithMessage;
 }
-
+/*
 template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
 void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
@@ -27,13 +27,13 @@ template <typename Type1, typename Type2, typename std::enable_if<std::is_same<T
 void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
 	memcpy(out, in, n * sizeof(Type1));
-}
+}*/
 
 LibMatchMexErrorWithMessage internalErrorMessage()
 {
 	return generateErrorMessage(LibMatchMexError::errorInternal, "Unknown internal error.");
 }
-
+/*
 template
 void convertArrayType(const float*, double *, size_t);
 template
@@ -45,7 +45,7 @@ void convertArrayType(const int*, float *, size_t);
 template
 void convertArrayType(const float*, float *, size_t);
 template
-void convertArrayType(const double*, double *, size_t);
+void convertArrayType(const double*, double *, size_t);*/
 
 std::type_index getTypeIndex(mxClassID mxTypeId)
 {
@@ -96,7 +96,7 @@ mxClassID getMxClassId(std::type_index type)
 	else
 		abort();
 }
-
+/*
 void convertArrayType(std::type_index inType, std::type_index outType, const void *in, void *out, size_t size)
 {
 	if (inType == typeid(float) && outType == typeid(double))
@@ -117,7 +117,12 @@ void convertArrayType(std::type_index inType, std::type_index outType, const voi
 	}
 	else
 		abort();
-}
+}*/
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4804)
+#pragma warning(disable:4018)
+#endif
 
 template <typename OriginType, typename DestinationType>
 LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue, DestinationType *destinationValue)
@@ -130,6 +135,10 @@ LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue
 
 	return LibMatchMexError::success;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 // Assuming int*
 template <typename Type>

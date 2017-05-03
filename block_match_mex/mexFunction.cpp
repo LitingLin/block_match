@@ -24,16 +24,20 @@ mxClassID type_index_to_mx_class_id(std::type_index type)
 		return mxSINGLE_CLASS;
 	else if (type == typeid(double))
 		return mxDOUBLE_CLASS;
+
+	throw std::runtime_error("Unknown type_index");
 }
 
-template <size_t size, typename ...dimensions>
-class mx_matrix_allocator
+#include <array>
+
+template <typename ...Types>
+class mxMatrixAllocator
 {
 public:
-	mx_matrix_allocator(std::type_index type, dimensions...)
-		: ptr(nullptr), classID(type_index_to_mx_class_id(type)), dims({dimensions::info})
+	mxMatrixAllocator(std::type_index type, Types ...dimensions)
+		: dims{ static_cast<size_t>(dimensions)... }, ptr(nullptr), classID(type_index_to_mx_class_id(type))
 	{ }
-	~mx_matrix_allocator()
+	~mxMatrixAllocator()
 	{
 		if (ptr)
 		{
@@ -42,15 +46,11 @@ public:
 	}
 	void alloc()
 	{
-		if (m && n) {
-			size_t dims[2] = { static_cast<size_t>(m),static_cast<size_t>(n) };
-			ptr = mxCreateNumericArray(2, dims, classID, mxREAL);
-		}
+		ptr = mxCreateNumericArray(sizeof...(Types), dims.data(), classID, mxREAL);
 	}
-	void resetSize(dimensions...)
+	void resetSize(Types ...dimensions)
 	{
-		this->m = m;
-		this->n = n;
+		dims = { static_cast<size_t>(dimensions)... };
 	}
 	mxArray *get() const
 	{
@@ -58,112 +58,28 @@ public:
 	}
 	void *getData() const
 	{
+		if (!ptr)
+			return nullptr;
 		return mxGetData(ptr);
+	}
+	void reset()
+	{
+		mxDestroyArray(ptr);
+		ptr = nullptr;
 	}
 	mxArray *release()
 	{
-		mxArray *ptr = this->ptr;
+		mxArray *ptr_ = this->ptr;
 		this->ptr = nullptr;
-		return ptr;
+		return ptr_;
 	}
 private:
-	std::array<size_t, size> dims;
+	std::array<size_t, sizeof...(Types)> dims;
 	mxArray *ptr;
 	mxClassID classID;
 };
 
-class mx_2d_matrix_allocator
-{
-public:
-	mx_2d_matrix_allocator(std::type_index type, int m = 0, int n = 0)
-		: m(m), n(n), ptr(nullptr), classID(type_index_to_mx_class_id(type))
-	{ }
-	~mx_2d_matrix_allocator()
-	{
-		if (ptr)
-		{
-			mxDestroyArray(ptr);
-		}
-	}
-	void alloc()
-	{
-		if (m && n) {
-			size_t dims[2] = { static_cast<size_t>(m),static_cast<size_t>(n) };
-			ptr = mxCreateNumericArray(2, dims, classID, mxREAL);
-		}
-	}
-	void resetSize(int m, int n)
-	{
-		this->m = m;
-		this->n = n;
-	}
-	mxArray *get() const
-	{
-		return ptr;
-	}
-	void *getData() const
-	{
-		return mxGetData(ptr);
-	}
-	mxArray *release()
-	{
-		mxArray *ptr = this->ptr;
-		this->ptr = nullptr;
-		return ptr;
-	}
-private:
-	int m;
-	int n;
-	mxArray *ptr;
-	mxClassID classID;
-};
-
-class mx_3d_matrix_allocator
-{
-public:
-	mx_3d_matrix_allocator(std::type_index type, int dim0 = 0, int dim1 = 0)
-		: dim0(dim0), dim1(dim1), ptr(nullptr), classID(type_index_to_mx_class_id(type))
-	{ }
-	~mx_3d_matrix_allocator()
-	{
-		if (ptr)
-		{
-			mxDestroyArray(ptr);
-		}
-	}
-	void alloc()
-	{
-		if (dim0 && dim1) {
-			size_t dims[2] = { static_cast<size_t>(dim1),static_cast<size_t>(dim0) };
-			ptr = mxCreateNumericArray(2, dims, classID, mxREAL);
-		}
-	}
-	void resetSize(int m, int n)
-	{
-		this->dim0 = m;
-		this->dim1 = n;
-	}
-	mxArray *get() const
-	{
-		return ptr;
-	}
-	void *getData() const
-	{
-		return mxGetData(ptr);
-	}
-	mxArray *release()
-	{
-		mxArray *ptr = this->ptr;
-		this->ptr = nullptr;
-		return ptr;
-	}
-private:
-	int dim0;
-	int dim1;
-	mxArray *ptr;
-	mxClassID classID;
-};
-/* 
+/*
  * plhs
  * [0]: Result
  * [1]: Index
@@ -173,99 +89,91 @@ private:
 template <typename IntermidateType>
 void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 {
-	int sequenceASize = context->sequenceAMatrixDimensions[0] * context->sequenceAMatrixDimensions[1];
-	int sequenceBSize = context->sequenceBMatrixDimensions[0] * context->sequenceBMatrixDimensions[1];
-	BlockMatch<IntermidateType> blockMatch(context->sourceAType, context->sourceBType,
-		context->resultType, context->indexDataType,
-		context->searchType, context->method,
-		context->padMethodA, context->padMethodB,
-		context->sequenceABorderType, context->searchFrom,
-		context->sort,
-		context->sequenceAMatrixDimensions[0], context->sequenceAMatrixDimensions[1],
-		context->sequenceBMatrixDimensions[0], context->sequenceBMatrixDimensions[1],
-		context->searchRegion_M,context->searchRegion_N,
-		context->block_M, context->block_N,
-		context->sequenceAStride_M,context->sequenceAStride_N,
-		context->sequenceBStride_M, context->sequenceBStride_N,
-		context->sequenceAPadding_M_Pre, context->sequenceAPadding_M_Post,
-		context->sequenceAPadding_N_Pre, context->sequenceAPadding_N_Post,
-		context->sequenceBPadding_M_Pre, context->sequenceBPadding_M_Post,
-		context->sequenceBPadding_N_Pre, context->sequenceBPadding_N_Post,
-		context->retain
-		);
-	int dim0, dim1, dim2;
-	blockMatch.get_matrixA_padded_dimensions(&dim0, &dim1);
-	mx_2d_matrix_allocator matrixA_padded(context->sourceAType, dim1, dim0);
-	blockMatch.get_matrixB_padded_dimensions(&dim0, &dim1);
-	mx_2d_matrix_allocator matrixB_padded(context->sourceBType, dim1, dim0);
-	blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
-	
-	system_memory_allocator<IntermidateType> sequenceAPointer_converted(sequenceASize);
-	system_memory_allocator<IntermidateType> sequenceBPointer_converted(sequenceASize);
-
-	int matrixC_M = libMatchWarper.matrixC_M;
-	int matrixC_N = libMatchWarper.matrixC_N;
-	int matrixC_O = libMatchWarper.matrixC_O;
-	int matrixA_padded_M = libMatchWarper.matrixA_padded_M;
-	int matrixA_padded_N = libMatchWarper.matrixA_padded_N;
-	int matrixB_padded_M = libMatchWarper.matrixB_padded_M;
-	int matrixB_padded_N = libMatchWarper.matrixB_padded_N;
-
-	system_memory_allocator<IntermidateType> matrixC(matrixC_M * matrixC_N * matrixC_O);
-	system_memory_allocator<IntermidateType> matrixA_padded(matrixA_padded_M * matrixA_padded_N);
-	system_memory_allocator<IntermidateType> matrixB_padded(matrixB_padded_M * matrixB_padded_N);
-	system_memory_allocator<int> index_x(matrixC_M * matrixC_N * matrixC_O);
-	system_memory_allocator<int> index_y(matrixC_M * matrixC_N * matrixC_O);
-
 	try {
-		sequenceAPointer_converted.alloc(); sequenceBPointer_converted.alloc();
+		std::type_index indexDataType = typeid(nullptr);
+		if (nlhs > 1)
+			indexDataType = context->indexDataType;
+
+		BlockMatch<IntermidateType> blockMatch(context->sourceAType, context->sourceBType,
+			context->resultType, indexDataType,
+			context->searchType, context->method,
+			context->padMethodA, context->padMethodB,
+			context->sequenceABorderType, context->searchFrom,
+			context->sort,
+			context->sequenceAMatrixDimensions[0], context->sequenceAMatrixDimensions[1],
+			context->sequenceBMatrixDimensions[0], context->sequenceBMatrixDimensions[1],
+			context->searchRegion_M, context->searchRegion_N,
+			context->block_M, context->block_N,
+			context->sequenceAStride_M, context->sequenceAStride_N,
+			context->sequenceBStride_M, context->sequenceBStride_N,
+			context->sequenceAPadding_M_Pre, context->sequenceAPadding_M_Post,
+			context->sequenceAPadding_N_Pre, context->sequenceAPadding_N_Post,
+			context->sequenceBPadding_M_Pre, context->sequenceBPadding_M_Post,
+			context->sequenceBPadding_N_Pre, context->sequenceBPadding_N_Post,
+			context->retain
+		);
+
+		int dim0, dim1, dim2;
+		blockMatch.get_matrixA_padded_dimensions(&dim0, &dim1);
+		mxMatrixAllocator<size_t, size_t> matrixA_padded(context->sourceAType, dim1, dim0);
+		blockMatch.get_matrixB_padded_dimensions(&dim0, &dim1);
+		mxMatrixAllocator<size_t, size_t> matrixB_padded(context->sourceBType, dim1, dim0);
+		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
+
+		mxMatrixAllocator<size_t, size_t, size_t> matrixC(context->resultType, dim1, dim0, dim2);
+		mxMatrixAllocator<size_t, size_t, size_t, size_t> index(context->indexDataType, dim1, dim0, dim2, 2);
+
 		matrixC.alloc();
-		matrixA_padded.alloc(); matrixB_padded.alloc();
-		index_x.alloc(); index_y.alloc();
+		ContiguousMemoryIterator matrixCIterator(matrixC.getData(), dim2);
+		if (nlhs > 1)
+			index.alloc();
 
-		convertArrayType(context->sourceAType, context->intermediateType, context->sequenceAMatrixPointer, sequenceAPointer_converted.get(), sequenceASize);
-		convertArrayType(context->sourceBType, context->intermediateType, context->sequenceBMatrixPointer, sequenceBPointer_converted.get(), sequenceBSize);
+		ContiguousMemoryIterator indexXIterator(index.getData(), dim2 * 2);
+		ContiguousMemoryIterator indexYIterator(static_cast<char*>(index.getData()) + dim2*getTypeSize(context->indexDataType), dim2 * 2);
+		if (nlhs > 2)
+			matrixA_padded.alloc();
+		if (nlhs > 3)
+			matrixB_padded.alloc();
 
-		libMatchWarper.execute(sequenceAPointer_converted, sequenceBPointer_converted, matrixC, matrixA_padded, matrixB_padded, index_x, index_y);
+		void *matrixAPaddedPtr = nullptr;
+		if (nlhs > 2)
+			matrixAPaddedPtr = matrixA_padded.getData();
+		void *matrixBPaddedPtr = nullptr;
+		if (nlhs > 3)
+			matrixBPaddedPtr = matrixA_padded.getData();
 
-		libMatchWarper.destroy();
+		ContiguousMemoryIterator *indexXIteratorPtr = nullptr;
+		ContiguousMemoryIterator *indexYIteratorPtr = nullptr;
+		if (nlhs > 1)
+		{
+			indexXIteratorPtr = &indexXIterator;
+			indexYIteratorPtr = &indexYIterator;
+		}
+		blockMatch.executev2(context->sequenceAMatrixPointer, context->sequenceBMatrixPointer,
+			&matrixCIterator,
+			matrixAPaddedPtr,
+			matrixBPaddedPtr,
+			indexXIteratorPtr, indexYIteratorPtr
+		);
+
+		plhs[0] = matrixC.release();
+
+		if (nlhs > 1)
+			plhs[1] = index.release();
+
+		if (nlhs > 2)
+			plhs[2] = matrixA_padded.release();
+		if (nlhs > 3)
+			plhs[3] = matrixB_padded.release();
 	}
-	catch (memory_alloc_exception &exp)
-	{
-		
-	}
-	catch (page_locked_memory_alloc_exception &exp)
-	{
-		
-	}
-	catch (gpu_memory_alloc_exception &exp)
-	{
-		
-	}
-	catch (std::exception &exp)
+	catch (std::runtime_error &exp)
 	{
 		mexErrMsgTxt(exp.what());
 	}
-	sequenceAPointer_converted.release();
-	sequenceBPointer_converted.release();
-	generate_result<IntermidateType, ResultType>(&plhs[0], matrixC_N, matrixC_M, index_y.get(), index_x.get(), matrixC.get(), matrixC_O);
-
-	index_y.release();
-	index_x.release();
-	matrixC.release();
-
-	if (nlhs > 1)
+	catch (std::bad_alloc &exp)
 	{
-		generatePaddedMatrix<IntermidateType, ResultType>(&plhs[1], matrixA_padded_N, matrixA_padded_M, matrixA_padded.get());
+		mexErrMsgTxt(exp.what());
 	}
-
-	matrixA_padded.release();
-
-	if (nlhs > 2)
-	{
-		generatePaddedMatrix<IntermidateType, ResultType>(&plhs[2], matrixB_padded_N, matrixB_padded_M, matrixB_padded.get());
-	}
-
 }
 
 extern "C"
@@ -281,7 +189,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
-	
+
 	if (context.intermediateType == typeid(float))
 		process<float>(&context, nlhs, plhs);
 	else if (context.intermediateType == typeid(double))

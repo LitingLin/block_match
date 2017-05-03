@@ -25,6 +25,22 @@ void recheckDataType(BlockMatchMexContext *context)
 		context->intermediateType = sourceType;
 	if (context->resultType == typeid(nullptr))
 		context->resultType = sourceType;
+
+	if (context->indexDataType == typeid(nullptr)) { // auto
+		uint32_t sequenceBPadded_M = uint32_t(context->sequenceBPadding_M_Pre + context->sequenceBPadding_M_Post);
+		uint32_t sequenceBPadded_N = uint32_t(context->sequenceBPadding_N_Pre + context->sequenceBPadding_N_Post);
+		std::type_index indexDataType = typeid(nullptr);
+		if (sequenceBPadded_M < std::numeric_limits<uint8_t>::max() && sequenceBPadded_N < std::numeric_limits<uint8_t>::max())
+			indexDataType = typeid(uint8_t);
+		else if (sequenceBPadded_M < std::numeric_limits<uint16_t>::max() && sequenceBPadded_N < std::numeric_limits<uint16_t>::max())
+			indexDataType = typeid(uint16_t);
+		else if (sequenceBPadded_M < std::numeric_limits<uint32_t>::max() && sequenceBPadded_N < std::numeric_limits<uint32_t>::max())
+			indexDataType = typeid(uint32_t);
+		else
+			indexDataType = typeid(uint64_t);
+
+		context->indexDataType = indexDataType;
+	}
 }
 
 void recheckSequenceBPadding(BlockMatchMexContext *context)
@@ -129,7 +145,7 @@ LibMatchMexError parseIntermediateType(BlockMatchMexContext *context,
 	if (error != LibMatchMexError::success)
 		return error;
 
-	if (strncmp(buffer, "float", 6) == 0)
+	if (strncmp(buffer, "single", 7) == 0)
 		context->intermediateType = typeid(float);
 	else if (strncmp(buffer, "double", 7) == 0)
 		context->intermediateType = typeid(double);
@@ -148,7 +164,7 @@ LibMatchMexError parseResultDataType(BlockMatchMexContext *context,
 	if (error != LibMatchMexError::success)
 		return error;
 
-	if (strncmp(buffer, "single", 6) == 0)
+	if (strncmp(buffer, "single", 7) == 0)
 		context->resultType = typeid(float);
 	else if (strncmp(buffer, "double", 7) == 0)
 		context->resultType = typeid(double);
@@ -438,7 +454,7 @@ LibMatchMexError parseMethod(BlockMatchMexContext *context,
 LibMatchMexError parseOutputArgument(BlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[])
 {
-	if (nlhs >= 4)
+	if (nlhs > 4)
 		return LibMatchMexError::errorNumberOfArguments;
 
 	return LibMatchMexError::success;
@@ -704,7 +720,6 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		}
 		else
 		{
-		NotImplemented:
 			sprintf_s(messageBuffer, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH,
 				"Argument %s has not implemented yet, or has wrong name\n", buffer);
 			return generateErrorMessage(LibMatchMexError::errorNotImplemented, messageBuffer);

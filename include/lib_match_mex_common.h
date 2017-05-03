@@ -50,14 +50,14 @@ void libMatchMexInitalize();
 
 struct LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...);
 struct LibMatchMexErrorWithMessage internalErrorMessage();
-
+/*
 void convertArrayType(std::type_index inType, std::type_index outType, const void *in, void *out, size_t size);
 
 template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
 void convertArrayType(const Type1 *in, Type2 *out, size_t n);
 template <typename Type1, typename Type2, typename std::enable_if<std::is_same<Type1, Type2>::value>::type * = nullptr>
 void convertArrayType(const Type1 *in, Type2 *out, size_t n);
-
+*/
 /* 
  * Return:
  * errorTypeOfArgument

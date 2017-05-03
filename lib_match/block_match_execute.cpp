@@ -12,6 +12,12 @@ void noIndexPostProcess(int *indexA, int strideA, int indexA_end)
 {
 }
 
+void recordIndexPlusOne(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
+{
+	*index_x_buffer = index_x + 1;
+	*index_y_buffer = index_y + 1;
+}
+
 void recordIndex(int *index_x_buffer, int *index_y_buffer, int index_x, int index_y)
 {
 	*index_x_buffer = index_x;
@@ -43,29 +49,23 @@ void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, in
 	*indexB_end = determineEndOfIndex(matB, block);
 }
 
-class ContiguousMemoryIterator : public Iterator
+ContiguousMemoryIterator::ContiguousMemoryIterator(void* ptr, int elem_size)
+	: ptr(static_cast<char*>(ptr)), elem_size(elem_size) { }
+
+void ContiguousMemoryIterator::next()
 {
-public:
-	ContiguousMemoryIterator(void *ptr, int elem_size)
-		: ptr(static_cast<char*>(ptr)), elem_size(elem_size)
-	{		
-	}
-	void next() override
-	{
-		ptr += elem_size;
-	}
-	void* get() override
-	{
-		return static_cast<void*>(ptr);
-	}
-	std::unique_ptr<Iterator> clone(size_t pos) override
-	{
-		return std::make_unique<ContiguousMemoryIterator>(ptr + pos * elem_size, elem_size);
-	}
-private:
-	char *ptr;
-	int elem_size;
-};
+	ptr += elem_size;
+}
+
+void* ContiguousMemoryIterator::get()
+{
+	return static_cast<void*>(ptr);
+}
+
+std::unique_ptr<Iterator> ContiguousMemoryIterator::clone(size_t pos)
+{
+	return std::make_unique<ContiguousMemoryIterator>(ptr + pos * elem_size, elem_size);
+}
 
 template <typename Type>
 void BlockMatch<Type>::execute(void *A, void *B,
@@ -74,10 +74,10 @@ void BlockMatch<Type>::execute(void *A, void *B,
 	void *index_x, void *index_y)
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
-	ContiguousMemoryIterator iterator_C(C, getTypeSize(instance->outputDataType) * instance->C_dimensions[2]);
+	ContiguousMemoryIterator iterator_C(C, getTypeSize(outputDataType) * instance->C_dimensions[2]);
 	if (index_x) {
-		ContiguousMemoryIterator iterator_index_x(index_x, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
-		ContiguousMemoryIterator iterator_index_y(index_y, getTypeSize(instance->indexDataType) * instance->C_dimensions[2]);
+		ContiguousMemoryIterator iterator_index_x(index_x, getTypeSize(indexDataType) * instance->C_dimensions[2]);
+		ContiguousMemoryIterator iterator_index_y(index_y, getTypeSize(indexDataType) * instance->C_dimensions[2]);
 
 		executev2(A, B, &iterator_C, padded_A, padded_B, &iterator_index_x, &iterator_index_y);
 	}
@@ -93,11 +93,11 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 {
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type>*>(m_instance);
 
-	if (instance->indexDataType == typeid(nullptr)) {
+	if (indexDataType == typeid(nullptr)) {
 		if (index_x)
 			throw std::runtime_error("index_x and index_y should be null, as indexDataType is nullptr");
 	}
-	
+
 	int A_M = instance->matrixA_M,
 		A_N = instance->matrixA_N,
 		B_M = instance->matrixB_M,
@@ -117,10 +117,18 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		if (!instance->optionalBuffer.matrixA_padded_internal.allocated())
 		{
 			instance->optionalBuffer.matrixA_padded_internal.alloc();
-			instance->optionalBuffer.matrixB_padded_internal.alloc();
 		}
 
 		padded_A = instance->optionalBuffer.matrixA_padded_internal.get();
+	}
+
+	if (!padded_B)
+	{
+		if (!instance->optionalBuffer.matrixB_padded_internal.allocated())
+		{
+			instance->optionalBuffer.matrixB_padded_internal.alloc();
+		}
+
 		padded_B = instance->optionalBuffer.matrixB_padded_internal.get();
 	}
 
@@ -203,7 +211,7 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 
 	if (isFailed)
 		throw std::runtime_error(error_message);
-	
+
 }
 template
 LIB_MATCH_EXPORT
