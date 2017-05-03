@@ -52,12 +52,3 @@ struct BlockMatchMexContext
 struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *context,
 	int nlhs, mxArray *plhs[],
 	int nrhs, const mxArray *prhs[]);
-
-struct LibMatchMexErrorWithMessage validateParameter(struct BlockMatchMexContext *context);
-
-template <typename IntermidateType, typename ResultType>
-void generate_result(mxArray **pa, const int sequenceAHeight, const int sequenceAWidth, const int *index_x, const int *index_y,
-	const IntermidateType *value, const int size);
-
-template <typename IntermidateType, typename ResultType>
-void generatePaddedMatrix(mxArray **pa, const int sequencePaddedHeight, const int sequencePaddedWidth, const IntermidateType *data);

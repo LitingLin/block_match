@@ -122,6 +122,8 @@ public:
 	void trigger_error(size_t size, memory_type type) const;
 	void get_max_memory_required(size_t *max_memory_size,
 		size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size) const;
+	void get_current_memory_usage(size_t *current_memory_size,
+		size_t *current_page_locked_memory_size, size_t *current_gpu_memory_size) const;
 private:
 	size_t max_memory_size;
 	size_t max_page_locked_memory_size;

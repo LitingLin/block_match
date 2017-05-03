@@ -1,5 +1,4 @@
 #include "common.h"
-#include "utils.h"
 #include <string.h>
 
 mxClassID type_index_to_mx_class_id(std::type_index type)
@@ -35,7 +34,7 @@ class mxMatrixAllocator
 {
 public:
 	mxMatrixAllocator(std::type_index type, Types ...dimensions)
-		: dims{ static_cast<size_t>(dimensions)... }, ptr(nullptr), classID(type_index_to_mx_class_id(type))
+		: dims{ static_cast<size_t>(dimensions)... }, ptr(nullptr), type(type)
 	{ }
 	~mxMatrixAllocator()
 	{
@@ -46,7 +45,7 @@ public:
 	}
 	void alloc()
 	{
-		ptr = mxCreateNumericArray(sizeof...(Types), dims.data(), classID, mxREAL);
+		ptr = mxCreateNumericArray(sizeof...(Types), dims.data(), type_index_to_mx_class_id(type), mxREAL);
 	}
 	void resetSize(Types ...dimensions)
 	{
@@ -62,6 +61,19 @@ public:
 			return nullptr;
 		return mxGetData(ptr);
 	}
+	size_t getSize() const
+	{
+		size_t size = 1;
+		for (size_t i=0;i<dims.size();++i)
+		{
+			size *= dims[i];
+		}
+		return size * getTypeSize(type);
+	}
+	bool isAllocated() const
+	{
+		return ptr != nullptr;
+	}
 	void reset()
 	{
 		mxDestroyArray(ptr);
@@ -76,7 +88,7 @@ public:
 private:
 	std::array<size_t, sizeof...(Types)> dims;
 	mxArray *ptr;
-	mxClassID classID;
+	std::type_index type;
 };
 
 /*
@@ -112,28 +124,59 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 			context->sequenceBPadding_N_Pre, context->sequenceBPadding_N_Post,
 			context->retain
 		);
-
 		int dim0, dim1, dim2;
+		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
+		mxMatrixAllocator<size_t, size_t, size_t> matrixC(context->resultType, dim1, dim0, dim2);
+		if (nlhs <= 1)
+			dim0 = dim1 = dim2 = 0;
+		mxMatrixAllocator<size_t, size_t, size_t, size_t> index(context->indexDataType, dim1, dim0, dim2, 2);
 		blockMatch.get_matrixA_padded_dimensions(&dim0, &dim1);
+		if (nlhs <= 2)
+			dim0 = dim1 = 0;
 		mxMatrixAllocator<size_t, size_t> matrixA_padded(context->sourceAType, dim1, dim0);
 		blockMatch.get_matrixB_padded_dimensions(&dim0, &dim1);
+		if (nlhs <= 3)
+			dim0 = dim1 = 0;
 		mxMatrixAllocator<size_t, size_t> matrixB_padded(context->sourceBType, dim1, dim0);
-		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
 
-		mxMatrixAllocator<size_t, size_t, size_t> matrixC(context->resultType, dim1, dim0, dim2);
-		mxMatrixAllocator<size_t, size_t, size_t, size_t> index(context->indexDataType, dim1, dim0, dim2, 2);
+		size_t maxMxMemorySize = matrixA_padded.getSize() + matrixB_padded.getSize() + matrixC.getSize() + index.getSize();
 
-		matrixC.alloc();
-		ContiguousMemoryIterator matrixCIterator(matrixC.getData(), dim2);
-		if (nlhs > 1)
-			index.alloc();
-
-		ContiguousMemoryIterator indexXIterator(index.getData(), dim2 * 2);
-		ContiguousMemoryIterator indexYIterator(static_cast<char*>(index.getData()) + dim2*getTypeSize(context->indexDataType), dim2 * 2);
-		if (nlhs > 2)
-			matrixA_padded.alloc();
-		if (nlhs > 3)
-			matrixB_padded.alloc();
+		try {
+			blockMatch.initialize();
+		}
+		catch(memory_alloc_exception &exp){
+			std::string message = exp.what();
+			message = message + "MATLAB:\t" + std::to_string(0) + "\t" + std::to_string(maxMxMemorySize) + "\n";
+			mexErrMsgTxt(message.c_str());
+			return;
+		}
+		try {
+			matrixC.alloc();
+			if (nlhs > 1)
+				index.alloc();
+			if (nlhs > 2)
+				matrixA_padded.alloc();
+			if (nlhs > 3)
+				matrixB_padded.alloc();
+		}
+		catch (...)
+		{
+			size_t currentMxMemorySize = 0;
+			if (matrixC.isAllocated())
+				currentMxMemorySize += matrixC.getSize();
+			if (index.isAllocated())
+				currentMxMemorySize += index.getSize();
+			if (matrixA_padded.isAllocated())
+				currentMxMemorySize += matrixA_padded.getSize();
+			if (matrixB_padded.isAllocated())
+				currentMxMemorySize += matrixB_padded.getSize();
+			reportMemoryAllocationFailed(currentMxMemorySize, maxMxMemorySize);
+			throw;
+		}
+		ContiguousMemoryIterator matrixCIterator(matrixC.getData(), dim2 * getTypeSize(context->resultType));
+		ContiguousMemoryIterator indexXIterator(index.getData(), dim2 * 2 * getTypeSize(context->indexDataType));
+		ContiguousMemoryIterator indexYIterator(static_cast<char*>(index.getData()) + dim2*getTypeSize(context->indexDataType),
+			dim2 * 2 * getTypeSize(context->indexDataType));
 
 		void *matrixAPaddedPtr = nullptr;
 		if (nlhs > 2)
@@ -195,5 +238,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	else if (context.intermediateType == typeid(double))
 		process<double>(&context, nlhs, plhs);
 	else
-		mexErrMsgTxt("Processing data type can only be float or double");
+		mexErrMsgTxt("Computing data type can only be float or double");
 }

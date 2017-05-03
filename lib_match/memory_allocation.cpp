@@ -107,7 +107,7 @@ void memory_allocation_statistic::trigger_error(size_t size, memory_type type) c
 		"\tCurrent\tMax(estimated)\n"
 		"System:\t{}\t{}\n"
 		"Page Locked:\t{}\t{}\n"
-		"GPU:\t{}\t{}",
+		"GPU:\t{}\t{}\n",
 		to_string(type), size,
 		current_memory_size, max_memory_size,
 		current_page_locked_memory_size, max_page_locked_memory_size,
@@ -126,11 +126,26 @@ void memory_allocation_statistic::get_max_memory_required(size_t* max_memory_siz
 	*max_gpu_memory_size_ = this->max_gpu_memory_size;
 }
 
+void memory_allocation_statistic::get_current_memory_usage(size_t *current_memory_size_,
+	size_t *current_page_locked_memory_size_, size_t *current_gpu_memory_size_) const
+{
+	*current_memory_size_ = this->current_memory_size;
+	*current_page_locked_memory_size_ = this->current_page_locked_memory_size;
+	*current_gpu_memory_size_ = this->current_gpu_memory_size;
+}
+
 void LibMatchDiagnose::getMaxMemoryUsage(size_t* max_memory_size, size_t* max_page_locked_memory_size,
 	size_t* max_gpu_memory_size)
 {
 	g_memory_statistic.get_max_memory_required(max_memory_size,
 		max_page_locked_memory_size, max_gpu_memory_size);
+}
+
+void LibMatchDiagnose::getCurrentMemoryUsage(size_t *current_memory_size,
+	size_t *current_page_locked_memory_size, size_t *current_gpu_memory_size)
+{
+	g_memory_statistic.get_current_memory_usage(current_memory_size,
+		current_page_locked_memory_size, current_gpu_memory_size);
 }
 
 memory_alloc_exception::memory_alloc_exception(const std::string& _Message,

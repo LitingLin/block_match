@@ -1,6 +1,5 @@
 #include "common.h"
 #include <string.h>
-#include "utils.h"
 
 LibMatchMexError recheckSearchRegion(BlockMatchMexContext *context)
 {
@@ -27,8 +26,8 @@ void recheckDataType(BlockMatchMexContext *context)
 		context->resultType = sourceType;
 
 	if (context->indexDataType == typeid(nullptr)) { // auto
-		uint32_t sequenceBPadded_M = uint32_t(context->sequenceBPadding_M_Pre + context->sequenceBPadding_M_Post);
-		uint32_t sequenceBPadded_N = uint32_t(context->sequenceBPadding_N_Pre + context->sequenceBPadding_N_Post);
+		uint32_t sequenceBPadded_M = uint32_t(context->sequenceBMatrixDimensions[0] + context->sequenceBPadding_M_Pre + context->sequenceBPadding_M_Post);
+		uint32_t sequenceBPadded_N = uint32_t(context->sequenceBMatrixDimensions[1] + context->sequenceBPadding_N_Pre + context->sequenceBPadding_N_Post);
 		std::type_index indexDataType = typeid(nullptr);
 		if (sequenceBPadded_M < std::numeric_limits<uint8_t>::max() && sequenceBPadded_N < std::numeric_limits<uint8_t>::max())
 			indexDataType = typeid(uint8_t);
@@ -727,7 +726,6 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		++index;
 	}
 
-	recheckDataType(context);
 	error = recheckSortingParameter(context);
 	if (error == LibMatchMexError::errorInvalidParameterCombination)
 		return generateErrorMessage(error, "Parameter Retain cannot be integer when Parameter Sort is given");
@@ -737,6 +735,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
 
 	recheckSequenceBPadding(context);
+	recheckDataType(context);
 
 	LibMatchMexErrorWithMessage error_message = { error = LibMatchMexError::success };
 

@@ -88,12 +88,9 @@
   <ItemGroup>
     <ClCompile Include="mexFunction.cpp" />
     <ClCompile Include="parse_parameter.cpp" />
-    <ClCompile Include="utils.cpp" />
-    <ClCompile Include="validate_parameter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
-    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

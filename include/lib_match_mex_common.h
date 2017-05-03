@@ -50,6 +50,8 @@ void libMatchMexInitalize();
 
 struct LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char message[LIB_MATCH_MEX_MAX_MESSAGE_LENGTH], ...);
 struct LibMatchMexErrorWithMessage internalErrorMessage();
+
+void reportMemoryAllocationFailed(size_t currentMxMemorySize, size_t maxMxMemorySize);
 /*
 void convertArrayType(std::type_index inType, std::type_index outType, const void *in, void *out, size_t size);
 

@@ -108,6 +108,7 @@ class LibMatchDiagnose
 {
 public:
 	static void getMaxMemoryUsage(size_t *max_memory_size, size_t *max_page_locked_memory_size, size_t *max_gpu_memory_size);
+	static void getCurrentMemoryUsage(size_t* current_memory_size, size_t* current_page_locked_memory_size, size_t* current_gpu_memory_size);
 };
 
 template <typename Type>
