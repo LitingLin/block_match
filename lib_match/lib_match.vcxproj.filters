@@ -114,9 +114,6 @@
     <ClInclude Include="template_instantiate_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib_match_execute.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

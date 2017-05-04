@@ -6,7 +6,7 @@ template <typename Type, ProcessFunction<Type> processFunction>
 unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 {
 	void *A = context->A, *B = context->B, *C = context->C;
-	Type *bufferA = context->bufferA, *bufferB = context->bufferB,
+	Type *bufferA = context->bufferA, *bufferB = context->bufferB, *bufferC = context->bufferC,
 		*deviceBufferA = context->deviceBufferA, *deviceBufferB = context->deviceBufferB, *deviceBufferC = context->deviceBufferC;
 	int	numberOfArrayA = context->numberOfArrayA, numberOfArrayB = context->numberOfArrayB, sizeOfArray = context->sizeOfArray,
 		startIndexA = context->startIndexA, numberOfIteration = context->numberOfIteration,
@@ -30,37 +30,31 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 	int indexOfIteration = 0;
 	int indexOfArrayB = 0;
 	int numberOfFilledTaskQueue = 0;
-	int numberOfAInQueue = 0;
-	int numberOfBInQueue = 0;
 
 	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA; ++indexOfA)
 	{
-		arrayCopyingA(c_bufferA, c_A, sizeOfArray);
-		c_bufferA += sizeOfArray;
-		c_A += elementSizeOfTypeA * sizeOfArray;
-		numberOfAInQueue++;
 		for (int indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
 		{
+			arrayCopyingA(c_bufferA, c_A, sizeOfArray);
+			c_bufferA += sizeOfArray;
 			arrayCopyingB(c_bufferB, c_B, sizeOfArray);
 			c_bufferB += sizeOfArray;
 			c_B += elementSizeOfTypeB * sizeOfArray;
-			numberOfBInQueue++;
 
 			numberOfFilledTaskQueue++;
 			if (numberOfFilledTaskQueue == sizeOfGpuTaskQueue)
 			{
-				
-				if (numberOfAInQueue != 1)
-				{
-					memcpy(bufferA, c_bufferA - sizeOfArray, sizeof(Type) * sizeOfArray);
-					c_bufferA = bufferA + sizeOfArray;
-					numberOfArrayA = 1;
-				}
+				submitGpuTask<processFunction>(bufferA, bufferB, bufferC, 
+					deviceBufferA, deviceBufferB, deviceBufferC,
+					sizeOfArray, )
+				numberOfFilledTaskQueue = 0;
 			}
 
 			if (indexOfIteration == numberOfIteration)
 				goto JumpOut;
 		}
+		c_B = static_cast<char*>(B);
+		c_A += elementSizeOfTypeA * sizeOfArray;
 	}
 	JumpOut:
 
