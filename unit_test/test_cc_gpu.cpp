@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(test_cc_gpu_float)
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	cuda_error = cudaMemcpy(dev_b, b, sizeof(b), cudaMemcpyHostToDevice);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = lib_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
+	cuda_error = block_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	float c;
 	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(test_cc_gpu_double)
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	cuda_error = cudaMemcpy(dev_b, b, sizeof(b), cudaMemcpyHostToDevice);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
-	cuda_error = lib_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
+	cuda_error = block_match_cc(dev_a, dev_b, 1, 1, a_length, dev_c, 1, 1, cudaStreamDefault);
 	BOOST_CHECK_EQUAL(cuda_error, cudaSuccess);
 	double c;
 	cuda_error = cudaMemcpy(&c, dev_c, sizeof(c), cudaMemcpyDeviceToHost);

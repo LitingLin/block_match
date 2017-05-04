@@ -285,7 +285,7 @@
 
 #define InstantiateTemplateFloating(exp) \
 	exp(float); \
-	exp(double);
+	exp(double)
 
 #define InstantiateTemplate2(exp) \
 	exp(bool, bool); \

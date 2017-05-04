@@ -362,11 +362,11 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 
 	if (measureMethod == MeasureMethod::mse)
 	{
-		executionFunction = processWorker<Type, lib_match_mse_check_border<Type>>;
+		executionFunction = processWorker<Type, block_match_mse_check_border<Type>>;
 	}
 	else if (measureMethod == MeasureMethod::cc)
 	{
-		executionFunction = processWorker<Type, lib_match_cc_check_border<Type>>;
+		executionFunction = processWorker<Type, block_match_cc_check_border<Type>>;
 	}
 	
 	switch (padMethodA)

@@ -524,17 +524,22 @@ template <typename Type1, typename Type2>
 void copyArray(Type1 *buf, const Type2 *src, int size);
 
 template <typename Type>
-cudaError_t lib_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 template <typename Type>
-cudaError_t lib_match_mse_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_mse_check_border(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 template <typename Type>
-cudaError_t lib_match_cc(Type *blocks_A, Type *blocks_B, int numBlocks_A,
-	int block_B_blockSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_cc(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 template <typename Type>
-cudaError_t lib_match_cc_check_border(Type *blocks_A, Type *blocks_B, int numBlocks_A,
-	int block_B_groupSize, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
+cudaError_t block_match_cc_check_border(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
+
+template <typename Type>
+cudaError_t array_match_mse_check_border(const Type *A, const Type *B, const int numberOfArray,
+	const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
+
 
 template <typename Type>
 void lib_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);
