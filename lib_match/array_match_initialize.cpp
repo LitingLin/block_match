@@ -30,6 +30,8 @@ size_t getPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB,
 		arrayMatchPerThreadDeviceBufferBSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads;
 }
 
+
+
 template <typename Type>
 LibMatchErrorCode arrayMatchInitialize(void **instance,
 	int numberOfArrayA, int numberOfArrayB, int lengthOfArray)
@@ -62,7 +64,7 @@ LibMatchErrorCode arrayMatchInitialize(void **instance,
 
 	context->executionContext = reinterpret_cast<ArrayMatchExecutionContext<Type>*>(reinterpret_cast<char*>(context) + sizeof(ArrayMatchContext<Type>));
 	context->taskHandle = reinterpret_cast<void**>(reinterpret_cast<char*>(context->executionContext) + sizeof(ArrayMatchExecutionContext<Type>) * numberOfThreads);
-	
+
 	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
 	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
 
@@ -124,6 +126,19 @@ ContextAllocationFailed:
 	return errorCode;
 }
 
+template <typename Type>
+ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inputBDataType,
+	std::type_index outputDataType,
+	std::type_index indexDataType,
+	MeasureMethod measureMethod,
+	bool sort,
+	int arrayASize, int arrayBSize,
+	int numberOfResultsRetain)
+	: m_instance(nullptr), inputADataType(inputADataType), inputBDataType(inputBDataType),
+	outputDataType(outputDataType), indexDataType(indexDataType)
+{
+
+}
 size_t arrayMatchGetMaximumMemoryAllocationSize()
 {
 	return sizeof(ArrayMatchContext<Type>);

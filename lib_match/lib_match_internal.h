@@ -406,15 +406,6 @@ struct BlockMatchContext
 		std::unique_ptr<ExecutionContext<Type>> executionContext;
 	};
 	std::vector<WorkerContext> workerContext;
-	/*
-	struct OptionalPerThreadBuffer
-	{
-		memory_allocator<int, memory_type::system> index_x_internal;
-		memory_allocator<int, memory_type::system> index_y_internal;
-	};
-	std::vector<OptionalPerThreadBuffer> optionalPerThreadBuffer;
-
-	*/
 
 	struct OptionalBuffer
 	{
@@ -440,21 +431,31 @@ struct BlockMatchContext
 	std::vector<PerThreadBuffer> perThreadBuffer;
 };
 
+using ArrayCopyMethod =
+void(void *, const void *, int);
+
 template <typename Type>
 struct ArrayMatchExecutionContext
 {
-	Type *A;
-	Type *B;
-	Type *C;
+	void *A;
+	void *B;
+	void *C;
 	Type *bufferA;
 	Type *bufferB;
+	Type *bufferC;
 	Type *deviceBufferA;
 	Type *deviceBufferB;
 	Type *deviceBufferC;
 	int numberOfArrayA;
 	int numberOfArrayB;
-	int lengthOfArray;
+	int sizeOfArray;
 	int startIndexA;
+
+	int elementSizeOfTypeA, elementSizeOfTypeB;
+
+	ArrayCopyMethod *arrayCopyingAFunction;
+	ArrayCopyMethod *arrayCopyingBFunction;
+
 	int numberOfIteration;
 	int numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread;
@@ -466,19 +467,26 @@ struct ArrayMatchContext
 	int numberOfArrayA;
 	int numberOfArrayB;
 	int lengthOfArray;
-	Type *result;
 
-	Type *bufferA;
-	Type *bufferB;
+	struct PerThreadBuffer
+	{
+		memory_allocator<Type, memory_type::page_locked> matrixA_buffer;
+		memory_allocator<Type, memory_type::page_locked> matrixB_buffer;
+		memory_allocator<Type, memory_type::page_locked> matrixC_buffer;
+		memory_allocator<Type, memory_type::gpu> matrixA_deviceBuffer;
+		memory_allocator<Type, memory_type::gpu> matrixB_deviceBuffer;
+		memory_allocator<Type, memory_type::gpu> matrixC_deviceBuffer;
 
-	Type *deviceBufferA;
-	Type *deviceBufferB;
-	Type *deviceBufferC;
+		memory_allocator<int, memory_type::system> index_sorting_buffer;
 
+		memory_allocator<int, memory_type::system> index_raw_sorting_buffer;
+	};
+	std::vector<PerThreadBuffer> perThreadBuffer;
+	
 	int numberOfThreads;
 
-	ArrayMatchExecutionContext<Type> *executionContext;
-	void **taskHandle;
+	std::vector<ArrayMatchExecutionContext<Type>> executionContext;
+	std::vector<void *>threadPoolTaskHandle;
 };
 
 namespace lib_match_internal {
@@ -512,6 +520,8 @@ template <typename Type1, typename Type2>
 void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template <typename Type>
 void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type1, typename Type2>
+void copyArray(Type1 *buf, const Type2 *src, int size);
 
 template <typename Type>
 cudaError_t lib_match_mse(Type *blocks_A, Type *blocks_B, int numBlocks_A,
@@ -569,7 +579,7 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 
 bool isInterruptPending();
 
-void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
+// void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
 
 void *aligned_block_malloc(size_t size, size_t alignment);
 void aligned_free(void *ptr);

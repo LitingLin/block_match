@@ -1,84 +1,89 @@
 #include "lib_match_internal.h"
 
-#include "lib_match.h"
+#include "lib_match_execute.hpp"
 
-typedef cudaError_t(ProcessFunction)(float *A, float *B, float *C,
-	int lengthOfArray, int numberOfArray,
-	int numberOfProcessors, int numberOfThreads);
-
-template <ProcessFunction processFunction>
-cudaError_t submitGpuTask(float *A, float *B, float *C,
-	float *deviceBufferA, float *deviceBufferB, float *deviceBufferC,
-	int numberOfArray, int lengthOfArray,
-	int numberOfGPUDeviceMultiProcessor, int numberOfGPUProcessorThread)
+template <typename Type, ProcessFunction<Type> processFunction>
+unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 {
-	cudaError_t cudaError;
-	size_t dataSizeA, dataSizeB;
-	dataSizeA = dataSizeB = numberOfArray * lengthOfArray * sizeof(float);
-	size_t dataSizeC = numberOfArray * sizeof(float);
-	cudaError = cudaMemcpyAsync(deviceBufferA, A, dataSizeA, cudaMemcpyHostToDevice);
-	if (cudaError != cudaSuccess)
-		return cudaError;
-	cudaError = cudaMemcpyAsync(deviceBufferB, B, dataSizeB, cudaMemcpyHostToDevice);
-	if (cudaError != cudaSuccess)
-		return cudaError;
-
-	cudaError = processFunction(deviceBufferA, deviceBufferB, deviceBufferC,
-		lengthOfArray, numberOfArray,
-		numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread);
-	if (cudaError != cudaSuccess)
-		return cudaError;
-
-	cudaError = cudaMemcpy(C, deviceBufferC, dataSizeC, cudaMemcpyDeviceToHost);
-	return cudaError;
-}
-
-template <ProcessFunction processFunction>
-unsigned arrayMatchWorker(ArrayMatchExecutionContext* context)
-{
-	float *A = context->A, *B = context->B, *C = context->C,
-		*bufferA = context->bufferA, *bufferB = context->bufferB,
+	void *A = context->A, *B = context->B, *C = context->C;
+	Type *bufferA = context->bufferA, *bufferB = context->bufferB,
 		*deviceBufferA = context->deviceBufferA, *deviceBufferB = context->deviceBufferB, *deviceBufferC = context->deviceBufferC;
-	int	numberOfArrayA = context->numberOfArrayA, numberOfArrayB = context->numberOfArrayB, lengthOfArray = context->lengthOfArray,
+	int	numberOfArrayA = context->numberOfArrayA, numberOfArrayB = context->numberOfArrayB, sizeOfArray = context->sizeOfArray,
 		startIndexA = context->startIndexA, numberOfIteration = context->numberOfIteration,
 		numberOfGPUDeviceMultiProcessor = context->numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread = context->numberOfGPUProcessorThread;
 
 	int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
 	int indexOfGpuTaskQueue = 0;
 
+	ArrayCopyMethod *arrayCopyingA = context->arrayCopyingAFunction;
+	ArrayCopyMethod *arrayCopyingB = context->arrayCopyingBFunction;
+
+	char *c_A = static_cast<char*>(A);
+	char *c_B = static_cast<char*>(B);
+	int elementSizeOfTypeA = context->elementSizeOfTypeA, elementSizeOfTypeB = context->elementSizeOfTypeB;
+
+	Type *c_bufferA = bufferA;
+	Type *c_bufferB = bufferB;
+
 	cudaError_t cudaError;
 
-	float *c_A = A + startIndexA * lengthOfArray;
-	float *c_B = B;
-	float *c_C = C + startIndexA * numberOfArrayB;
-	float *c_deviceBufferA = deviceBufferA, *c_deviceBufferB = deviceBufferB, *c_deviceBufferC = deviceBufferC;
-	float *c_bufferA = bufferA;
-	float *c_bufferB = bufferB;
-
-	int sizeOfThisIteration = 0;
+	int indexOfIteration = 0;
 	int indexOfArrayB = 0;
-	int sizeOfFilledGpuTaskQueue = 0;
+	int numberOfFilledTaskQueue = 0;
+	int numberOfAInQueue = 0;
+	int numberOfBInQueue = 0;
 
-	for (int indexOfIteration = 0; indexOfIteration < numberOfIteration; indexOfIteration += sizeOfThisIteration)
+	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA; ++indexOfA)
 	{
-		if (sizeOfFilledGpuTaskQueue + numberOfArrayB - indexOfArrayB <= sizeOfGpuTaskQueue)
-			sizeOfThisIteration = numberOfArrayB - indexOfArrayB;
-		else
-			sizeOfThisIteration = sizeOfGpuTaskQueue - sizeOfFilledGpuTaskQueue;
+		arrayCopyingA(c_bufferA, c_A, sizeOfArray);
+		c_bufferA += sizeOfArray;
+		c_A += elementSizeOfTypeA * sizeOfArray;
+		numberOfAInQueue++;
+		for (int indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
+		{
+			arrayCopyingB(c_bufferB, c_B, sizeOfArray);
+			c_bufferB += sizeOfArray;
+			c_B += elementSizeOfTypeB * sizeOfArray;
+			numberOfBInQueue++;
 
-		for (int indexOfA = 0; indexOfA < sizeOfThisIteration; ++indexOfA)
+			numberOfFilledTaskQueue++;
+			if (numberOfFilledTaskQueue == sizeOfGpuTaskQueue)
+			{
+				
+				if (numberOfAInQueue != 1)
+				{
+					memcpy(bufferA, c_bufferA - sizeOfArray, sizeof(Type) * sizeOfArray);
+					c_bufferA = bufferA + sizeOfArray;
+					numberOfArrayA = 1;
+				}
+			}
+
+			if (indexOfIteration == numberOfIteration)
+				goto JumpOut;
+		}
+	}
+	JumpOut:
+
+	for (int indexOfIteration = 0; indexOfIteration < numberOfIteration; indexOfIteration += indexOfIteration)
+	{
+		if (numberOfFilledTaskQueue + numberOfArrayB - indexOfArrayB <= sizeOfGpuTaskQueue)
+			indexOfIteration = numberOfArrayB - indexOfArrayB;
+		else
+			indexOfIteration = sizeOfGpuTaskQueue - numberOfFilledTaskQueue;
+
+		for (int indexOfA = 0; indexOfA < indexOfIteration; ++indexOfA)
 		{
 			memcpy(c_bufferA, c_A, lengthOfArray * sizeof(float));
 			c_bufferA += lengthOfArray;
 		}
 
-		memcpy(c_bufferB, c_B, sizeOfThisIteration * lengthOfArray * sizeof(float));
-		
-		c_bufferB += sizeOfThisIteration * lengthOfArray;
-		c_B += sizeOfThisIteration * lengthOfArray;
+		memcpy(c_bufferB, c_B, indexOfIteration * lengthOfArray * sizeof(float));
 
-		indexOfArrayB += sizeOfThisIteration;
-		sizeOfFilledGpuTaskQueue += sizeOfThisIteration;
+		c_bufferB += indexOfIteration * lengthOfArray;
+		c_B += indexOfIteration * lengthOfArray;
+
+		indexOfArrayB += indexOfIteration;
+		numberOfFilledTaskQueue += indexOfIteration;
 		if (indexOfArrayB == numberOfArrayB)
 		{
 			c_A += lengthOfArray;
@@ -86,7 +91,7 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext* context)
 			indexOfArrayB = 0;
 		}
 
-		if (sizeOfFilledGpuTaskQueue == sizeOfGpuTaskQueue)
+		if (numberOfFilledTaskQueue == sizeOfGpuTaskQueue)
 		{
 			cudaError = cudaMemcpyAsync(deviceBufferA, bufferA, sizeOfGpuTaskQueue * lengthOfArray * sizeof(float), cudaMemcpyHostToDevice);
 			if (cudaError != cudaSuccess)
@@ -111,25 +116,25 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext* context)
 				return cudaError;
 
 			c_C += sizeOfGpuTaskQueue;
-			sizeOfFilledGpuTaskQueue = 0;
+			numberOfFilledTaskQueue = 0;
 		}
 	}
-	cudaError = cudaMemcpyAsync(deviceBufferA, bufferA, sizeOfFilledGpuTaskQueue * lengthOfArray * sizeof(float), cudaMemcpyHostToDevice);
+	cudaError = cudaMemcpyAsync(deviceBufferA, bufferA, numberOfFilledTaskQueue * lengthOfArray * sizeof(float), cudaMemcpyHostToDevice);
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	cudaError = cudaMemcpyAsync(deviceBufferB, bufferB, sizeOfFilledGpuTaskQueue * lengthOfArray * sizeof(float), cudaMemcpyHostToDevice);
+	cudaError = cudaMemcpyAsync(deviceBufferB, bufferB, numberOfFilledTaskQueue * lengthOfArray * sizeof(float), cudaMemcpyHostToDevice);
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
 	cudaError = processFunction(deviceBufferA, deviceBufferB, deviceBufferC,
-		lengthOfArray, sizeOfFilledGpuTaskQueue,
-		(sizeOfFilledGpuTaskQueue + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread);
+		lengthOfArray, numberOfFilledTaskQueue,
+		(numberOfFilledTaskQueue + numberOfGPUProcessorThread - 1) / numberOfGPUProcessorThread, numberOfGPUProcessorThread);
 
 	if (cudaError != cudaSuccess)
 		return cudaError;
 
-	cudaError = cudaMemcpy(c_C, deviceBufferC, sizeOfFilledGpuTaskQueue * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaError = cudaMemcpy(c_C, deviceBufferC, numberOfFilledTaskQueue * sizeof(float), cudaMemcpyDeviceToHost);
 
 	if (cudaError != cudaSuccess)
 		return cudaError;
@@ -193,7 +198,7 @@ LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, LibMatch
 		executionContext.deviceBufferC = deviceBufferC + indexOfThread * perThreadDeviceBufferCSize;
 		executionContext.numberOfGPUDeviceMultiProcessor = numberOfGPUDeviceMultiProcessor;
 		executionContext.numberOfGPUProcessorThread = numberOfGPUProcessorThread;
-		
+
 		if (method == LibMatchMeasureMethod::mse)
 			context->taskHandle[indexOfThread] = pool.submit(reinterpret_cast<unsigned(*)(void*)>(arrayMatchWorker<arrayMatchMse>), &executionContext);
 		else if (method == LibMatchMeasureMethod::cc)

@@ -92,8 +92,9 @@ SequenceBPaddingMethod = 'symmetric';
 
 %% Results Post-Processing
 % Threshold of result, can be
-%  scalar
-Threshold = 0;
+%  scalar,
+%  'no'
+Threshold = 'no';
 % Sort result, can be
 %  logical
 Sort = true;

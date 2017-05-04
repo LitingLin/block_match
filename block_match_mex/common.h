@@ -47,6 +47,9 @@ struct BlockMatchMexContext
 
 	bool sort;
 	int retain;
+	bool threshold;
+	double thresholdValue;
+	int sparse;
 };
 
 struct LibMatchMexErrorWithMessage parseParameter(struct BlockMatchMexContext *context,

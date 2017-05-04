@@ -59,27 +59,6 @@ enum class SearchFrom
 	topLeft,
 	center
 };
-/*
-LIB_MATCH_EXPORT
-LibMatchErrorCode arrayMatchInitialize(void **instance,
-	int numberOfArrayA, int numberOfArrayB, int lengthOfArray);
-
-LIB_MATCH_EXPORT
-LibMatchErrorCode arrayMatchExecute(void *instance, float *A, float *B, MeasureMethod method,
-	float **result);
-
-LIB_MATCH_EXPORT
-LibMatchErrorCode arrayMatchFinalize(void *instance);
-
-LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumMemoryAllocationSize();
-
-LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray);
-
-LIB_MATCH_EXPORT
-size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads);
-*/
 
 class Iterator
 {
@@ -112,6 +91,44 @@ public:
 };
 
 template <typename Type>
+class ArrayMatch
+{
+public:
+	ArrayMatch(std::type_index inputADataType, std::type_index inputBDataType,
+		std::type_index outputDataType,
+		std::type_index indexDataType,
+		MeasureMethod measureMethod,
+		bool sort,
+		int arrayASize, int arrayBSize,
+		int numberOfResultsRetain);
+	~ArrayMatch();
+	void initialize();
+	void execute(void *A, void *B,
+		void *C,
+		void *index = nullptr);
+	template <typename InputADataType, typename InputBDataType, typename OutputDataType, typename IndexDataType>
+	void execute(InputADataType *A, InputBDataType *B,
+		OutputDataType *C,
+		IndexDataType *index = nullptr)
+	{
+		if (inputADataType != typeid(InputADataType) || inputBDataType != typeid(InputBDataType)
+			|| outputDataType != typeid(OutputDataType)
+			|| (index && indexDataType != typeid(IndexDataType)))
+			throw std::runtime_error("Type check failed");
+		execute(static_cast<void*>(A), static_cast<void*>(B),
+			static_cast<void*>(C),
+			static_cast<void*>(index));
+	}
+	void destroy();
+private:
+	void *m_instance;
+	std::type_index inputADataType;
+	std::type_index inputBDataType;
+	std::type_index outputDataType;
+	std::type_index indexDataType;
+};
+
+template <typename Type>
 class BlockMatch
 {
 public:
@@ -137,7 +154,6 @@ public:
 		int numberOfResultsRetain);
 	~BlockMatch();
 	void initialize();
-
 	void executev2(void *A, void *B,
 		Iterator *C,
 		void *padded_A = nullptr, void *padded_B = nullptr,

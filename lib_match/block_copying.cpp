@@ -35,7 +35,7 @@ void copyBlock_helper(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int in
 #ifdef _MSC_VER
 #pragma warning( default : 4800 )  
 #endif
-// Workaround: MSVC SFINAE function point type cast bug
+// Workaround: MSVC SFINAE function pointer type cast bug
 template <typename Type1, typename Type2>
 void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
 {

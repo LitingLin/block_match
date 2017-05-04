@@ -1,5 +1,11 @@
 #include "lib_match_mex_common.h"
 
+/*
+ * Return:
+ *	errorTypeOfArgument
+ *	errorSizeOfArray
+ *	success
+ */
 LibMatchMexError getStringFromMxArray(const mxArray *pa, char *buffer, int bufferLength)
 {
 	mxClassID classId = mxGetClassID(pa);

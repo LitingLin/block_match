@@ -1,32 +1,7 @@
 #pragma once
 
 #include "lib_match_internal.h"
-
-template <typename Type>
-using ProcessFunction = cudaError_t(*)(Type *blocks_A, Type *blocks_B, int numBlocks_A,
-	int numberOfBlockBPerBlockA, int blockSize, Type *result, int numProcessors, int numThreads, cudaStream_t stream);
-template <typename Type>
-using ProcessFunctionCPU = void(*)(Type *blocks_A, Type *blocks_B, int blockSize, Type *result);
-//typedef void(CopyBlockMethod)(float *buf, const float *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
-
-template <typename Type, ProcessFunction<Type> processFunction>
-void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
-	int blockSize,
-	int numberOfBlockA, int numberOfBlockBPerBlockA,
-	int numberOfGpuProcessors, int numberOfGpuThreads,
-	cudaStream_t stream)
-{
-	int numberOfBlockB = numberOfBlockA * numberOfBlockBPerBlockA;
-
-	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferA, bufferA, numberOfBlockA * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream));
-
-	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfBlockB * blockSize * sizeof(Type), cudaMemcpyHostToDevice, stream));
-
-	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfBlockA, numberOfBlockBPerBlockA, blockSize, deviceResultBuffer,
-		numberOfGpuProcessors, numberOfGpuThreads, stream));
-
-	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfBlockB * sizeof(Type), cudaMemcpyDeviceToHost, stream));
-}
+#include "lib_match_execute.hpp"
 
 template <typename Type>
 using RawSortMethod_WithIndex = void(*)(int *index, Type *value, int size, int retain);
