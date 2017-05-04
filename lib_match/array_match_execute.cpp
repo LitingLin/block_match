@@ -1,6 +1,26 @@
 #include "lib_match_internal.h"
 
-#include "lib_match_execute.hpp"
+template <typename Type>
+using ProcessFunction = cudaError_t(*)(Type *A, Type *B, int numberOfArray,
+	int size, Type *C, int numProcessors, int numThreads, cudaStream_t stream);
+template <typename Type>
+using ProcessFunctionCPU = void(*)(Type *A, Type *B, int size, Type *C);
+
+template <typename Type, ProcessFunction<Type> processFunction>
+void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
+	int numberOfArray, int size,
+	int numberOfGpuProcessors, int numberOfGpuThreads,
+	cudaStream_t stream)
+{
+	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferA, bufferA, numberOfArray * size * sizeof(Type), cudaMemcpyHostToDevice, stream));
+
+	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfArray * size * sizeof(Type), cudaMemcpyHostToDevice, stream));
+
+	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfArray, size, deviceResultBuffer,
+		numberOfGpuProcessors, numberOfGpuThreads, stream));
+
+	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfArray * sizeof(Type), cudaMemcpyDeviceToHost, stream));
+}
 
 template <typename Type, ProcessFunction<Type> processFunction>
 unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
@@ -12,6 +32,8 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 		startIndexA = context->startIndexA, numberOfIteration = context->numberOfIteration,
 		numberOfGPUDeviceMultiProcessor = context->numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread = context->numberOfGPUProcessorThread;
 
+	cudaStream_t stream = context->stream;
+
 	int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
 	int indexOfGpuTaskQueue = 0;
 
@@ -20,7 +42,9 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 
 	char *c_A = static_cast<char*>(A);
 	char *c_B = static_cast<char*>(B);
-	int elementSizeOfTypeA = context->elementSizeOfTypeA, elementSizeOfTypeB = context->elementSizeOfTypeB;
+	char *c_C = static_cast<char*>(C);
+	int elementSizeOfTypeA = context->elementSizeOfTypeA, elementSizeOfTypeB = context->elementSizeOfTypeB,
+	elementSizeOfTypeC = context->elementSizeOfTypeC;
 
 	Type *c_bufferA = bufferA;
 	Type *c_bufferB = bufferB;
@@ -44,9 +68,13 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 			numberOfFilledTaskQueue++;
 			if (numberOfFilledTaskQueue == sizeOfGpuTaskQueue)
 			{
-				submitGpuTask<processFunction>(bufferA, bufferB, bufferC, 
+				submitGpuTask<processFunction>(bufferA, bufferB, bufferC,
 					deviceBufferA, deviceBufferB, deviceBufferC,
-					sizeOfArray, )
+					numberOfFilledTaskQueue, sizeOfArray,
+					numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
+
+				c_C += numberOfFilledTaskQueue;
+
 				numberOfFilledTaskQueue = 0;
 			}
 
@@ -57,6 +85,11 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 		c_A += elementSizeOfTypeA * sizeOfArray;
 	}
 	JumpOut:
+
+	if (numberOfFilledTaskQueue)
+	{
+		
+	}
 
 	for (int indexOfIteration = 0; indexOfIteration < numberOfIteration; indexOfIteration += indexOfIteration)
 	{

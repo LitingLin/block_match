@@ -456,6 +456,7 @@ struct ArrayMatchExecutionContext
 	ArrayCopyMethod *arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingBFunction;
 
+	cudaStream_t stream;
 	int numberOfIteration;
 	int numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread;
