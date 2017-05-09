@@ -434,6 +434,12 @@ struct BlockMatchContext
 using ArrayCopyMethod =
 void(void *, const void *, int);
 
+using ArrayMatchDataPostProcessingMethod =
+void(void **, void **,
+	void *,
+	int, int, int,
+	const int *, int *);
+
 template <typename Type>
 struct ArrayMatchExecutionContext
 {
@@ -451,10 +457,17 @@ struct ArrayMatchExecutionContext
 	int sizeOfArray;
 	int startIndexA;
 
+	void *index;
+	int *index_template;
+	int *index_buffer;
+	int *index_sorting_buffer;
+
 	int elementSizeOfTypeA, elementSizeOfTypeB;
+	int retain;
 
 	ArrayCopyMethod *arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingBFunction;
+	ArrayMatchDataPostProcessingMethod *dataPostProcessingFunction;
 
 	cudaStream_t stream;
 	int numberOfIteration;
