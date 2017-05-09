@@ -2,129 +2,7 @@
 
 #include "lib_match.h"
 
-size_t getGpuMemoryAllocationSize(int lengthOfArray)
-{
-	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
-	const int numberOfThreads = globalContext.numberOfThreads;
-
-	size_t deviceBufferASize = arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
-	size_t deviceBufferBSize = deviceBufferASize;
-	size_t deviceBufferCSize = arrayMatchPerThreadDeviceBufferCSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread) * numberOfThreads;
-
-	return (deviceBufferASize + deviceBufferBSize + deviceBufferCSize) * sizeof(float);
-}
-
-size_t getArrayCLength(int numberOfArrayA, int numberOfArrayB)
-{
-	return numberOfArrayA * numberOfArrayB;
-}
-
-size_t getPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads)
-{
-	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	return getArrayCLength(numberOfArrayA, numberOfArrayB) * sizeof(float) +
-		arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads +
-		arrayMatchPerThreadDeviceBufferBSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * sizeof(float) * numberOfThreads;
-}
-
-
-
-template <typename Type>
-LibMatchErrorCode arrayMatchInitialize(void **instance,
-	int numberOfArrayA, int numberOfArrayB, int lengthOfArray)
-{
-	if (!globalContext.hasGPU)
-		return LibMatchErrorCode::errorCuda;
-
-#ifndef NDEBUG
-	const int numberOfThreads = 2;
-#else
-	int numberOfThreads = 2; // enough
-#endif
-
-	if (numberOfArrayA == 1)
-		numberOfThreads = 1;
-
-	LibMatchErrorCode errorCode;
-
-	ArrayMatchContext<Type> *context = static_cast<ArrayMatchContext<Type> *>(malloc(sizeof(ArrayMatchContext<Type>) +
-		sizeof(ArrayMatchExecutionContext<Type>) * numberOfThreads +
-		sizeof(void*) * numberOfThreads));
-
-	if (context == nullptr) {
-		errorCode = LibMatchErrorCode::errorMemoryAllocation;
-
-		setLastErrorString("Error in memory allocation.");
-
-		goto ContextAllocationFailed;
-	}
-
-	context->executionContext = reinterpret_cast<ArrayMatchExecutionContext<Type>*>(reinterpret_cast<char*>(context) + sizeof(ArrayMatchContext<Type>));
-	context->taskHandle = reinterpret_cast<void**>(reinterpret_cast<char*>(context->executionContext) + sizeof(ArrayMatchExecutionContext<Type>) * numberOfThreads);
-
-	const int numberOfGpuDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGpuProcessorThread = globalContext.numberOfGPUProcessorThread;
-
-	float *deviceBufferA, *deviceBufferB, *deviceBufferC;
-
-	size_t deviceBufferASize = arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
-	size_t deviceBufferBSize = deviceBufferASize;
-	size_t deviceBufferCSize = arrayMatchPerThreadDeviceBufferCSize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread) * numberOfThreads;
-
-	cudaError_t cudaError = cudaMalloc(&deviceBufferA, (deviceBufferASize + deviceBufferBSize + deviceBufferCSize) * sizeof(float));
-	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorCode::errorGpuMemoryAllocation;
-
-		setCudaLastErrorString(cudaError, "Error in gpu memory allocation.\n");
-
-		goto GpuMemoryAllocationFailed;
-	}
-
-	float *result;
-
-	cudaError = cudaMallocHost(&result, getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray, numberOfThreads));
-	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorCode::errorPageLockedMemoryAllocation;
-
-		setCudaLastErrorString(cudaError, "Error in page locked memory allocation.\n");
-
-		goto PageLockedMemoryAllocationFailed;
-	}
-
-	float *bufferA = result + getArrayCLength(numberOfArrayA, numberOfArrayB);
-	float *bufferB = bufferA + arrayMatchPerThreadDeviceBufferASize(numberOfGpuDeviceMultiProcessor, numberOfGpuProcessorThread, lengthOfArray) * numberOfThreads;
-
-	deviceBufferB = deviceBufferA + deviceBufferASize;
-	deviceBufferC = deviceBufferB + deviceBufferBSize;
-
-	context->deviceBufferA = deviceBufferA;
-	context->deviceBufferB = deviceBufferB;
-	context->deviceBufferC = deviceBufferC;
-	context->bufferA = bufferA;
-	context->bufferB = bufferB;
-	context->lengthOfArray = lengthOfArray;
-	context->numberOfArrayA = numberOfArrayA;
-	context->numberOfArrayB = numberOfArrayB;
-	context->result = result;
-	context->numberOfThreads = numberOfThreads;
-
-	*instance = context;
-	errorCode = LibMatchErrorCode::success;
-
-	return errorCode;
-
-
-PageLockedMemoryAllocationFailed:
-	cudaFreeHost(result);
-
-GpuMemoryAllocationFailed:
-	free(context);
-ContextAllocationFailed:
-	return errorCode;
-}
+#include "array_match_execute.hpp"
 
 template <typename Type>
 ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inputBDataType,
@@ -132,24 +10,144 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 	std::type_index indexDataType,
 	MeasureMethod measureMethod,
 	bool sort,
-	int arrayASize, int arrayBSize,
-	int numberOfResultsRetain)
+	int numberOfA, int numberOfB,
+	int size,
+	int numberOfResultRetain)
 	: m_instance(nullptr), inputADataType(inputADataType), inputBDataType(inputBDataType),
 	outputDataType(outputDataType), indexDataType(indexDataType)
 {
+	int numberOfThreads = globalContext.numberOfThreads;
+	if (!sort)
+	{
+		if (numberOfThreads > 2)
+			numberOfThreads = 2;
+	}
+	
+	ArrayCopyMethod *arrayACopyFunction;
+	ArrayCopyMethod *arrayBCopyFunction;
+	ArrayMatchDataPostProcessingMethod *dataPostProcessingFunction;
 
-}
-size_t arrayMatchGetMaximumMemoryAllocationSize()
-{
-	return sizeof(ArrayMatchContext<Type>);
+#define EXP(type) \
+	arrayACopyFunction = (ArrayCopyMethod*)copyArray<Type, type>
+	RuntimeTypeInference(inputADataType, EXP);
+#undef EXP
+	
+#define EXP(type) \
+	arrayBCopyFunction = (ArrayCopyMethod*)copyArray<Type, type>
+	RuntimeTypeInference(inputBDataType, EXP);
+#undef EXP
+
+	if (sort)
+	{
+		if (indexDataType == typeid(nullptr))
+		{
+			if (measureMethod == MeasureMethod::mse && numberOfResultRetain)
+			{
+#define exp(type) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>>
+				RuntimeTypeInference(outputDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
+			{
+#define exp(type) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>>
+				RuntimeTypeInference(outputDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
+			{
+#define exp(type) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>>
+				RuntimeTypeInference(outputDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
+			{
+#define exp(type) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>>
+				RuntimeTypeInference(outputDataType, exp);
+#undef exp
+			}
+			else
+				NOT_IMPLEMENTED_ERROR;
+		}
+		else
+		{
+			if (measureMethod == MeasureMethod::mse && numberOfResultRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>>
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>>
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>>
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+			}
+			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
+			{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>>
+				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+			}
+		}
+	}
+	else
+	{
+		if (indexDataType == typeid(nullptr))
+		{
+#define exp(type) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)noSort_noRecordIndex<Type, type>
+			RuntimeTypeInference(outputDataType, exp);
+#undef exp
+		}
+		else
+		{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (ArrayMatchDataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2>
+			RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+		}
+	}
+
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
+	const int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
+
+
+
+	ArrayMatchContext<Type> *instance = new ArrayMatchContext<Type>{
+		numberOfA, numberOfB,
+		size,
+		std::vector<typename ArrayMatchContext<Type>::PerThreadBuffer>(),
+		numberOfThreads,
+		std::vector<ArrayMatchExecutionContext<Type>>(),
+		std::vector<void *>(numberOfThreads)
+	};
+
+	for (int indexOfThread = 0;indexOfThread<numberOfThreads;++indexOfThread)
+	{
+		instance->executionContext.emplace_back(typename ArrayMatchContext<Type>::PerThreadBuffer{
+
+		});
+	}
+
+	m_instance = static_cast<void*>(instance);
 }
 
-size_t arrayMatchGetMaximumGpuMemoryAllocationSize(int lengthOfArray)
+template <typename Type>
+void ArrayMatch<Type>::initialize()
 {
-	return getGpuMemoryAllocationSize(lengthOfArray);
-}
-
-size_t arrayMatchGetMaximumPageLockedMemoryAllocationSize(int numberOfArrayA, int numberOfArrayB, int lengthOfArray, int numberOfThreads)
-{
-	return getPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayB, lengthOfArray, numberOfThreads);
 }

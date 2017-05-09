@@ -2,21 +2,18 @@
 
 #include "lib_match.h"
 
-LibMatchErrorCode arrayMatchFinalize(void *instance)
+template <typename Type>
+ArrayMatch<Type>::~ArrayMatch()
 {
-	LibMatchErrorCode errorCode = LibMatchErrorCode::success;
-	ArrayMatchContext *context = (ArrayMatchContext *)instance;
-	cudaError_t cudaError = cudaFree(context->deviceBufferA);
-	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorCode::errorInternal;
-		setCudaLastErrorString(cudaError, "Internal Error: in calling cudaFree");
-	}
-	cudaError = cudaFreeHost(context->result);
-	if (cudaError != cudaSuccess) {
-		errorCode = LibMatchErrorCode::errorInternal;
-		setCudaLastErrorString(cudaError, "Internal Error: in calling cudaFreeHost");
-	}
-	free(context);
+	destroy();
+}
 
-	return errorCode;
+template <typename Type>
+void ArrayMatch<Type>::destroy()
+{
+	if (m_instance) {
+		ArrayMatchContext<Type> *instance = static_cast<ArrayMatchContext<Type> *>(m_instance);
+		delete instance;
+		m_instance = nullptr;
+	}
 }

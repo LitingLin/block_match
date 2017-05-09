@@ -100,6 +100,7 @@ public:
 		MeasureMethod measureMethod,
 		bool sort,
 		int arrayASize, int arrayBSize,
+		int size,
 		int numberOfResultsRetain);
 	~ArrayMatch();
 	void initialize();

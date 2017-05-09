@@ -1,5 +1,6 @@
 #include "lib_match_internal.h"
 #include "sorting.hpp"
+#include <cstring>
 
 template <typename Type>
 using ProcessFunction = cudaError_t(*)(Type *A, Type *B, int numberOfArray,
@@ -183,7 +184,6 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 	cudaStream_t stream = context->stream;
 
 	int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
-	int indexOfGpuTaskQueue = 0;
 
 	ArrayCopyMethod *arrayCopyingA = context->arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingB = context->arrayCopyingBFunction;
