@@ -17,3 +17,17 @@ void ArrayMatch<Type>::destroy()
 		m_instance = nullptr;
 	}
 }
+
+template
+LIB_MATCH_EXPORT
+ArrayMatch<float>::~ArrayMatch();
+template
+LIB_MATCH_EXPORT
+ArrayMatch<double>::~ArrayMatch();
+
+template
+LIB_MATCH_EXPORT
+void ArrayMatch<float>::destroy();
+template
+LIB_MATCH_EXPORT
+void ArrayMatch<double>::destroy();

@@ -88,7 +88,7 @@ cudaError_t block_match_mse_check_border(const Type *blocks_A, const Type *block
 }
 
 template <typename Type>
-cudaError_t array_match_mse_check_border(const Type *A, const Type *B, const int numberOfArray,
+cudaError_t array_match_mse(const Type *A, const Type *B, const int numberOfArray,
 	const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
 {
 	array_match_mse_kernel << <numProcessors, numThreads, 0, stream >> >
@@ -112,7 +112,7 @@ InstantiateTemplateFloating(EXP);
 
 #define EXP(type) \
 template \
-cudaError_t array_match_mse_check_border(const type *, const type *, const int, \
+cudaError_t array_match_mse(const type *, const type *, const int, \
 	const int, type *, const int, const int, const cudaStream_t)
 InstantiateTemplateFloating(EXP);
 #undef EXP

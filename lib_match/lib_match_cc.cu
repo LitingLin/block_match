@@ -35,8 +35,8 @@ correlation_coefficient(const Type *A, const Type *B, const int size)
 }
 
 template <typename Type>
-__device__ inline void
-array_match_cc_kernel_helper(const Type *A, const Type *B, const int size, Type *C,
+__global__ void
+array_match_cc_kernel(const Type *A, const Type *B, const int size, Type *C,
 	const int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;

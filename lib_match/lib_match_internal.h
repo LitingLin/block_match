@@ -456,11 +456,11 @@ struct ArrayMatchExecutionContext
 	int numberOfArrayB;
 	int sizeOfArray;
 	int startIndexA;
+	int startIndexB;
 
 	void *index;
-	int *index_template;
-	int *index_buffer;
 	int *index_sorting_buffer;
+	int *index_template;
 
 	int elementSizeOfTypeA, elementSizeOfTypeB;
 	int retain;
@@ -471,9 +471,13 @@ struct ArrayMatchExecutionContext
 
 	cudaStream_t stream;
 	int numberOfIteration;
+	int sizeOfGpuTaskQueue;
 	int numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread;
 };
+
+template <typename Type>
+using ArrayMatchExecutionFunction = unsigned(ArrayMatchExecutionContext<Type> *);
 
 template <typename Type>
 struct ArrayMatchContext
@@ -481,6 +485,13 @@ struct ArrayMatchContext
 	int numberOfArrayA;
 	int numberOfArrayB;
 	int lengthOfArray;
+	int numberOfResultRetain;
+
+	ArrayMatchExecutionFunction<Type> *executionFunction;
+
+	ArrayCopyMethod *arrayCopyingAFunction;
+	ArrayCopyMethod *arrayCopyingBFunction;
+	ArrayMatchDataPostProcessingMethod *dataPostProcessingFunction;
 
 	struct PerThreadBuffer
 	{
@@ -490,17 +501,25 @@ struct ArrayMatchContext
 		memory_allocator<Type, memory_type::gpu> matrixA_deviceBuffer;
 		memory_allocator<Type, memory_type::gpu> matrixB_deviceBuffer;
 		memory_allocator<Type, memory_type::gpu> matrixC_deviceBuffer;
-
 		memory_allocator<int, memory_type::system> index_sorting_buffer;
-
-		memory_allocator<int, memory_type::system> index_raw_sorting_buffer;
+		memory_allocator<int, memory_type::system> index_sorting_template;
 	};
 	std::vector<PerThreadBuffer> perThreadBuffer;
-	
 	int numberOfThreads;
-
-	std::vector<ArrayMatchExecutionContext<Type>> executionContext;
+	struct ExecutionContext
+	{
+		int startIndexA;
+		int startIndexB;
+		int numberOfIteration;
+		std::unique_ptr<ArrayMatchExecutionContext<Type>> context;
+	};
+	std::vector<ExecutionContext> executionContexts;
 	std::vector<void *>threadPoolTaskHandle;
+
+	std::vector<cudaStream_guard> streams;
+	int numberOfGPUDeviceMultiProcessor;
+	int numberOfGPUProcessorThread;
+	int sizeOfGpuTaskQueue;
 };
 
 namespace lib_match_internal {
@@ -551,7 +570,10 @@ cudaError_t block_match_cc_check_border(const Type *blocks_A, const Type *blocks
 	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 
 template <typename Type>
-cudaError_t array_match_mse_check_border(const Type *A, const Type *B, const int numberOfArray,
+cudaError_t array_match_mse(const Type *A, const Type *B, const int numberOfArray,
+	const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
+template <typename Type>
+cudaError_t array_match_cc(const Type *A, const Type *B, const int numberOfArray,
 	const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 
 

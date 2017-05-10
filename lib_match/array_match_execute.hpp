@@ -1,14 +1,15 @@
+#pragma once
 #include "lib_match_internal.h"
 #include "sorting.hpp"
 #include <cstring>
 
 template <typename Type>
-using ProcessFunction = cudaError_t(*)(Type *A, Type *B, int numberOfArray,
+using ArrayMatchProcessFunction = cudaError_t(*)(Type *A, Type *B, int numberOfArray,
 	int size, Type *C, int numProcessors, int numThreads, cudaStream_t stream);
 template <typename Type>
 using ProcessFunctionCPU = void(*)(Type *A, Type *B, int size, Type *C);
 
-template <typename Type, ProcessFunction<Type> processFunction>
+template <typename Type, ArrayMatchProcessFunction<Type> processFunction>
 void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
 	int numberOfArray, int size,
 	int numberOfGpuProcessors, int numberOfGpuThreads,
@@ -167,7 +168,7 @@ noSort_noRecordIndex(void **index, ResultDataType **result,
 #endif
 
 
-template <typename Type, ProcessFunction<Type> processFunction>
+template <typename Type, ArrayMatchProcessFunction<Type> processFunction>
 unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 {
 	void *A = context->A, *B = context->B, *C = context->C;
