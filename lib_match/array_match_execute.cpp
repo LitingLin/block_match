@@ -35,6 +35,11 @@ void ArrayMatch<Type>::execute(void* A, void* B, void* C, void* index)
 		executionContext->index_template = perThreadBuffer.index_sorting_template.get();
 		executionContext->elementSizeOfTypeA = getTypeSize(inputADataType);
 		executionContext->elementSizeOfTypeB = getTypeSize(inputBDataType);
+		executionContext->elementSizeOfTypeC = getTypeSize(outputDataType);
+		if (indexDataType != typeid(nullptr))
+			executionContext->elementSizeOfIndex = getTypeSize(indexDataType);
+		else
+			executionContext->elementSizeOfIndex = 0;
 		executionContext->retain = instance->numberOfResultRetain;
 		executionContext->arrayCopyingAFunction = instance->arrayCopyingAFunction;
 		executionContext->arrayCopyingBFunction = instance->arrayCopyingBFunction;

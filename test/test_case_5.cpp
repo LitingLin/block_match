@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(test_case_5)
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
-	BlockMatch<float> match(typeid(float), typeid(float), typeid(int),
+	BlockMatch<float> match(typeid(float), typeid(float), typeid(float), typeid(int),
 		SearchType::global, MeasureMethod::mse, PadMethod::symmetric, PadMethod::symmetric, BorderType::normal, SearchFrom::topLeft, false,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,

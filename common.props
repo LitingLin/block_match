@@ -11,6 +11,8 @@
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <AdditionalOptions>/Zc:throwingNew %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4819;4100;4189</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>

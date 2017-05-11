@@ -16,9 +16,11 @@ void initializeExecutionContext(ArrayMatchContext<Type> *instance)
 		const int offset = minimumNumberOfTaskPerThread * indexOfThread;
 		const int beginIndexOfA = offset / numberOfB;
 		const int beginIndexOfB = offset % numberOfB;
-		instance->executionContexts.emplace_back(beginIndexOfA, beginIndexOfB, minimumNumberOfTaskPerThread, new ArrayMatchExecutionContext<Type>);
+		instance->executionContexts.emplace_back(ArrayMatchContext<Type>::ExecutionContext{
+			beginIndexOfA, beginIndexOfB, minimumNumberOfTaskPerThread,
+			std::make_unique<ArrayMatchExecutionContext<Type>>() });
 	}
-	instance->executionContexts[numberOfThreads - 1] += (numberOfTasks - minimumNumberOfTaskPerThread * numberOfThreads);
+	instance->executionContexts[numberOfThreads - 1].numberOfIteration += (numberOfTasks - minimumNumberOfTaskPerThread * numberOfThreads);
 }
 
 template <typename Type>
@@ -179,22 +181,32 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 	{
 		for (int indexOfThread = 0; indexOfThread<numberOfThreads; ++indexOfThread)
 		{
-			instance->perThreadBuffer.emplace_back(
-				bufferASize, bufferBSize, bufferCSize,
-				bufferASize, bufferBSize, bufferCSize,
-				size, size
-			);
+			instance->perThreadBuffer.emplace_back(ArrayMatchContext<Type>::PerThreadBuffer{
+				memory_allocator<Type, memory_type::page_locked>(bufferASize), // matrixA_buffer
+				memory_allocator<Type, memory_type::page_locked>(bufferBSize), // matrixB_buffer
+				memory_allocator<Type, memory_type::page_locked>(bufferCSize), // matrixC_buffer
+				memory_allocator<Type, memory_type::gpu>(bufferASize), // matrixA_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(bufferBSize), // matrixB_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(bufferCSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::system>(size), // index_sorting_buffer
+				memory_allocator<int, memory_type::system>(size), // index_sorting_template
+			});
 		}
 	}
 	else
 	{
 		for (int indexOfThread = 0; indexOfThread<numberOfThreads; ++indexOfThread)
 		{
-			instance->perThreadBuffer.emplace_back(
-				bufferASize, bufferBSize, bufferCSize,
-				bufferASize, bufferBSize, bufferCSize,
-				0, 0
-			);
+			instance->perThreadBuffer.emplace_back(ArrayMatchContext<Type>::PerThreadBuffer{
+				memory_allocator<Type, memory_type::page_locked>(bufferASize), // matrixA_buffer
+				memory_allocator<Type, memory_type::page_locked>(bufferBSize), // matrixB_buffer
+				memory_allocator<Type, memory_type::page_locked>(bufferCSize), // matrixC_buffer
+				memory_allocator<Type, memory_type::gpu>(bufferASize), // matrixA_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(bufferBSize), // matrixB_deviceBuffer
+				memory_allocator<Type, memory_type::gpu>(bufferCSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::system>(0), // index_sorting_buffer
+				memory_allocator<int, memory_type::system>(0), // index_sorting_template
+			});
 		}
 	}
 

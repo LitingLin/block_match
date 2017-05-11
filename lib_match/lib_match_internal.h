@@ -462,7 +462,7 @@ struct ArrayMatchExecutionContext
 	int *index_sorting_buffer;
 	int *index_template;
 
-	int elementSizeOfTypeA, elementSizeOfTypeB;
+	int elementSizeOfTypeA, elementSizeOfTypeB, elementSizeOfTypeC, elementSizeOfIndex;
 	int retain;
 
 	ArrayCopyMethod *arrayCopyingAFunction;

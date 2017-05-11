@@ -14,5 +14,4 @@ list(APPEND SRC_LIST ../include/lib_match.h)
 include_directories(${CUDA_INCLUDE_DIRS} ../include ../spdlog/include)
 
 add_library(lib_match STATIC ${SRC_LIST} ${CUDA_SRC_LIST})
-set_property(TARGET lib_match PROPERTY CXX_STANDARD 11)
 target_link_libraries(lib_match ${CUDA_CUDART_LIBRARY})

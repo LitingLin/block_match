@@ -3,10 +3,10 @@
 #include "lib_match_internal.h"
 
 template <typename Type>
-using ProcessFunction = cudaError_t(*)(Type *A, Type *B, int numberOfA,
-	int numberOfBPerA, int size, Type *C, int numProcessors, int numThreads, cudaStream_t stream);
+using ProcessFunction = cudaError_t(const Type *A, const Type *B, const int numberOfA,
+	const int numberOfBPerA, const int size, Type *C, const int numProcessors, const int numThreads, const cudaStream_t stream);
 template <typename Type>
-using ProcessFunctionCPU = void(*)(Type *A, Type *B, int size, Type *C);
+using ProcessFunctionCPU = void(const Type *A, const Type *B, const int size, Type *C);
 
 template <typename Type, ProcessFunction<Type> processFunction>
 void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,

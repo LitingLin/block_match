@@ -24,16 +24,6 @@
 
 enum class MeasureMethod { mse, cc };
 
-enum class LibMatchErrorCode
-{
-	errorMemoryAllocation,
-	errorPageLockedMemoryAllocation,
-	errorGpuMemoryAllocation,
-	errorCuda,
-	errorInternal,
-	success
-};
-
 enum class SearchType
 {
 	local,
