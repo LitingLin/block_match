@@ -456,7 +456,6 @@ struct ArrayMatchExecutionContext
 	int numberOfArrayB;
 	int sizeOfArray;
 	int startIndexA;
-	int startIndexB;
 
 	void *index;
 	int *index_sorting_buffer;
@@ -509,7 +508,6 @@ struct ArrayMatchContext
 	struct ExecutionContext
 	{
 		int startIndexA;
-		int startIndexB;
 		int numberOfIteration;
 		std::unique_ptr<ArrayMatchExecutionContext<Type>> context;
 	};

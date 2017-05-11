@@ -1,30 +1,7 @@
 #pragma once
 #include "lib_match_internal.h"
-#include "sorting.hpp"
+#include "lib_match_execute.hpp"
 #include <cstring>
-
-template <typename Type>
-using ArrayMatchProcessFunction = cudaError_t(const Type *A, const  Type *B, const int numberOfArray,
-	const int size, Type *C, const int numProcessors, const int numThreads, const cudaStream_t stream);
-template <typename Type>
-using ProcessFunctionCPU = void(const Type *A, const Type *B, const int size, Type *C);
-
-template <typename Type, ArrayMatchProcessFunction<Type> processFunction>
-void submitGpuTask(Type *bufferA, Type *bufferB, Type *resultBuffer, Type *deviceBufferA, Type *deviceBufferB, Type *deviceResultBuffer,
-	const int numberOfArray, const int size,
-	const int numberOfGpuProcessors, const int numberOfGpuThreads,
-	const cudaStream_t stream)
-{
-	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferA, bufferA, numberOfArray * size * sizeof(Type), cudaMemcpyHostToDevice, stream));
-
-	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfArray * size * sizeof(Type), cudaMemcpyHostToDevice, stream));
-
-	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, numberOfArray, size, deviceResultBuffer,
-		numberOfGpuProcessors, numberOfGpuThreads, stream));
-
-	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfArray * sizeof(Type), cudaMemcpyDeviceToHost, stream));
-}
-
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4800 )  
@@ -168,14 +145,14 @@ noSort_noRecordIndex(void **index, ResultDataType **result,
 #endif
 
 
-template <typename Type, ArrayMatchProcessFunction<Type> processFunction>
+template <typename Type, ProcessFunction<Type> processFunction>
 unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 {
 	void *A = context->A, *B = context->B, *C = context->C;
 	Type *bufferA = context->bufferA, *bufferB = context->bufferB, *bufferC = context->bufferC,
 		*deviceBufferA = context->deviceBufferA, *deviceBufferB = context->deviceBufferB, *deviceBufferC = context->deviceBufferC;
 	const int numberOfArrayA = context->numberOfArrayA, numberOfArrayB = context->numberOfArrayB, sizeOfArray = context->sizeOfArray,
-		startIndexA = context->startIndexA, startIndexB = context->startIndexB, numberOfIteration = context->numberOfIteration,
+		startIndexA = context->startIndexA, numberOfIteration = context->numberOfIteration,
 		numberOfGPUDeviceMultiProcessor = context->numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread = context->numberOfGPUProcessorThread;
 
 	void *index = context->index;
@@ -184,7 +161,7 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 
 	cudaStream_t stream = context->stream;
 
-	const int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
+	const int sizeOfGpuTaskQueue = context->sizeOfGpuTaskQueue;
 
 	ArrayCopyMethod *arrayCopyingA = context->arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingB = context->arrayCopyingBFunction;
@@ -194,72 +171,65 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 		elementSizeOfTypeC = context->elementSizeOfTypeC, elementSizeOfIndex = context->elementSizeOfIndex;
 
 	char *c_A = static_cast<char*>(A) + startIndexA * elementSizeOfTypeA;
-	char *c_B = static_cast<char*>(B) + startIndexB * elementSizeOfTypeB;
-	void *c_C = static_cast<char*>(C) + (startIndexA * numberOfArrayB + startIndexB) * elementSizeOfTypeC;
+	char *c_B = static_cast<char*>(B);
+	void *c_C = static_cast<char*>(C) + startIndexA * numberOfArrayB * elementSizeOfTypeC;
 
 	int retain = context->retain;
 	if (retain == 0)
 		retain = numberOfArrayB;
 
-	void *c_index = static_cast<char*>(index) + (startIndexA * numberOfArrayB + startIndexB) * elementSizeOfIndex;
+	void *c_index = static_cast<char*>(index) + startIndexA * numberOfArrayB * elementSizeOfIndex;
 
 	Type *c_bufferA = bufferA;
 	Type *c_bufferB = bufferB;
 	
 	int indexOfIteration = 0;
-	int numberOfFilledTaskQueue = 0;
-
-	int indexOfA = startIndexA, indexOfB = startIndexB;
-
-	goto JumpIn;
-
-	for (/*indexOfA = 0*/; indexOfA < numberOfArrayA; ++indexOfA)
+	int numberOfAInQueue = 0;
+	
+	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA; ++indexOfA)
 	{
-		for (indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
+		arrayCopyingA(c_bufferA, c_A, sizeOfArray);
+		c_bufferA += sizeOfArray;
+		++numberOfAInQueue;
+		for (int indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
 		{
-			JumpIn:
-			arrayCopyingA(c_bufferA, c_A, sizeOfArray);
-			c_bufferA += sizeOfArray;
 			arrayCopyingB(c_bufferB, c_B, sizeOfArray);
 			c_bufferB += sizeOfArray;
 			c_B += elementSizeOfTypeB * sizeOfArray;
-
-			numberOfFilledTaskQueue++;
-			if (numberOfFilledTaskQueue == sizeOfGpuTaskQueue)
-			{
-				submitGpuTask<Type, processFunction>(bufferA, bufferB, bufferC,
-					deviceBufferA, deviceBufferB, deviceBufferC,
-					numberOfFilledTaskQueue, sizeOfArray,
-					numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
-
-				dataPostProcessing(&c_index, &c_C, bufferC,
-					numberOfFilledTaskQueue, sizeOfArray, retain,
-					index_template, index_sorting_buffer);
-				
-				numberOfFilledTaskQueue = 0;
-				c_bufferA = bufferA;
-				c_bufferB = bufferB;
-			}
-
-			++indexOfIteration;
-
-			if (indexOfIteration == numberOfIteration)
-				goto JumpOut;
 		}
+		if (numberOfAInQueue == sizeOfGpuTaskQueue)
+		{
+			submitGpuTask<Type, processFunction>(bufferA, bufferB, bufferC,
+				deviceBufferA, deviceBufferB, deviceBufferC,
+				sizeOfArray, numberOfAInQueue, numberOfArrayB,
+				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
+
+			dataPostProcessing(&c_index, &c_C, bufferC,
+				numberOfAInQueue, numberOfArrayB, retain,
+				index_template, index_sorting_buffer);
+
+			numberOfAInQueue = 0;
+			c_bufferA = bufferA;
+			c_bufferB = bufferB;
+		}
+
+		++indexOfIteration;
+
+		if (indexOfIteration == numberOfIteration)
+			break;
 		c_B = static_cast<char*>(B);
 		c_A += elementSizeOfTypeA * sizeOfArray;
 	}
-	JumpOut:
 
-	if (numberOfFilledTaskQueue)
+	if (numberOfAInQueue)
 	{
 		submitGpuTask<Type, processFunction>(bufferA, bufferB, bufferC,
 			deviceBufferA, deviceBufferB, deviceBufferC,
-			numberOfFilledTaskQueue, sizeOfArray,
+			sizeOfArray, numberOfAInQueue, numberOfArrayB,
 			numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
 
 		dataPostProcessing(&c_index, &c_C, bufferC,
-			numberOfFilledTaskQueue, sizeOfArray, retain,
+			numberOfAInQueue, sizeOfArray, retain,
 			index_template, index_sorting_buffer);
 	}
 	return 0;

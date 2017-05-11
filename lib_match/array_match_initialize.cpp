@@ -8,16 +8,13 @@ template <typename Type>
 void initializeExecutionContext(ArrayMatchContext<Type> *instance)
 {
 	const int numberOfThreads = instance->numberOfThreads;
-	const int numberOfB = instance->numberOfArrayB;
-	const int numberOfTasks = instance->numberOfArrayA * instance->numberOfArrayB;
+	const int numberOfTasks = instance->numberOfArrayA;
 	const int minimumNumberOfTaskPerThread = numberOfTasks / numberOfThreads;
 	for (int indexOfThread=  0;indexOfThread<numberOfThreads;++indexOfThread)
 	{
-		const int offset = minimumNumberOfTaskPerThread * indexOfThread;
-		const int beginIndexOfA = offset / numberOfB;
-		const int beginIndexOfB = offset % numberOfB;
+		const int beginIndexOfA = minimumNumberOfTaskPerThread * indexOfThread;
 		instance->executionContexts.emplace_back(ArrayMatchContext<Type>::ExecutionContext{
-			beginIndexOfA, beginIndexOfB, minimumNumberOfTaskPerThread,
+			beginIndexOfA, minimumNumberOfTaskPerThread,
 			std::make_unique<ArrayMatchExecutionContext<Type>>() });
 	}
 	instance->executionContexts[numberOfThreads - 1].numberOfIteration += (numberOfTasks - minimumNumberOfTaskPerThread * numberOfThreads);
@@ -49,11 +46,11 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 
 	if (measureMethod == MeasureMethod::mse)
 	{
-		executionFunction = arrayMatchWorker<Type, array_match_mse<Type>>;
+		executionFunction = arrayMatchWorker<Type, block_match_mse_check_border<Type>>;
 	}
 	else if (measureMethod == MeasureMethod::cc)
 	{
-		executionFunction = arrayMatchWorker<Type, array_match_cc<Type>>;
+		executionFunction = arrayMatchWorker<Type, block_match_cc_check_border<Type>>;
 	}
 
 #define EXP(type) \
@@ -151,9 +148,9 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 		}
 	}
 
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
-	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
-	const int sizeOfGpuTaskQueue = numberOfGPUDeviceMultiProcessor * numberOfGPUProcessorThread;
+	int numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, sizeOfGpuTaskQueue;
+	determineGpuTaskConfiguration(globalContext.numberOfGPUProcessorThread, globalContext.numberOfGPUDeviceMultiProcessor,
+		numberOfB, &numberOfGPUProcessorThread, &numberOfGPUDeviceMultiProcessor, &sizeOfGpuTaskQueue);
 	
 	ArrayMatchContext<Type> *instance = new ArrayMatchContext<Type>{
 		numberOfA, numberOfB,
@@ -174,8 +171,8 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 	initializeExecutionContext(instance);
 
 	const int bufferASize = sizeOfGpuTaskQueue * size;
-	const int bufferBSize = sizeOfGpuTaskQueue * size;
-	const int bufferCSize = sizeOfGpuTaskQueue;
+	const int bufferBSize = sizeOfGpuTaskQueue * numberOfB * size;
+	const int bufferCSize = sizeOfGpuTaskQueue * numberOfB;
 
 	if (sort && indexDataType != typeid(nullptr))
 	{

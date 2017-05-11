@@ -91,6 +91,9 @@
     <ClCompile Include="array_match_execute.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lib_match_initialize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\lib_match.h">
@@ -114,11 +117,14 @@
     <ClInclude Include="template_instantiate_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="sorting.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="array_match_execute.hpp">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib_match_execute.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib_match_initialize.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

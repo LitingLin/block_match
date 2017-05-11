@@ -28,7 +28,6 @@ void ArrayMatch<Type>::execute(void* A, void* B, void* C, void* index)
 		executionContext->numberOfArrayB = instance->numberOfArrayB;
 		executionContext->sizeOfArray = instance->lengthOfArray;
 		executionContext->startIndexA = instance->executionContexts[indexOfThreads].startIndexA;
-		executionContext->startIndexB = instance->executionContexts[indexOfThreads].startIndexB;
 		executionContext->numberOfIteration = instance->executionContexts[indexOfThreads].numberOfIteration;
 
 		executionContext->index_sorting_buffer = perThreadBuffer.index_sorting_buffer.get();
