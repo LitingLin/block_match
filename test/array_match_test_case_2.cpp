@@ -13,8 +13,7 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_2) {
 	memcpy(A + size, T2, sizeof(int) * size);
 	memcpy(A + size * 2, T3, sizeof(int) * size);
 	memcpy(A + size * 3, T4, sizeof(int) * size);
-	memcpy(A + size * 4, T5, sizeof(int) * size);
-	for (int i = 5; i<numberOfArrayA; ++i)
+	for (int i = 4; i<numberOfArrayA; ++i)
 	{
 		memcpy(A + size*i, T5, sizeof(int) * size);
 	}
@@ -37,6 +36,7 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_2) {
 	BOOST_CHECK_EQUAL(C[0], 1.f);
 	BOOST_CHECK_EQUAL(C[1], 4.f);
 	BOOST_CHECK_EQUAL(C[numberOfArrayB], 0.f);
+	BOOST_CHECK_EQUAL(C[numberOfArrayB* 4], 9.f);
 	BOOST_CHECK_EQUAL(C[numberOfArrayA * numberOfArrayB - 1], 16.f);
 
 	free(C);

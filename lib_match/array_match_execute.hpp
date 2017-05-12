@@ -76,6 +76,7 @@ sort_noRecordIndex(void **index, ResultDataType **result,
 		{
 			*c_result++ = static_cast<ResultDataType>(result_buffer[j]);
 		}
+		result_buffer += numberOfArrayB;
 	}
 	*result = c_result;
 }
@@ -96,6 +97,7 @@ noSort_recordIndex(IndexDataType **index, ResultDataType **result,
 			*c_result++ = static_cast<ResultDataType>(result_buffer[j]);
 			*c_index++ = static_cast<IndexDataType>(j);
 		}
+		result_buffer += numberOfArrayB;
 	}
 	*result = c_result;
 	*index = c_index;
@@ -105,18 +107,19 @@ template <typename ComputingDataType, typename ResultDataType, typename IndexDat
 inline void
 noSort_recordIndexPlusOne(IndexDataType **index, ResultDataType **result,
 	ComputingDataType *result_buffer,
-	int numberOfArray, int sizeOfArray, int retain,
+	int numberOfArrayA, int numberOfArrayB, int retain,
 	const int *index_template, int *index_sorting_buffer)
 {
 	IndexDataType *c_index = *index;
 	ResultDataType *c_result = *result;
-	for (int i = 0; i < numberOfArray; ++i)
+	for (int i = 0; i < numberOfArrayA; ++i)
 	{
 		for (int j = 0; j < retain; ++j)
 		{
 			*c_result++ = static_cast<ResultDataType>(result_buffer[j]);
 			*c_index++ = static_cast<IndexDataType>(j + 1);
 		}
+		result_buffer += numberOfArrayB;
 	}
 	*result = c_result;
 	*index = c_index;
@@ -126,16 +129,17 @@ template <typename ComputingDataType, typename ResultDataType>
 inline void
 noSort_noRecordIndex(void **index, ResultDataType **result,
 	ComputingDataType *result_buffer,
-	int numberOfArray, int sizeOfArray, int retain,
+	int numberOfArrayA, int numberOfArrayB, int retain,
 	const int *index_template, int *index_sorting_buffer)
 {
 	ResultDataType *c_result = *result;
-	for (int i = 0; i < numberOfArray; ++i)
+	for (int i = 0; i < numberOfArrayA; ++i)
 	{
 		for (int j = 0; j < retain; ++j)
 		{
 			*c_result++ = static_cast<ResultDataType>(result_buffer[j]);
 		}
+		result_buffer += numberOfArrayB;
 	}
 	*result = c_result;
 }
@@ -185,24 +189,32 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 	
 	int indexOfIteration = 0;
 	int numberOfAInQueue = 0;
-	
+/*
+	for (int indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
+	{
+		arrayCopyingB(c_bufferB, c_B, sizeOfArray);
+		c_bufferB += sizeOfArray;
+		c_B += elementSizeOfTypeB * sizeOfArray;
+	}
+	c_B = static_cast<char*>(B);
+	c_bufferB = bufferB;*/
+	arrayCopyingB(bufferB, B, sizeOfArray * numberOfArrayB);
+
+	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfArrayB * sizeOfArray * sizeof(Type), cudaMemcpyHostToDevice, stream));
+
 	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA; ++indexOfA)
 	{
 		arrayCopyingA(c_bufferA, c_A, sizeOfArray);
 		c_bufferA += sizeOfArray;
 		++numberOfAInQueue;
-		for (int indexOfB = 0; indexOfB < numberOfArrayB; ++indexOfB)
-		{
-			arrayCopyingB(c_bufferB, c_B, sizeOfArray);
-			c_bufferB += sizeOfArray;
-			c_B += elementSizeOfTypeB * sizeOfArray;
-		}
 		if (numberOfAInQueue == sizeOfGpuTaskQueue)
 		{
-			submitGpuTask<Type, processFunction>(bufferA, bufferB, bufferC,
+			submitGpuTask_global<Type, processFunction>(bufferA, bufferC,
 				deviceBufferA, deviceBufferB, deviceBufferC,
 				sizeOfArray, numberOfAInQueue, numberOfArrayB,
 				numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
+
+			CUDA_CHECK_POINT(cudaStreamSynchronize(stream));
 
 			dataPostProcessing(&c_index, &c_C, bufferC,
 				numberOfAInQueue, numberOfArrayB, retain,
@@ -210,26 +222,26 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 
 			numberOfAInQueue = 0;
 			c_bufferA = bufferA;
-			c_bufferB = bufferB;
 		}
 
 		++indexOfIteration;
 
 		if (indexOfIteration == numberOfIteration)
 			break;
-		c_B = static_cast<char*>(B);
 		c_A += elementSizeOfTypeA * sizeOfArray;
 	}
 
 	if (numberOfAInQueue)
 	{
-		submitGpuTask<Type, processFunction>(bufferA, bufferB, bufferC,
+		submitGpuTask_global<Type, processFunction>(bufferA, bufferC,
 			deviceBufferA, deviceBufferB, deviceBufferC,
 			sizeOfArray, numberOfAInQueue, numberOfArrayB,
 			numberOfGPUDeviceMultiProcessor, numberOfGPUProcessorThread, stream);
 
+		CUDA_CHECK_POINT(cudaStreamSynchronize(stream));
+
 		dataPostProcessing(&c_index, &c_C, bufferC,
-			numberOfAInQueue, sizeOfArray, retain,
+			numberOfAInQueue, numberOfArrayB, retain,
 			index_template, index_sorting_buffer);
 	}
 	return 0;

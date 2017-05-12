@@ -36,23 +36,27 @@ correlation_coefficient(const Type *A, const Type *B, const int size)
 
 template <typename Type>
 __global__ void
-array_match_cc_kernel(const Type *A, const Type *B, const int size, Type *C,
+lib_match_cc_global_kernel(const Type *A, const Type *B, const int numberOfBPerA, const int size, Type *C,
 	const int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (tid >= n)
 		return;
+		
+	int groupIndex = tid / numberOfBPerA;
 
-	const Type *c_block_A = A + tid * size;
-	const Type *c_block_B = B + tid * size;
+	int inGroupOffset = tid % numberOfBPerA;
 
-	C[tid] = correlation_coefficient(c_block_A, c_block_B, size);
+	const Type *c_A = A + groupIndex * size;
+	const Type *c_B = B + inGroupOffset * size;
+
+	C[tid] = correlation_coefficient(c_A, c_B, size);
 }
 
 template <typename Type>
 __device__ inline void
-block_match_cc_kernel_helper(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize,
+lib_match_cc_kernel_helper(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize,
 	Type *resultsBuffer, const int tid)
 {
 	int groupIndex = tid / numberOfBlockBPerBlockA;
@@ -67,16 +71,16 @@ block_match_cc_kernel_helper(const Type *blocks_A, const Type *blocks_B, const i
 
 template <typename Type>
 __global__ void
-block_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize, Type *resultsBuffer)
+lib_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize, Type *resultsBuffer)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
 	
-	block_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
+	lib_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
 }
 
 template <typename Type>
 __global__ void
-block_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize, Type *resultsBuffer,
+lib_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, const int numberOfBlockBPerBlockA, const int blockSize, Type *resultsBuffer,
 	const int n)
 {
 	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
@@ -84,56 +88,56 @@ block_match_cc_kernel(const Type *blocks_A, const Type *blocks_B, const int numb
 	if (tid >= n)
 		return;
 		
-	block_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
+	lib_match_cc_kernel_helper(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, resultsBuffer, tid);
 }
 
 template <typename Type>
-cudaError_t block_match_cc(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+cudaError_t lib_match_cc(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
 	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
 {
-	block_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
+	lib_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
 		(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result);
 
 	return cudaGetLastError();
 }
 
 template <typename Type>
-cudaError_t block_match_cc_check_border(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
+cudaError_t lib_match_cc_check_border(const Type *blocks_A, const Type *blocks_B, const int numBlocks_A,
 	const int numberOfBlockBPerBlockA, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
 {
-	block_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
+	lib_match_cc_kernel <<<numProcessors, numThreads, 0, stream >>> 
 		(blocks_A, blocks_B, numberOfBlockBPerBlockA, blockSize, result, numberOfBlockBPerBlockA*numBlocks_A);
 
 	return cudaGetLastError();
 }
 
 template <typename Type>
-cudaError_t array_match_cc(const Type *A, const Type *B, const int numberOfArray,
-	const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
+cudaError_t lib_match_cc_global(const Type *A, const Type *B, const int numberOfA,
+	const int numberOfBPerA, const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
 {
-	array_match_cc_kernel << <numProcessors, numThreads, 0, stream >> >
-		(A, B, size, result, numberOfArray);
+	lib_match_cc_global_kernel << <numProcessors, numThreads, 0, stream >> >
+		(A, B, numberOfBPerA, size, result, numberOfA * numberOfBPerA);
 
 	return cudaGetLastError();
 }
 
 #define EXP(type) \
 template \
-cudaError_t block_match_cc(const type *, const type *, const int, \
+cudaError_t lib_match_cc(const type *, const type *, const int, \
 	const int, const int, type *, const int, const int, const cudaStream_t)
 InstantiateTemplateFloating(EXP);
 #undef EXP
 
 #define EXP(type) \
 template \
-cudaError_t block_match_cc_check_border(const type *, const type *, const int, \
+cudaError_t lib_match_cc_check_border(const type *, const type *, const int, \
 	const int, const int, type *, const int, const int, const cudaStream_t)
 InstantiateTemplateFloating(EXP);
 #undef EXP
 
 #define EXP(type) \
 template \
-cudaError_t array_match_cc(const type *, const type *, const int, \
-	const int, type *, const int, const int, const cudaStream_t)
+cudaError_t lib_match_cc_global(const type *, const type *, const int, \
+	const int, const int, type *, const int, const int, const cudaStream_t)
 InstantiateTemplateFloating(EXP);
 #undef EXP

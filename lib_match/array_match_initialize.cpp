@@ -46,11 +46,11 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 
 	if (measureMethod == MeasureMethod::mse)
 	{
-		executionFunction = arrayMatchWorker<Type, block_match_mse_check_border<Type>>;
+		executionFunction = arrayMatchWorker<Type, lib_match_mse_global<Type>>;
 	}
 	else if (measureMethod == MeasureMethod::cc)
 	{
-		executionFunction = arrayMatchWorker<Type, block_match_cc_check_border<Type>>;
+		executionFunction = arrayMatchWorker<Type, lib_match_cc_global<Type>>;
 	}
 
 #define EXP(type) \
@@ -171,7 +171,7 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 	initializeExecutionContext(instance);
 
 	const int bufferASize = sizeOfGpuTaskQueue * size;
-	const int bufferBSize = sizeOfGpuTaskQueue * numberOfB * size;
+	const int bufferBSize = numberOfB * size;
 	const int bufferCSize = sizeOfGpuTaskQueue * numberOfB;
 
 	if (sort && indexDataType != typeid(nullptr))
@@ -185,8 +185,8 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::gpu>(bufferASize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(bufferBSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(bufferCSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::system>(size), // index_sorting_buffer
-				memory_allocator<int, memory_type::system>(size), // index_sorting_template
+				memory_allocator<int, memory_type::system>(numberOfB), // index_sorting_buffer
+				memory_allocator<int, memory_type::system>(numberOfB), // index_sorting_template
 			});
 		}
 	}
@@ -250,7 +250,7 @@ void ArrayMatch<Type>::initialize()
 		threadBuffer.index_sorting_template.alloc();
 
 		if (threadBuffer.index_sorting_template.allocated())
-			generateIndexSequence(threadBuffer.index_sorting_template.get(), instance->lengthOfArray);
+			generateIndexSequence(threadBuffer.index_sorting_template.get(), instance->numberOfArrayB);
 	}
 }
 

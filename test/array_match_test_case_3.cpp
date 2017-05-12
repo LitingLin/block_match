@@ -1,6 +1,6 @@
 #include "test_common.h"
 
-BOOST_AUTO_TEST_CASE(array_match_test_case_1) {
+BOOST_AUTO_TEST_CASE(array_match_test_case_3) {
 	const int numberOfArrayA = 2048, numberOfArrayB = 15;
 	const int size = 5;
 	int *A = (int*)malloc(sizeof(int) * numberOfArrayA * size);
@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_1) {
 	memcpy(A + size * 2, T3, sizeof(int) * size);
 	memcpy(A + size * 3, T4, sizeof(int) * size);
 	memcpy(A + size * 4, T5, sizeof(int) * size);
-	for (int i=5;i<numberOfArrayA;++i)
+	for (int i = 5; i<numberOfArrayA; ++i)
 	{
 		memcpy(A + size*i, T5, sizeof(int) * size);
 	}
@@ -25,23 +25,31 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_1) {
 		3, 4, 5,
 	};
 	static_assert(numberOfArrayB*size * sizeof(double) == sizeof(B), "");
-	ArrayMatch<double> match(typeid(int), typeid(double), typeid(float), typeid(nullptr),
+	ArrayMatch<double> match(typeid(int), typeid(double), typeid(float), typeid(uint8_t),
 		MeasureMethod::mse, true, numberOfArrayA, numberOfArrayB, size, 0);
 	match.initialize();
 	float *C = (float*)malloc(sizeof(float) * numberOfArrayA * numberOfArrayB);
-
-	match.execute(A,B,C);
+	uint8_t *index = (uint8_t*)malloc(sizeof(uint8_t) * numberOfArrayA * numberOfArrayB);
+	match.execute(A, B, C, index);
 
 	free(A);
 
 	BOOST_CHECK_EQUAL(C[0], 0.f);
+	BOOST_CHECK_EQUAL(index[0], 13 + 1);
 	BOOST_CHECK_EQUAL(C[1], 0.f);
+	BOOST_CHECK_EQUAL(index[1], 14 + 1);
 	BOOST_CHECK_EQUAL(C[2], 1.f);
+	BOOST_CHECK_EQUAL(index[2], 0 + 1);
 	BOOST_CHECK_EQUAL(C[3], 4.f);
+	BOOST_CHECK_EQUAL(index[3], 1 + 1);
 	BOOST_CHECK_EQUAL(C[4], 9.f);
+	BOOST_CHECK_EQUAL(index[4], 2 + 1);
 	BOOST_CHECK_EQUAL(C[5], 16.f);
+	BOOST_CHECK_EQUAL(index[5], 3 + 1);
 	BOOST_CHECK_EQUAL(C[numberOfArrayB], 0.f);
+	BOOST_CHECK_EQUAL(index[numberOfArrayB], 0 + 1);
 	BOOST_CHECK_EQUAL(C[numberOfArrayB + 1], 1.f);
+	BOOST_CHECK_EQUAL(index[numberOfArrayB + 1], 1 + 1);
 
 	free(C);
 }
