@@ -69,6 +69,10 @@
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y "$(SolutionDir)matlab\blockMatch.m" "$(SolutionDir)build\+match\"
+xcopy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetFileName)" "$(SolutionDir)build\+match\private\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -84,6 +88,10 @@
       </ModuleDefinitionFile>
       <Profile>true</Profile>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y "$(SolutionDir)matlab\blockMatch.m" "$(SolutionDir)build\+match\"
+xcopy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetFileName)" "$(SolutionDir)build\+match\private\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="mexFunction.cpp" />

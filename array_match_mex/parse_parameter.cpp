@@ -211,7 +211,7 @@ LibMatchMexError parseResultDataType(ArrayMatchMexContext *context,
 LibMatchMexError parseOutputArgument(ArrayMatchMexContext *context,
 	int nlhs, mxArray *plhs[])
 {
-	if (nlhs >= 2)
+	if (nlhs > 2)
 		return LibMatchMexError::errorNumberOfArguments;
 
 	return LibMatchMexError::success;

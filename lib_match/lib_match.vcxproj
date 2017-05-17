@@ -62,7 +62,10 @@
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
+copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
+xcopy /Y C:\windows\system32\msvcp140.dll "$(SolutionDir)build\+match\private\"
+xcopy /Y C:\windows\system32\vcruntime140.dll "$(SolutionDir)build\+match\private\"
+xcopy /Y "$(CudaToolkitBinDir)\cudart64*.dll" "$(SolutionDir)build\+match\private\"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -89,7 +92,10 @@ copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"</Command>
+copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
+xcopy /Y C:\windows\system32\msvcp140.dll "$(SolutionDir)build\+match\private\"
+xcopy /Y C:\windows\system32\vcruntime140.dll "$(SolutionDir)build\+match\private\"
+xcopy /Y "$(CudaToolkitBinDir)\cudart64*.dll" "$(SolutionDir)build\+match\private\"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
