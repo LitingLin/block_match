@@ -1,5 +1,7 @@
 #include "test_common.h"
 
+#include <algorithm>
+
 BOOST_AUTO_TEST_CASE(array_match_test_case_4) {
 	const int numberOfArrayA = 2048, numberOfArrayB = 15;
 	const int size = 5;
@@ -46,11 +48,12 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_4) {
 	BOOST_CHECK_EQUAL(C[4], 9.f);
 	BOOST_CHECK_EQUAL(index[4], 2 + 1);
 	BOOST_CHECK_EQUAL(C[5], 16.f);
-	BOOST_CHECK_EQUAL(index[5], 3 + 1);
+	BOOST_CHECK(inRange(index[5], uint8_t(3 + 1), uint8_t(14 + 1)));
 	BOOST_CHECK_EQUAL(C[retain], 0.f);
 	BOOST_CHECK_EQUAL(index[retain], 0 + 1);
 	BOOST_CHECK_EQUAL(C[retain + 1], 1.f);
-	BOOST_CHECK_EQUAL(index[retain + 1], 1 + 1);
+	int a[3] = { 1 + 1,13 + 1,14 + 1 };
+	BOOST_CHECK(inRange(index[retain + 1], a));
 
 	free(C);
 }
