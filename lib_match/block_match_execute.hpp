@@ -131,16 +131,6 @@ noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 
 typedef void RecordIndex(int*, int*, int, int);
 
-
-inline
-bool indexA_M_outOfIndexError()
-{
-#ifndef NDEBUG
-	logger.critical("Internal logical error: indexA_M out of index");
-#endif
-	return false;
-}
-
 // TODO: Fix busy waiting gpu tasks
 template <typename Type,
 	ProcessFunction<Type> processFunction>
@@ -197,7 +187,7 @@ template <typename Type,
 
 	goto JumpIn;
 	
-	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
+	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || outOfIndexError(); indexA_M += strideA_M)
 	{
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
@@ -351,7 +341,7 @@ template <typename Type,
 
 	goto JumpIn;
 
-	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || indexA_M_outOfIndexError(); indexA_M += strideA_M)
+	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || outOfIndexError(); indexA_M += strideA_M)
 	{
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
