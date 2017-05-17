@@ -84,7 +84,6 @@
   <ItemGroup>
     <ClCompile Include="mexFunction.cpp" />
     <ClCompile Include="parse_parameter.cpp" />
-    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

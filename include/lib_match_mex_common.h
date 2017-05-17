@@ -12,6 +12,7 @@
 
 #include <mex.h>
 
+#include <array>
 #include <lib_match.h>
 #include <type_traits>
 
@@ -162,3 +163,67 @@ LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
 	int *integerA1, int *integerA2,
 	int *integerB1, int *integerB2);
+
+mxClassID type_index_to_mx_class_id(std::type_index type);
+
+template <typename ...Types>
+class mxMatrixAllocator
+{
+public:
+	mxMatrixAllocator(std::type_index type, Types ...dimensions)
+		: dims{ static_cast<size_t>(dimensions)... }, ptr(nullptr), type(type)
+	{ }
+	~mxMatrixAllocator()
+	{
+		if (ptr)
+		{
+			mxDestroyArray(ptr);
+		}
+	}
+	void alloc()
+	{
+		ptr = mxCreateNumericArray(sizeof...(Types), dims.data(), type_index_to_mx_class_id(type), mxREAL);
+	}
+	void resetSize(Types ...dimensions)
+	{
+		dims = { static_cast<size_t>(dimensions)... };
+	}
+	mxArray *get() const
+	{
+		return ptr;
+	}
+	void *getData() const
+	{
+		if (!ptr)
+			return nullptr;
+		return mxGetData(ptr);
+	}
+	size_t getSize() const
+	{
+		size_t size = 1;
+		for (size_t i = 0; i<dims.size(); ++i)
+		{
+			size *= dims[i];
+		}
+		return size * getTypeSize(type);
+	}
+	bool isAllocated() const
+	{
+		return ptr != nullptr;
+	}
+	void reset()
+	{
+		mxDestroyArray(ptr);
+		ptr = nullptr;
+	}
+	mxArray *release()
+	{
+		mxArray *ptr_ = this->ptr;
+		this->ptr = nullptr;
+		return ptr_;
+	}
+private:
+	std::array<size_t, sizeof...(Types)> dims;
+	mxArray *ptr;
+	std::type_index type;
+};

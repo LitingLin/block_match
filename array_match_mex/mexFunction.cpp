@@ -1,91 +1,97 @@
 #include "common.h"
 
-#include <memory.h>
+/*
+* plhs
+* [0]: Result
+* [1]: Index
+*/
+template <typename IntermidateType>
+void process(ArrayMatchMexContext *context, int nlhs, mxArray *plhs[])
+{
+	try {
+		std::type_index indexDataType = typeid(nullptr);
+		if (nlhs > 1)
+			indexDataType = context->indexDataType;
+
+		ArrayMatch<IntermidateType> arrayMatch(context->sourceAType, context->sourceBType,
+			context->resultType, indexDataType,
+			context->method,
+			context->sort,
+			context->numberOfArrayA, context->numberOfArrayB,
+			context->lengthOfArray,
+			context->retain
+		);
+		int dim0 = context->numberOfArrayA, dim1 = context->numberOfArrayB;
+		mxMatrixAllocator<size_t, size_t> matrixC(context->resultType, dim0, dim1);
+		if (nlhs <= 1)
+			dim0 = dim1 = 0;
+		mxMatrixAllocator<size_t, size_t> index(context->indexDataType, dim1, dim0);
+		
+		size_t maxMxMemorySize = matrixC.getSize() + index.getSize();
+
+		try {
+			arrayMatch.initialize();
+		}
+		catch (memory_alloc_exception &exp) {
+			std::string message = exp.what();
+			message = message + "MATLAB:\t" + std::to_string(0) + "\t" + std::to_string(maxMxMemorySize) + "\n";
+			mexErrMsgTxt(message.c_str());
+			return;
+		}
+		try {
+			matrixC.alloc();
+			if (nlhs > 1)
+				index.alloc();
+		}
+		catch (...)
+		{
+			size_t currentMxMemorySize = 0;
+			if (matrixC.isAllocated())
+				currentMxMemorySize += matrixC.getSize();
+			if (index.isAllocated())
+				currentMxMemorySize += index.getSize();
+			reportMemoryAllocationFailed(currentMxMemorySize, maxMxMemorySize);
+			throw;
+		}
+
+		arrayMatch.execute(context->A, context->B,
+			matrixC.getData(),
+			index.getData()
+		);
+
+		plhs[0] = matrixC.release();
+
+		if (nlhs > 1)
+			plhs[1] = index.release();
+	}
+	catch (std::runtime_error &exp)
+	{
+		mexErrMsgTxt(exp.what());
+	}
+	catch (std::bad_alloc &exp)
+	{
+		mexErrMsgTxt(exp.what());
+	}
+}
 
 extern "C"
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
 	libMatchMexInitalize();
+	struct ArrayMatchMexContext context;
+	struct LibMatchMexErrorWithMessage errorMessage = parseParameter(&context, nlhs, plhs, nrhs, prhs);
 
-	struct ArrayMatchMexContext context; memset(&context, 0, sizeof(context));
-
-	struct LibMatchMexErrorWithMessage errorWithMessage = parseParameter(&context,
-		nlhs, plhs,
-		nrhs, prhs);
-
-	if (errorWithMessage.error != LibMatchMexError::success) {
-		mexErrMsgTxt(errorWithMessage.message);
-		return;
-	}
-
-	int lengthOfArray = context.lengthOfArray;
-	int numberOfArrayA = context.numberOfArrayA;
-	int numberOfArrayB = context.numberOfArrayB;
-	int sizeOfA = lengthOfArray * numberOfArrayA;
-	int sizeOfB = lengthOfArray * numberOfArrayB;
-	float *A;
-	float *B;
-	A = static_cast<float *>(malloc((sizeOfA + sizeOfB) * sizeof(float)));
-	if (A == nullptr)
+	if (errorMessage.error != LibMatchMexError::success)
 	{
-		snprintf(errorWithMessage.message, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, 
-			"Malloc failed, need %zd bytes for normal memory allocation, %zd bytes for page locked memory allocation.\n",
-			getMaximumMemoryAllocationSize(lengthOfArray, numberOfArrayA, numberOfArrayB) + arrayMatchGetMaximumMemoryAllocationSize(),
-			arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA, numberOfArrayA, lengthOfArray,2));
-		mexErrMsgTxt(errorWithMessage.message);
-		return;
-	}
-	B = A + sizeOfA;
-	convertArrayType(context.A, A, sizeOfA);
-	convertArrayType(context.B, B, sizeOfB);
-
-	char buffer[LIB_MATCH_MAX_MESSAGE_LENGTH + LIB_MATCH_MEX_MAX_MESSAGE_LENGTH];
-
-	void *arrayMatchInstance;
-	LibMatchErrorCode errorCode = arrayMatchInitialize(&arrayMatchInstance,numberOfArrayB,  numberOfArrayA, lengthOfArray);
-	if (errorCode != LibMatchErrorCode::success)
-	{		
-		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		if (errorCode == LibMatchErrorCode::errorMemoryAllocation || errorCode == LibMatchErrorCode::errorPageLockedMemoryAllocation)
-			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
-				"Memory allocation failed, need %zd bytes for normal memory allocation, %zd bytes for page locked memory allocation.\n",
-				buffer, getMaximumMemoryAllocationSize(lengthOfArray, numberOfArrayA, numberOfArrayB) + arrayMatchGetMaximumMemoryAllocationSize(),
-				arrayMatchGetMaximumPageLockedMemoryAllocationSize(numberOfArrayA,numberOfArrayB, lengthOfArray, 2));
-		else if (errorCode == LibMatchErrorCode::errorGpuMemoryAllocation)
-			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n"
-				"Gpu Memory allocation failed, need %zd bytes.\n",
-				buffer, arrayMatchGetMaximumGpuMemoryAllocationSize(lengthOfArray));
-		else
-			snprintf(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH, LIB_MATCH_MEX_MAX_MESSAGE_LENGTH, "%s\n",
-				buffer);
-		mexErrMsgTxt(buffer + LIB_MATCH_MAX_MESSAGE_LENGTH);
-		return;
-	}
-	
-	float *result;
-	errorCode = arrayMatchExecute(arrayMatchInstance, B, A, context.method, &result);
-	if (errorCode != LibMatchErrorCode::success)
-	{
-		arrayMatchFinalize(arrayMatchInstance);
-		free(A);
-
-		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		mexErrMsgTxt(buffer);
+		mexErrMsgTxt(errorMessage.message);
 		return;
 	}
 
-	free(A);
-	
-	plhs[0] = mxCreateDoubleMatrix(numberOfArrayA , numberOfArrayB, mxREAL);
-	double *mxResult = mxGetPr(plhs[0]);
-	convertArrayType(result, mxResult, numberOfArrayA * numberOfArrayB);
-
-	errorCode = arrayMatchFinalize(arrayMatchInstance);
-	if (errorCode != LibMatchErrorCode::success)
-	{
-		libMatchGetLastErrorString(buffer, LIB_MATCH_MAX_MESSAGE_LENGTH);
-		mexErrMsgTxt(buffer);
-		return;
-	}
+	if (context.intermediateType == typeid(float))
+		process<float>(&context, nlhs, plhs);
+	else if (context.intermediateType == typeid(double))
+		process<double>(&context, nlhs, plhs);
+	else
+		mexErrMsgTxt("Computing data type can only be float or double");
 }

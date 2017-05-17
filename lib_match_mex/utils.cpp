@@ -271,3 +271,30 @@ LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
 		return LibMatchMexError::errorTypeOfArgument;
 	}
 }
+
+
+mxClassID type_index_to_mx_class_id(std::type_index type)
+{
+	if (type == typeid(bool))
+		return mxLOGICAL_CLASS;
+	else if (type == typeid(uint8_t))
+		return mxUINT8_CLASS;
+	else if (type == typeid(int8_t))
+		return mxINT8_CLASS;
+	else if (type == typeid(uint16_t))
+		return mxUINT16_CLASS;
+	else if (type == typeid(int16_t))
+		return mxINT16_CLASS;
+	else if (type == typeid(uint32_t))
+		return mxUINT32_CLASS;
+	else if (type == typeid(int32_t))
+		return mxINT32_CLASS;
+	else if (type == typeid(uint64_t))
+		return mxUINT64_CLASS;
+	else if (type == typeid(float))
+		return mxSINGLE_CLASS;
+	else if (type == typeid(double))
+		return mxDOUBLE_CLASS;
+
+	throw std::runtime_error("Unknown type_index");
+}

@@ -581,6 +581,8 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	{
 		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2\n");
 	}
+	else if (error != LibMatchMexError::success)
+		return unknownParsingError("A");
 
 	++index;
 
@@ -597,6 +599,8 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	{
 		return generateErrorMessage(error, "Number of dimension of Matrix B must be the same as Matrix A\n");
 	}
+	else if (error != LibMatchMexError::success)
+		return unknownParsingError("B");
 
 	++index;
 

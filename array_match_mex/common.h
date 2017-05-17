@@ -9,10 +9,17 @@ struct ArrayMatchMexContext
 	int numberOfArrayB;
 	int lengthOfArray;
 
-	double *A;
-	double *B;
+	void *A;
+	void *B;
 
-	bool debug;
+	std::type_index sourceAType = typeid(nullptr);
+	std::type_index sourceBType = typeid(nullptr);
+	std::type_index intermediateType = typeid(nullptr);
+	std::type_index resultType = typeid(nullptr);
+	std::type_index indexDataType = typeid(nullptr);
+
+	bool sort;
+	int retain;
 };
 
 struct LibMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *context,
