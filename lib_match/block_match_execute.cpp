@@ -189,6 +189,8 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->determineBlockBRangeFunction = instance->determineBlockBRangeFunction;
 		executionContext->iterationIndexPostProcessFunction = instance->iterationIndexPostProcessFunction;
 		executionContext->indexRecordFunction = instance->indexRecordFunction;
+		executionContext->thresholdValue = instance->threshold;
+		executionContext->replacementValue = instance->replacementValue;
 
 		instance->threadPoolTaskHandle[i] = exec_serv.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
 			static_cast<void*>(executionContext));

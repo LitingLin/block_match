@@ -13,7 +13,7 @@ LibMatchMexErrorWithMessage generateErrorMessage(LibMatchMexError error, char me
 	va_end(args);
 	return errorWithMessage;
 }
-/*
+
 template <typename Type1, typename Type2, typename std::enable_if<!std::is_same<Type1, Type2>::value>::type * = nullptr>
 void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
@@ -27,7 +27,7 @@ template <typename Type1, typename Type2, typename std::enable_if<std::is_same<T
 void convertArrayType(const Type1 *in, Type2 *out, size_t n)
 {
 	memcpy(out, in, n * sizeof(Type1));
-}*/
+}
 
 LibMatchMexErrorWithMessage internalErrorMessage()
 {
@@ -96,7 +96,7 @@ mxClassID getMxClassId(std::type_index type)
 	else
 		abort();
 }
-/*
+
 void convertArrayType(std::type_index inType, std::type_index outType, const void *in, void *out, size_t size)
 {
 	if (inType == typeid(float) && outType == typeid(double))
@@ -117,7 +117,7 @@ void convertArrayType(std::type_index inType, std::type_index outType, const voi
 	}
 	else
 		abort();
-}*/
+}
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4804)

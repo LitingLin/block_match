@@ -301,6 +301,8 @@ struct ExecutionContext
 		indexA_M_end, indexA_N_end,
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
 
+	Type thresholdValue, replacementValue;
+
 	DataPostProcessingMethod *dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyingAFunction;
 	BlockCopyMethod *blockCopyingBFunction;
@@ -389,6 +391,8 @@ struct BlockMatchContext
 	int numberOfBlockBPerBlockA;
 
 	int C_dimensions[3];
+
+	Type threshold, replacementValue;
 
 	std::vector<cudaStream_guard> streams;
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;

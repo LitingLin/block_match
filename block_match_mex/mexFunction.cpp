@@ -32,7 +32,11 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 			context->sequenceAPadding_N_Pre, context->sequenceAPadding_N_Post,
 			context->sequenceBPadding_M_Pre, context->sequenceBPadding_M_Post,
 			context->sequenceBPadding_N_Pre, context->sequenceBPadding_N_Post,
-			context->retain
+			context->retain,
+			context->threshold,
+			*static_cast<IntermidateType*>(context->thresholdValue),
+			*static_cast<IntermidateType*>(context->thresholdReplacementValue),
+			true
 		);
 		int dim0, dim1, dim2;
 		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);

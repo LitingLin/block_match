@@ -142,7 +142,10 @@ public:
 		int matrixAPadding_N_pre, int matrixAPadding_N_post,
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,
 		int matrixBPadding_N_pre, int matrixBPadding_N_post,
-		int numberOfResultsRetain);
+		int numberOfResultsRetain,
+		bool doThresholding,
+		Type thresholdValue, Type replacementValue,
+		bool indexStartFromOne);
 	~BlockMatch();
 	void initialize();
 	void executev2(void *A, void *B,

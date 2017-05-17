@@ -7,11 +7,15 @@
 #ifdef _MSC_VER
 #pragma warning( disable : 4800 )  
 #endif
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, RawSortMethod_WithIndex<ComputingDataType> sortType>
+
+template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, 
+RawSortMethod_WithIndex<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction, 
+IndexValueOffsetMethod<IndexDataType> indexValueOffset>
 inline void
 sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain, 
+	ComputingDataType threshold, ComputingDataType replacementValue,
 	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
@@ -25,10 +29,12 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = static_cast<ResultDataType>(result_buffer[index_buffer_sort[j]]);
-
-			*index_x_ptr++ = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
-			*index_y_ptr++ = static_cast<IndexDataType>(index_y_buffer[index_buffer_sort[j]]);
+			*result_ptr = static_cast<ResultDataType>(result_buffer[index_buffer_sort[j]]);
+			thresholdFunction(result_ptr++, threshold, replacementValue);
+			*index_x_ptr = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
+			indexValueOffset(index_x_ptr++);
+			*index_y_ptr = static_cast<IndexDataType>(index_y_buffer[index_buffer_sort[j]]);
+			indexValueOffset(index_y_ptr++);
 		}
 		result->next();
 		index_x->next();
@@ -40,11 +46,13 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	}
 }
 
-template <typename ComputingDataType, typename ResultDataType, RawSortMethod<ComputingDataType> sortType>
+template <typename ComputingDataType, typename ResultDataType, 
+RawSortMethod<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction>
 inline void
 sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain, 
+	ComputingDataType threshold, ComputingDataType replacementValue,
 	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
@@ -54,17 +62,21 @@ sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
+			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
+			thresholdFunction(result_ptr++, threshold, replacementValue);
 		}
 		result->next();
 	}
 }
 
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType>
+template <typename ComputingDataType, typename ResultDataType, typename IndexDataType,
+ThresholdMethod<ComputingDataType> thresholdFunction,
+IndexValueOffsetMethod<IndexDataType> indexValueOffset>
 inline void
 noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	ComputingDataType threshold, ComputingDataType replacementValue,
 	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
@@ -74,10 +86,12 @@ noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
-
-			*index_x_ptr++ = static_cast<IndexDataType>(*index_x_buffer++);
-			*index_y_ptr++ = static_cast<IndexDataType>(*index_y_buffer++);
+			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
+			thresholdFunction(result_ptr++, threshold, replacementValue);
+			*index_x_ptr = static_cast<IndexDataType>(*index_x_buffer++);
+			indexValueOffset(index_x_ptr++);
+			*index_y_ptr = static_cast<IndexDataType>(*index_y_buffer++);
+			indexValueOffset(index_y_ptr++);
 		}
 		result->next();
 		index_x->next();
@@ -86,11 +100,13 @@ noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 }
 
 
-template <typename ComputingDataType, typename ResultDataType>
+template <typename ComputingDataType, typename ResultDataType,
+ThresholdMethod<ComputingDataType> thresholdFunction>
 inline void
 noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	ComputingDataType threshold, ComputingDataType replacementValue,
 	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
@@ -98,7 +114,8 @@ noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType*>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr++ = static_cast<ResultDataType>(*result_buffer++);
+			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
+			thresholdFunction(result_ptr++, threshold, replacementValue);
 		}
 		result->next();
 	}
@@ -152,6 +169,8 @@ template <typename Type,
 		numberOfSubmitThreadsPerProcessor = executionContext->numberOfSubmitThreadsPerProcessor,
 		numberOfSubmitProcessors = executionContext->numberOfSubmitProcessors,
 		lengthOfGpuTaskQueue = executionContext->lengthOfGpuTaskQueue;
+
+	Type thresholdValue = executionContext->thresholdValue, replacementValue = executionContext->replacementValue;
 
 	int blockSize = executionContext->block_M * executionContext->block_N;
 	Type *c_bufferA = executionContext->matrixA_buffer;
@@ -238,6 +257,7 @@ template <typename Type,
 				dataPostProcessing(index_x, index_y, matrixC, index_x_buffer, index_y_buffer,
 					matrixC_buffer,
 					numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
+					thresholdValue, replacementValue,
 					rawIndexTemplate, rawIndexBuffer);
 
 				//c_result += numTasks;
@@ -276,6 +296,7 @@ JumpOut:
 
 		dataPostProcessing(index_x, index_y, matrixC, index_x_buffer, index_y_buffer, matrixC_buffer,
 			numberOfBlockA, numberOfBlockBPerBlockA, numberOfIndexRetain,
+			thresholdValue, replacementValue,
 			rawIndexTemplate, rawIndexBuffer);
 	}
 

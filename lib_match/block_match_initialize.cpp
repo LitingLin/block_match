@@ -96,7 +96,10 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
 	int matrixBPadding_N_pre, int matrixBPadding_N_post,
-	int numberOfResultRetain)
+	int numberOfResultRetain,
+	bool doThresholding,
+	Type thresholdValue, Type replacementValue,
+	bool indexStartFromOne)
 	: m_instance(nullptr), 
 		inputADataType(inputADataType), inputBDataType(inputBDataType),
 		outputDataType(outputDataType), indexDataType(indexDataType)
@@ -192,31 +195,66 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		{
 			if (measureMethod == MeasureMethod::mse && numberOfResultRetain)
 			{
+				if (doThresholding) {
 #define exp(type) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>, threshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
 #undef exp
+				}
+				else
+				{
+#define exp(type) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialAscend<Type>, noThreshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
+#undef exp
+				}
 			}
 			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
 			{
+				if (doThresholding) {
 #define exp(type) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>, threshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
 #undef exp
+				}
+				else {
+#define exp(type) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortAscend<Type>, noThreshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
+#undef exp
+				}
 			}
 			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
 			{
+				if (doThresholding) {
 #define exp(type) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>, threshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
 #undef exp
+				}
+				else
+				{
+#define exp(type) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortDescend<Type>, noThreshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
+#undef exp					
+				}
 			}
 			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
 			{
+				if (doThresholding) {
 #define exp(type) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>, threshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
 #undef exp
+				}
+				else
+				{
+#define exp(type) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_noRecordIndex<Type, type, sortPartialDescend<Type>, noThreshold<Type>>
+					RuntimeTypeInference(outputDataType, exp);
+#undef exp
+				}
 			}
 			else
 				NOT_IMPLEMENTED_ERROR;
@@ -225,31 +263,145 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		{
 			if (measureMethod == MeasureMethod::mse && numberOfResultRetain)
 			{
+				if (doThresholding) {
+					if (indexStartFromOne) {
 #define exp(type1, type2) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>>
-				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, threshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, threshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
+				else
+				{
+					if (indexStartFromOne)
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
 			}
 			else if (measureMethod == MeasureMethod::mse && !numberOfResultRetain)
 			{
+				if (doThresholding) {
+					if (indexStartFromOne) {
 #define exp(type1, type2) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>>
-				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>, threshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>, threshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp						
+					}
+				}
+				else
+				{
+					if (indexStartFromOne)
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp						
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortAscend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp						
+					}					
+				}
 			}
 			else if (measureMethod == MeasureMethod::cc && numberOfResultRetain)
 			{
+				if (doThresholding) {
+					if (indexStartFromOne) {
 #define exp(type1, type2) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>>
-				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
+				else
+				{
+					if (indexStartFromOne)
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
 			}
 			else if (measureMethod == MeasureMethod::cc && !numberOfResultRetain)
 			{
+				if (doThresholding)
+				{
+					if (indexStartFromOne)
+					{
 #define exp(type1, type2) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>>
-				RuntimeTypeInference2(outputDataType, indexDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>, threshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
+				else
+				{
+					if (indexStartFromOne)
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+					else
+					{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)sort_recordIndex<Type, type1, type2, sortDescend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
+						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+					}
+				}
 			}
 		}
 	}
@@ -257,17 +409,55 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 		if (indexDataType == typeid(nullptr))
 		{
+			if (doThresholding) {
 #define exp(type) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_noRecordIndex<Type, type>
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_noRecordIndex<Type, type, threshold<Type>>
 				RuntimeTypeInference(outputDataType, exp);
 #undef exp
+			}
+			else
+			{
+#define exp(type) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_noRecordIndex<Type, type, noThreshold<Type>>
+				RuntimeTypeInference(outputDataType, exp);
+#undef exp
+			}
 		}
 		else
 		{
+			if (doThresholding) {
+				if (indexStartFromOne)
+				{
 #define exp(type1, type2) \
-	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2>
-			RuntimeTypeInference2(outputDataType, indexDataType, exp);
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2, threshold<Type>, indexValuePlusOne<type2>>
+					RuntimeTypeInference2(outputDataType, indexDataType, exp);
 #undef exp
+				}
+				else
+				{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2, threshold<Type>, noChangeIndexValue<type2>>
+					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+				}
+			}
+			else
+			{
+				if (indexStartFromOne)
+				{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2, noThreshold<Type>, indexValuePlusOne<type2>>
+					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp					
+				}
+				else
+				{
+#define exp(type1, type2) \
+	dataPostProcessingFunction = (DataPostProcessingMethod*)noSort_recordIndex<Type, type1, type2, noThreshold<Type>, noChangeIndexValue<type2>>
+					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+#undef exp
+				}
+			}
 		}
 	}
 
@@ -401,6 +591,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		determineBlockBRangeFunction, iterationIndexPostProcessFunction, indexRecordFunction,
 		numberOfBlockBPerBlockA_M,numberOfBlockBPerBlockA_N,numberOfBlockBPerBlockA,
 		{ matrixC_M, matrixC_N, matrixC_X },
+		thresholdValue, replacementValue,
 		std::vector<cudaStream_guard>(), // streams
 		0, 0, 0, // numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue
 		std::vector<void *>(), // threadPoolTaskHandle

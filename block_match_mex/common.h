@@ -48,7 +48,8 @@ struct BlockMatchMexContext
 	bool sort;
 	int retain;
 	bool threshold;
-	double thresholdValue;
+	char thresholdValue[sizeof(double)];
+	char thresholdReplacementValue[sizeof(double)];
 	int sparse;
 };
 

@@ -94,3 +94,36 @@ void sortPartialDescend(Type *value, int size, int retain)
 {
 	lib_match_sort_partial_descend(value, size, retain);
 }
+
+template<typename ComputingDataType>
+using ThresholdMethod =
+void(ComputingDataType*, ComputingDataType, ComputingDataType);
+
+template <typename ComputingDataType>
+void threshold(ComputingDataType *value, ComputingDataType threshold, ComputingDataType replacementValue)
+{
+	if (*value > threshold)
+		*value = replacementValue;
+}
+
+template <typename ComputingDataType>
+void noThreshold(ComputingDataType *value, ComputingDataType threshold, ComputingDataType replacementValue)
+{
+	if (*value > threshold)
+		*value = replacementValue;
+}
+
+template<typename IndexDataType>
+using IndexValueOffsetMethod =
+void(IndexDataType*);
+
+template<typename IndexDataType>
+void indexValuePlusOne(IndexDataType* value)
+{
+	++(*value);
+}
+
+template<typename IndexDataType>
+void noChangeIndexValue(IndexDataType* value)
+{
+}
