@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(test_case_3)
 		SearchType::global, MeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::normal, SearchFrom::topLeft, true,
 		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
-		numberOfResultRetain);
+		numberOfResultRetain, false, 0, 0, true);
 	match.initialize();
 
 	match.get_matrixC_dimensions(&matrixC_M, &matrixC_N, &matrixC_O);

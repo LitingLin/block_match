@@ -29,8 +29,9 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr = static_cast<ResultDataType>(result_buffer[index_buffer_sort[j]]);
-			thresholdFunction(result_ptr++, threshold, replacementValue);
+			ComputingDataType value = *result_buffer++;
+			thresholdFunction(&value, threshold, replacementValue);
+			*result_ptr++ = static_cast<ResultDataType>(value);
 			*index_x_ptr = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
 			indexValueOffset(index_x_ptr++);
 			*index_y_ptr = static_cast<IndexDataType>(index_y_buffer[index_buffer_sort[j]]);
@@ -62,8 +63,9 @@ sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType *>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
-			thresholdFunction(result_ptr++, threshold, replacementValue);
+			ComputingDataType value = *result_buffer++;
+			thresholdFunction(&value, threshold, replacementValue);
+			*result_ptr++ = static_cast<ResultDataType>(value);
 		}
 		result->next();
 	}
@@ -86,8 +88,9 @@ noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
-			thresholdFunction(result_ptr++, threshold, replacementValue);
+			ComputingDataType value = *result_buffer++;
+			thresholdFunction(&value, threshold, replacementValue);
+			*result_ptr++ = static_cast<ResultDataType>(value);
 			*index_x_ptr = static_cast<IndexDataType>(*index_x_buffer++);
 			indexValueOffset(index_x_ptr++);
 			*index_y_ptr = static_cast<IndexDataType>(*index_y_buffer++);
@@ -114,8 +117,9 @@ noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		ResultDataType *result_ptr = static_cast<ResultDataType*>(result->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			*result_ptr = static_cast<ResultDataType>(*result_buffer++);
-			thresholdFunction(result_ptr++, threshold, replacementValue);
+			ComputingDataType value = *result_buffer++;
+			thresholdFunction(&value, threshold, replacementValue);
+			*result_ptr++ = static_cast<ResultDataType>(value);
 		}
 		result->next();
 	}
@@ -184,7 +188,7 @@ template <typename Type,
 	int indexOfIteration = 0;
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
+	DataPostProcessingMethod<Type> *dataPostProcessing = executionContext->dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
 	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;

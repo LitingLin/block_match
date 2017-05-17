@@ -265,10 +265,12 @@ void memory_allocator<Type, malloc_type>::resize(size_t elem_size)
 ** So, two dimensions is assumed
 */
 
+template<typename Type>
 using DataPostProcessingMethod =
 void(Iterator *index_x, Iterator *index_y, Iterator *result,
-	int *index_x_buffer, int *index_y_buffer, void *result_buffer,
+	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
 	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	Type threshold, Type replacementValue,
 	const int *index_buffer, int *index_buffer_sort);
 using BlockCopyMethod =
 void(void *, const void *, int, int, int, int, int, int);
@@ -303,7 +305,7 @@ struct ExecutionContext
 
 	Type thresholdValue, replacementValue;
 
-	DataPostProcessingMethod *dataPostProcessingFunction;
+	DataPostProcessingMethod<Type> *dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyingAFunction;
 	BlockCopyMethod *blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRangeFunction;
@@ -379,7 +381,7 @@ struct BlockMatchContext
 	PadFunction *padMethodB;
 	ExecutionFunction<Type> *executionMethod;
 
-	DataPostProcessingMethod *dataPostProcessingFunction;
+	DataPostProcessingMethod<Type> *dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyingAFunction;
 	BlockCopyMethod *blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRangeFunction;

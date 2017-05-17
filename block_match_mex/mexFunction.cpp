@@ -34,8 +34,8 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 			context->sequenceBPadding_N_Pre, context->sequenceBPadding_N_Post,
 			context->retain,
 			context->threshold,
-			*static_cast<IntermidateType*>(context->thresholdValue),
-			*static_cast<IntermidateType*>(context->thresholdReplacementValue),
+			static_cast<IntermidateType>(context->thresholdValue),
+			static_cast<IntermidateType>(context->thresholdReplacementValue),
 			true
 		);
 		int dim0, dim1, dim2;

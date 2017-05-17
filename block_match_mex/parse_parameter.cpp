@@ -1,6 +1,6 @@
 #include "common.h"
 #include <string.h>
-
+/*
 void recheckSparse(BlockMatchMexContext *context)
 {
 	if (context->sparse == -1)
@@ -11,7 +11,7 @@ void recheckSparse(BlockMatchMexContext *context)
 			context->sparse = false;
 	}
 }
-
+*/
 LibMatchMexError recheckSearchRegion(BlockMatchMexContext *context)
 {
 	if (context->searchType == SearchType::local)
@@ -306,45 +306,61 @@ ValueClass:
 	}
 }
 
-LibMatchMexError parseSparse(BlockMatchMexContext *context,
+
+LibMatchMexError parseThresholdReplacementValue(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	mxClassID classId = mxGetClassID(pa);
-	if (classId == mxCHAR_CLASS)
-		goto StringClass;
-	else
-		goto ValueClass;
+	if (!mxIsNumeric(pa))
+		return LibMatchMexError::errorTypeOfArgument;
 
-	LibMatchMexError error;
+	if (!mxIsScalar(pa))
+		return LibMatchMexError::errorSizeOfArray;
 
-StringClass:
-	{
-		char buffer[5];
+	context->thresholdReplacementValue = mxGetScalar(pa);
 
-		error = getStringFromMxArray(pa, buffer, 5);
-		if (error != LibMatchMexError::success)
-			return error;
-
-		if (strncmp(buffer, "auto", 5) != 0)
-			return LibMatchMexError::errorInvalidValue;
-
-		context->sparse = -1;
-
-		return LibMatchMexError::success;
-	}
-ValueClass:
-	{
-		if (!mxIsScalar(pa))
-			return LibMatchMexError::errorSizeOfArray;
-
-		if (!mxIsLogical(pa))
-			return LibMatchMexError::errorTypeOfArgument;
-
-		context->sparse = mxIsLogicalScalarTrue(pa);
-		
-		return LibMatchMexError::success;
-	}
+	return LibMatchMexError::success;
 }
+
+//
+//LibMatchMexError parseSparse(BlockMatchMexContext *context,
+//	const mxArray *pa)
+//{
+//	mxClassID classId = mxGetClassID(pa);
+//	if (classId == mxCHAR_CLASS)
+//		goto StringClass;
+//	else
+//		goto ValueClass;
+//
+//	LibMatchMexError error;
+//
+//StringClass:
+//	{
+//		char buffer[5];
+//
+//		error = getStringFromMxArray(pa, buffer, 5);
+//		if (error != LibMatchMexError::success)
+//			return error;
+//
+//		if (strncmp(buffer, "auto", 5) != 0)
+//			return LibMatchMexError::errorInvalidValue;
+//
+//		context->sparse = -1;
+//
+//		return LibMatchMexError::success;
+//	}
+//ValueClass:
+//	{
+//		if (!mxIsScalar(pa))
+//			return LibMatchMexError::errorSizeOfArray;
+//
+//		if (!mxIsLogical(pa))
+//			return LibMatchMexError::errorTypeOfArgument;
+//
+//		context->sparse = mxIsLogicalScalarTrue(pa);
+//		
+//		return LibMatchMexError::success;
+//	}
+//}
 
 LibMatchMexError parseRetain(BlockMatchMexContext *context,
 	const mxArray *pa)
@@ -377,7 +393,7 @@ ValueClass:
 	{
 		if (!mxIsScalar(pa))
 			return LibMatchMexError::errorSizeOfArray;
-		
+
 		error = getIntegerFromMxArray(pa, &context->retain);
 		if (error != LibMatchMexError::success)
 			return error;
@@ -748,7 +764,16 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "Argument Threshold must be scalar or 'no'.");
 			else if (error != LibMatchMexError::success)
-				return unknownParsingError(buffer);			
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "ThresholdReplacementValue", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseThresholdReplacementValue(context, prhs[index]);
+			if (error == LibMatchMexError::errorSizeOfArray ||
+				error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument Threshold must be scalar.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
 		}
 		else if (strncmp(buffer, "Sort", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
@@ -801,17 +826,17 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return generateErrorMessage(error, "Invalid value of argument IntermediateDataType.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
-		}
+		}/*
 		else if (strncmp(buffer, "Sparse", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSparse(context, prhs[index]);
-			if (error == LibMatchMexError::errorSizeOfArray || 
+			if (error == LibMatchMexError::errorSizeOfArray ||
 				error == LibMatchMexError::errorTypeOfArgument ||
 				error == LibMatchMexError::errorInvalidValue)
 				return generateErrorMessage(error, "Argument Sparse must be logical or 'auto'.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
-		}
+		}*/
 		else if (strncmp(buffer, "SequenceABorder", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceABorderType(context, prhs[index]);
@@ -853,7 +878,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 
 	recheckSequenceBPadding(context);
 	recheckDataType(context);
-	recheckSparse(context);
+	// recheckSparse(context);
 
 	LibMatchMexErrorWithMessage error_message = { error = LibMatchMexError::success };
 
