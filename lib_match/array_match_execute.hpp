@@ -202,7 +202,7 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 
 	CUDA_CHECK_POINT(cudaMemcpyAsync(deviceBufferB, bufferB, numberOfArrayB * sizeOfArray * sizeof(Type), cudaMemcpyHostToDevice, stream));
 
-	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA; ++indexOfA)
+	for (int indexOfA = startIndexA; indexOfA < numberOfArrayA || outOfIndexError(); ++indexOfA)
 	{
 		arrayCopyingA(c_bufferA, c_A, sizeOfArray);
 		c_bufferA += sizeOfArray;

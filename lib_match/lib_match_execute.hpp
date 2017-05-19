@@ -127,3 +127,12 @@ template<typename IndexDataType>
 void noChangeIndexValue(IndexDataType* value)
 {
 }
+
+inline
+bool outOfIndexError()
+{
+#ifndef NDEBUG
+	logger.critical("Internal logical error: indexA_M out of index");
+#endif
+	return false;
+}

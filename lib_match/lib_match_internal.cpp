@@ -69,7 +69,7 @@ unsigned getNumberOfPhysicalProcessor()
 
 #endif
 
-#define LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE 1
+#define LIMIT_NUMBER_OF_THREAD_IN_DEBUG_MODE 0
 
 unsigned getNumberOfProcessor()
 {
