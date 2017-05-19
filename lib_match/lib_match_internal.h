@@ -104,7 +104,7 @@ struct GlobalContext
 
 	unsigned numberOfThreads;
 	execution_service exec_serv;
-	int numberOfGPUDeviceMultiProcessor;
+	std::vector<int> numberOfGPUDeviceMultiProcessor;
 	const int numberOfGPUProcessorThread;
 	bool hasGPU;
 };
