@@ -178,7 +178,7 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 	if (retain == 0)
 		retain = numberOfArrayB;
 
-	char *c_A = static_cast<char*>(A) + startIndexA * elementSizeOfTypeA;
+	char *c_A = static_cast<char*>(A) + startIndexA * sizeOfArray * elementSizeOfTypeA;
 	char *c_B = static_cast<char*>(B);
 	void *c_C = static_cast<char*>(C) + startIndexA * retain * elementSizeOfTypeC;
 
