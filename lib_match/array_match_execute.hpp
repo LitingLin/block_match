@@ -174,15 +174,15 @@ unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 	const int elementSizeOfTypeA = context->elementSizeOfTypeA, elementSizeOfTypeB = context->elementSizeOfTypeB,
 		elementSizeOfTypeC = context->elementSizeOfTypeC, elementSizeOfIndex = context->elementSizeOfIndex;
 
-	char *c_A = static_cast<char*>(A) + startIndexA * elementSizeOfTypeA;
-	char *c_B = static_cast<char*>(B);
-	void *c_C = static_cast<char*>(C) + startIndexA * numberOfArrayB * elementSizeOfTypeC;
-
 	int retain = context->retain;
 	if (retain == 0)
 		retain = numberOfArrayB;
 
-	void *c_index = static_cast<char*>(index) + startIndexA * numberOfArrayB * elementSizeOfIndex;
+	char *c_A = static_cast<char*>(A) + startIndexA * elementSizeOfTypeA;
+	char *c_B = static_cast<char*>(B);
+	void *c_C = static_cast<char*>(C) + startIndexA * retain * elementSizeOfTypeC;
+
+	void *c_index = static_cast<char*>(index) + startIndexA * retain * elementSizeOfIndex;
 
 	Type *c_bufferA = bufferA;
 	Type *c_bufferB = bufferB;
