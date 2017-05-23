@@ -91,7 +91,12 @@ public:
 		bool sort,
 		int arrayASize, int arrayBSize,
 		int size,
-		int numberOfResultsRetain);
+		int numberOfResultsRetain,
+		bool doThresholding,
+		Type thresholdValue, Type replacementValue,
+		bool indexStartFromOne,
+		int indexOfDevice = 0,
+		unsigned numberOfThreads = 0);
 	~ArrayMatch();
 	void initialize();
 	void execute(void *A, void *B,
@@ -145,7 +150,9 @@ public:
 		int numberOfResultsRetain,
 		bool doThresholding,
 		Type thresholdValue, Type replacementValue,
-		bool indexStartFromOne);
+		bool indexStartFromOne,
+		int indexOfDevice = 0,
+		unsigned numberOfThreads = 0);
 	~BlockMatch();
 	void initialize();
 	void executev2(void *A, void *B,

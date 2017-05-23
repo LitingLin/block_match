@@ -91,8 +91,9 @@ unsigned getNumberOfProcessor()
 GlobalContext::GlobalContext()
 	: numberOfThreads(getNumberOfProcessor()),
 	exec_serv(numberOfThreads), numberOfGPUProcessorThread(::numberOfGPUProcessorThread),
-hasGPU(false)
+	hasGPU(false)
 {
+	initialize();
 }
 
 bool GlobalContext::initialize()
@@ -100,31 +101,37 @@ bool GlobalContext::initialize()
 	int nDevices;
 
 	cudaError_t cuda_error = cudaGetDeviceCount(&nDevices);
-
+	if (cuda_error != cudaSuccess)
+		return false;
+/*
 	if (cuda_error != cudaSuccess)
 	{
 		logger.critical("cudaGetDeviceCount() return {}, message: {}", cuda_error, cudaGetErrorString(cuda_error));
 		logger.critical() << "GPU initialization failed.";
 		return false;
-	}
+	}*/
 	numberOfGPUDeviceMultiProcessor.resize(nDevices);
 
 	for (int i = 0; i < nDevices; ++i)
 	{
 		cuda_error = cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor[i], cudaDevAttrMultiProcessorCount, i);
-
+		if (cuda_error != cudaSuccess)
+			return false;
+		/*
 		if (cuda_error != cudaSuccess) {
 			logger.critical("cudaDeviceGetAttribute(&numberOfGPUDeviceMultiProcessor[i], cudaDevAttrMultiProcessorCount, i)"
 				"return {}, message: {}, i={}", cuda_error, cudaGetErrorString(cuda_error), i);
 			return false;
-		}
+		}*/
 	}
 	hasGPU = true;
 	cuda_error = cudaSetDeviceFlags(cudaDeviceScheduleYield); // save cpu time
-	if (cuda_error != cudaSuccess) {
+	if (cuda_error != cudaSuccess)
+		return false;
+	/*if (cuda_error != cudaSuccess) {
 		logger.warn("cudaSetDeviceFlags(cudaDeviceScheduleYield) return {}, message: {}", cuda_error, cudaGetErrorString(cuda_error));
 		return false;
-	}
+	}*/
 
 	return true;
 }

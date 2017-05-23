@@ -24,6 +24,9 @@ void ArrayMatch<Type>::execute(void* A, void* B, void* C, void* index)
 		executionContext->deviceBufferB = perThreadBuffer.matrixB_deviceBuffer.get();
 		executionContext->deviceBufferC = perThreadBuffer.matrixC_deviceBuffer.get();
 
+		executionContext->threshold = instance->threshold;
+		executionContext->replacementValue = instance->replacementValue;
+
 		executionContext->numberOfArrayA = instance->numberOfArrayA;
 		executionContext->numberOfArrayB = instance->numberOfArrayB;
 		executionContext->sizeOfArray = instance->lengthOfArray;
@@ -48,6 +51,8 @@ void ArrayMatch<Type>::execute(void* A, void* B, void* C, void* index)
 		executionContext->sizeOfGpuTaskQueue = instance->sizeOfGpuTaskQueue;
 		executionContext->numberOfGPUDeviceMultiProcessor = instance->numberOfGPUDeviceMultiProcessor;
 		executionContext->numberOfGPUProcessorThread = instance->numberOfGPUProcessorThread;
+
+		executionContext->indexOfDevice = instance->executionContexts[indexOfThreads].indexOfDevice;
 
 		instance->threadPoolTaskHandle[indexOfThreads] =
 			executionService.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionFunction), executionContext);

@@ -29,7 +29,7 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			ComputingDataType value = *result_buffer++;
+			ComputingDataType value = result_buffer[index_buffer_sort[j]];
 			thresholdFunction(&value, threshold, replacementValue);
 			*result_ptr++ = static_cast<ResultDataType>(value);
 			*index_x_ptr = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
@@ -136,6 +136,8 @@ template <typename Type,
 	ProcessFunction<Type> processFunction>
 	unsigned processWorker(ExecutionContext<Type> *executionContext)
 {
+	CUDA_CHECK_POINT(cudaSetDevice(executionContext->indexOfDevice));
+
 	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB;
 	Iterator *matrixC = executionContext->matrixC.get();
 	Type *matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
@@ -332,13 +334,13 @@ template <typename Type,
 
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
+	DataPostProcessingMethod<Type> *dataPostProcessing = executionContext->dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
 	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
-
+	
 	goto JumpIn;
 
 	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || outOfIndexError(); indexA_M += strideA_M)

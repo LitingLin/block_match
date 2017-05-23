@@ -12,6 +12,7 @@ template <typename Type>
 void ArrayMatch<Type>::destroy()
 {
 	if (m_instance) {
+		CUDA_CHECK_POINT(cudaSetDevice(0));
 		ArrayMatchContext<Type> *instance = static_cast<ArrayMatchContext<Type> *>(m_instance);
 		delete instance;
 		m_instance = nullptr;

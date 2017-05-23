@@ -26,7 +26,8 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_3) {
 	};
 	static_assert(numberOfArrayB*size * sizeof(double) == sizeof(B), "");
 	ArrayMatch<double> match(typeid(int), typeid(double), typeid(float), typeid(uint8_t),
-		MeasureMethod::mse, true, numberOfArrayA, numberOfArrayB, size, 0);
+		MeasureMethod::mse, true, numberOfArrayA, numberOfArrayB, size, 0,
+		false, 0, 0, true);
 	match.initialize();
 	float *C = (float*)malloc(sizeof(float) * numberOfArrayA * numberOfArrayB);
 	uint8_t *index = (uint8_t*)malloc(sizeof(uint8_t) * numberOfArrayA * numberOfArrayB);

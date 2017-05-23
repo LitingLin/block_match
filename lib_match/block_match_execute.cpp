@@ -191,6 +191,7 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->indexRecordFunction = instance->indexRecordFunction;
 		executionContext->thresholdValue = instance->threshold;
 		executionContext->replacementValue = instance->replacementValue;
+		executionContext->indexOfDevice = instance->workerContext[i].indexOfDevice;
 
 		instance->threadPoolTaskHandle[i] = exec_serv.submit(reinterpret_cast<unsigned(*)(void*)>(instance->executionMethod),
 			static_cast<void*>(executionContext));

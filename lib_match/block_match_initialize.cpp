@@ -17,7 +17,7 @@ int determineSizeOfMatrixC_X(int numberOfIndexRetain, int group_M, int group_N)
 
 template <typename Type>
 void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
-	BorderType sequenceABorderType)
+	BorderType sequenceABorderType, std::vector<int> deviceLists)
 {
 	const int numberOfThreads = context->numberOfThreads;
 
@@ -58,6 +58,7 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 			rawMatrixCIndex_begin,
 			beginMatrixAIndex_M,
 			beginMatrixAIndex_N,
+			deviceLists[0],
 			std::make_unique<ExecutionContext<Type>>()
 		});
 	}
@@ -99,12 +100,16 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	int numberOfResultRetain,
 	bool doThresholding,
 	Type thresholdValue, Type replacementValue,
-	bool indexStartFromOne)
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads_byUser)
 	: m_instance(nullptr), 
 		inputADataType(inputADataType), inputBDataType(inputBDataType),
 		outputDataType(outputDataType), indexDataType(indexDataType)
 {
 	CHECK_POINT(globalContext.hasGPU);
+
+	CHECK_POINT_LT(indexOfDevice, globalContext.numberOfGPUDeviceMultiProcessor.size());
 
 	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_M,
@@ -175,8 +180,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		if ((indexA_N_end - indexA_N_begin - 1) % strideA_N)
 			++matrixC_N;
 	}
+	if (!numberOfThreads_byUser)
+		numberOfThreads_byUser = globalContext.numberOfThreads;
+
 	// In case number of threads > size of A
-	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M * matrixC_N, globalContext.numberOfThreads);
+	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M * matrixC_N, 
+		globalContext.numberOfThreads < numberOfThreads_byUser ? globalContext.numberOfThreads : numberOfThreads_byUser);
 
 	PadFunction *padFunctionA = nullptr;
 	PadFunction *padFunctionB = nullptr;
@@ -604,7 +613,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor[indexOfDevice];
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
@@ -624,6 +633,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	instance->threadPoolTaskHandle.resize(numberOfThreads);
 	instance->streams.resize(numberOfThreads);
 	instance->perThreadBuffer.reserve(numberOfThreads);
+
+	CUDA_CHECK_POINT(cudaSetDevice(indexOfDevice));
 
 	if (sort && indexDataType != typeid(nullptr))
 	{
@@ -681,7 +692,9 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	else
 		NOT_IMPLEMENTED_ERROR;
 
-	initializeInstanceWorkerContext(instance, sequenceABorderType);
+	std::vector<int> deviceLists(1, indexOfDevice);
+
+	initializeInstanceWorkerContext(instance, sequenceABorderType, deviceLists);
 	this->m_instance = instance;
 }
 
@@ -711,7 +724,7 @@ void BlockMatch<Type>::initialize()
 template
 LIB_MATCH_EXPORT
 BlockMatch<float>::BlockMatch(
-	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index inputADataType, std::type_index inputBDataType,
 	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
@@ -732,11 +745,13 @@ BlockMatch<float>::BlockMatch(
 	int numberOfIndexRetain,
 	bool doThresholding,
 	float thresholdValue, float replacementValue,
-	bool indexStartFromOne);
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads);
 template
 LIB_MATCH_EXPORT
 BlockMatch<double>::BlockMatch(
-	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index inputADataType, std::type_index inputBDataType,
 	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
@@ -757,7 +772,9 @@ BlockMatch<double>::BlockMatch(
 	int numberOfIndexRetain,
 	bool doThresholding,
 	double thresholdValue, double replacementValue,
-	bool indexStartFromOne);
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads);
 
 template
 LIB_MATCH_EXPORT

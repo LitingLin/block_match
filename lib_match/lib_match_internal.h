@@ -302,6 +302,7 @@ struct ExecutionContext
 		indexA_M_begin, indexA_N_begin,
 		indexA_M_end, indexA_N_end,
 		startIndexOfMatrixA_M, startIndexOfMatrixA_N, numberOfIteration;
+	int indexOfDevice;
 
 	Type thresholdValue, replacementValue;
 
@@ -409,6 +410,7 @@ struct BlockMatchContext
 		int rawMatrixCIndex_begin;
 		int beginMatrixAIndex_M;
 		int beginMatrixAIndex_N;
+		int indexOfDevice;
 		std::unique_ptr<ExecutionContext<Type>> executionContext;
 	};
 	std::vector<WorkerContext> workerContext;
@@ -440,10 +442,12 @@ struct BlockMatchContext
 using ArrayCopyMethod =
 void(void *, const void *, int);
 
+template <typename Type>
 using ArrayMatchDataPostProcessingMethod =
 void(void **, void **,
 	void *,
 	int, int, int,
+	Type, Type,
 	const int *, int *);
 
 template <typename Type>
@@ -469,16 +473,18 @@ struct ArrayMatchExecutionContext
 
 	int elementSizeOfTypeA, elementSizeOfTypeB, elementSizeOfTypeC, elementSizeOfIndex;
 	int retain;
+	Type threshold, replacementValue;
 
 	ArrayCopyMethod *arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingBFunction;
-	ArrayMatchDataPostProcessingMethod *dataPostProcessingFunction;
+	ArrayMatchDataPostProcessingMethod<Type> *dataPostProcessingFunction;
 
 	cudaStream_t stream;
 	int numberOfIteration;
 	int sizeOfGpuTaskQueue;
 	int numberOfGPUDeviceMultiProcessor;
 	int numberOfGPUProcessorThread;
+	int indexOfDevice;
 };
 
 template <typename Type>
@@ -492,11 +498,13 @@ struct ArrayMatchContext
 	int lengthOfArray;
 	int numberOfResultRetain;
 
+	Type threshold, replacementValue;
+
 	ArrayMatchExecutionFunction<Type> *executionFunction;
 
 	ArrayCopyMethod *arrayCopyingAFunction;
 	ArrayCopyMethod *arrayCopyingBFunction;
-	ArrayMatchDataPostProcessingMethod *dataPostProcessingFunction;
+	ArrayMatchDataPostProcessingMethod<Type> *dataPostProcessingFunction;
 
 	struct PerThreadBuffer
 	{
@@ -515,6 +523,7 @@ struct ArrayMatchContext
 	{
 		int startIndexA;
 		int numberOfIteration;
+		int indexOfDevice;
 		std::unique_ptr<ArrayMatchExecutionContext<Type>> context;
 	};
 	std::vector<ExecutionContext> executionContexts;
