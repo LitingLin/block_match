@@ -362,6 +362,66 @@ LibMatchMexError parseThresholdReplacementValue(BlockMatchMexContext *context,
 //	}
 //}
 
+LibMatchMexError parseIndexOfDevice(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	if (!mxIsScalar(pa))
+		return LibMatchMexError::errorTypeOfArgument;
+	
+	LibMatchMexError error = getIntegerFromMxArray(pa, &context->indexOfDevice);
+
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (context->indexOfDevice < 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
+LibMatchMexError parseNumberOfThreads(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	mxClassID classId = mxGetClassID(pa);
+	if (classId == mxCHAR_CLASS)
+		goto StringClass;
+	else
+		goto ValueClass;
+
+	LibMatchMexError error;
+
+StringClass:
+	{
+		char buffer[5];
+
+		error = getStringFromMxArray(pa, buffer, 5);
+
+		if (error != LibMatchMexError::success)
+			return error;
+
+		if (strncmp(buffer, "auto", 5) != 0)
+			return LibMatchMexError::errorInvalidValue;
+
+		context->numberOfThreads = 0;
+
+		return LibMatchMexError::success;
+	}
+ValueClass:
+	{
+		if (!mxIsScalar(pa))
+			return LibMatchMexError::errorSizeOfArray;
+
+		error = getUnsignedIntegerFromMxArray(pa, &context->numberOfThreads);
+		if (error != LibMatchMexError::success)
+			return error;
+		
+		if (context->numberOfThreads == 0)
+			return LibMatchMexError::errorInvalidValue;
+
+		return LibMatchMexError::success;
+	}
+}
+
 LibMatchMexError parseRetain(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -856,6 +916,32 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return generateErrorMessage(error, "Argument SearchFrom must be string.");
 			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray || error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Invalid value of argument SearchFrom.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "NumberOfThreads", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseNumberOfThreads(context, prhs[index]);
+
+			if (error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Argument NumberOfThreads must be scalar or 'auto'.");
+			else if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument NumberOfThreads must be integer or string.");
+			else if (error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "Value of argument NumberOfThreads must be 'auto' or positive integer.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of argument NumberOfThreads overflowed.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "IndexOfDevice", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseIndexOfDevice(context, prhs[index]);
+
+			if (error == LibMatchMexError::errorTypeOfArgument || error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "Argument IndexOfDevice must be positive integer.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of argument IndexOfDevice overflowed.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}

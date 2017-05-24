@@ -163,6 +163,13 @@ LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 LibMatchMexError getFourIntegerFromMxArray(const mxArray *pa,
 	int *integerA1, int *integerA2,
 	int *integerB1, int *integerB2);
+/*
+* Return:
+*  success,
+*  errorOverFlow,
+*  errorTypeOfArgument
+*/
+LibMatchMexError getUnsignedIntegerFromMxArray(const mxArray *pa, unsigned *integer);
 
 mxClassID type_index_to_mx_class_id(std::type_index type);
 

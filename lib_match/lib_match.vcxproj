@@ -60,13 +60,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart64*.dll" "$(OutDir)"
-xcopy /Y C:\windows\system32\msvcp140.dll "$(SolutionDir)build\+match\private\"
-xcopy /Y C:\windows\system32\vcruntime140.dll "$(SolutionDir)build\+match\private\"
-xcopy /Y "$(CudaToolkitBinDir)\cudart64*.dll" "$(SolutionDir)build\+match\private\"</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;compute_61,sm_61</CodeGeneration>

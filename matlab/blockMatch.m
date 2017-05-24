@@ -123,6 +123,15 @@ IndexDataType = 'auto';
 %  logical
 Sparse = 'auto';
 
+%% Performance Tunning
+% Number of worker threads, can be
+%  scalar
+%  'auto': depends on environment
+NumberOfThreads = 'auto';
+% Index of GPU, can be
+%  scalar
+IndexOfDevice = 0;
+
 %% Parse option parameter
 if nargin == 4
     if isfield(Options, 'SearchRegion')
@@ -175,11 +184,14 @@ if nargin == 4
     if isfield(Options, 'IndexDataType')
         IndexDataType = Options.IndexDataType;
     end
-    if isfield(Options, 'Sparse')
-        Sparse = Options.Sparse;
-    end
     if isfield(Options, 'SequenceABorder')
         SequenceABorder = Options.SequenceABorder;
+    end
+    if isfield(Options, 'NumberOfThreads')
+        NumberOfThreads = Options.NumberOfThreads;
+    end
+    if isfield(Options, 'IndexOfDevice')
+        IndexOfDevice = Options.IndexOfDevice;
     end
 end
 
@@ -199,4 +211,5 @@ end
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
     'IndexDataType', IndexDataType, ...
-    'Sparse', Sparse);
+    'NumberOfThreads', NumberOfThreads, ...
+    'IndexOfDevice', IndexOfDevice);

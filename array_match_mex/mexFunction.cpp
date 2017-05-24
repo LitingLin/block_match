@@ -19,7 +19,13 @@ void process(ArrayMatchMexContext *context, int nlhs, mxArray *plhs[])
 			context->sort,
 			context->numberOfArrayA, context->numberOfArrayB,
 			context->lengthOfArray,
-			context->retain
+			context->retain,
+			context->threshold,
+			static_cast<IntermidateType>(context->thresholdValue),
+			static_cast<IntermidateType>(context->thresholdReplacementValue),
+			true,
+			context->numberOfThreads,
+			context->indexOfDevice
 		);
 		int dim0 = context->numberOfArrayA, dim1 = context->numberOfArrayB;
 		mxMatrixAllocator<size_t, size_t> matrixC(context->resultType, dim0, dim1);

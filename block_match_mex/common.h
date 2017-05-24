@@ -50,6 +50,9 @@ struct BlockMatchMexContext
 	bool threshold;
 	double thresholdValue;
 	double thresholdReplacementValue;
+
+	unsigned numberOfThreads;
+	int indexOfDevice;
 	// int sparse;
 };
 

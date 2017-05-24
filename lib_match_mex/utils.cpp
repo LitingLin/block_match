@@ -128,6 +128,9 @@ template <typename OriginType, typename DestinationType>
 LibMatchMexError typeConvertWithNumericLimitsCheck(const OriginType *originValue, DestinationType *destinationValue)
 {
 	OriginType value = *originValue;
+	if (value < std::numeric_limits<DestinationType>::min())
+		return LibMatchMexError::errorOverFlow;
+
 	if (value > std::numeric_limits<DestinationType>::max())
 		return LibMatchMexError::errorOverFlow;
 
@@ -198,6 +201,46 @@ LibMatchMexError getIntegerFromMxArray(const mxArray *pa, int *integer)
 	}
 }
 
+/*
+* Return:
+*  success,
+*  errorOverFlow,
+*  errorTypeOfArgument
+*/
+LibMatchMexError getUnsignedIntegerFromMxArray(const mxArray *pa, unsigned *integer)
+{
+	mxClassID classId = mxGetClassID(pa);
+	const void *data = mxGetData(pa);
+	switch (classId)
+	{
+	case mxLOGICAL_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const mxLogical*>(data), integer);
+	case mxCHAR_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const mxChar*>(data), integer);
+	case mxDOUBLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const double*>(data), integer);
+	case mxSINGLE_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const float*>(data), integer);
+	case mxINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const int8_t*>(data), integer);
+	case mxUINT8_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const uint8_t*>(data), integer);
+	case mxINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const int16_t*>(data), integer);
+	case mxUINT16_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const uint16_t*>(data), integer);
+	case mxINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const int32_t*>(data), integer);
+	case mxUINT32_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const uint32_t*>(data), integer);
+	case mxINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const int64_t*>(data), integer);
+	case mxUINT64_CLASS:
+		return typeConvertWithNumericLimitsCheck(static_cast<const uint64_t*>(data), integer);
+	default:
+		return LibMatchMexError::errorTypeOfArgument;
+	}
+}
 
 LibMatchMexError getTwoIntegerFromMxArray(const mxArray *pa,
 	int *integerA, int *integerB)
