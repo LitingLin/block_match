@@ -273,7 +273,7 @@ void(Iterator *index_x, Iterator *index_y, Iterator *result,
 	Type threshold, Type replacementValue,
 	const int *index_buffer, int *index_buffer_sort);
 using BlockCopyMethod =
-void(void *, const void *, int, int, int, int, int, int);
+void(const size_t, void *, const void *, int, int, int, int, int, int);
 using DetermineBlockBRangeMethod =
 void(int *, int *, int, int, int, int);
 using IterationIndexPostProcessMethod =
@@ -285,6 +285,7 @@ template <typename Type>
 struct ExecutionContext
 {
 	void *matrixA, *matrixB;
+	int numberOfChannels;
 	std::unique_ptr<Iterator> matrixC;
 	Type *matrixA_buffer, *matrixB_buffer, *matrixC_buffer,
 		*matrixA_deviceBuffer, *matrixB_deviceBuffer, *matrixC_deviceBuffer;
@@ -319,7 +320,7 @@ struct ExecutionContext
 		numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, lengthOfGpuTaskQueue;
 };
 
-using PadFunction = void(const void *old_ptr, void *new_ptr,
+using PadFunction = void(const size_t, const void *old_ptr, void *new_ptr,
 	size_t old_width, size_t old_height,
 	size_t pad_left, size_t pad_right, size_t pad_up, size_t pad_buttom);
 
@@ -343,6 +344,8 @@ struct BlockMatchContext
 	int matrixA_N;
 	int matrixB_M;
 	int matrixB_N;
+
+	int numberOfChannels;
 
 	int matrixA_padded_M;
 	int matrixA_padded_N;
@@ -564,6 +567,8 @@ void generateIndexSequence(int *index, int size);
 
 template <typename Type1, typename Type2>
 void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type1, typename Type2>
+void copyBlockMultiChannel(const size_t nChannels, Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template <typename Type>
 void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template <typename Type1, typename Type2>
@@ -633,6 +638,23 @@ void determinePadSizeAccordingToPatchSize(int mat_M, int mat_N, int patch_M, int
 bool isInterruptPending();
 
 // void convert(void *src, std::type_index src_type, void *dst, std::type_index dst_type, size_t size);
+
+template <typename T>
+void zeroPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
+template <typename T>
+void circularPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
+template <typename T>
+void replicatePaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
+template <typename T>
+void symmetricPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post);
 
 void *aligned_block_malloc(size_t size, size_t alignment);
 void aligned_free(void *ptr);

@@ -134,6 +134,10 @@ LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 	void **pointer,
 	int *size_M, int *size_N);
 
+LibMatchMexError parse3DMatrixParameter(const mxArray *pa,
+	void **pointer,
+	int *size_M, int *size_N, int *size_O);
+
 std::type_index getTypeIndex(mxClassID mxTypeId);
 mxClassID getMxClassId(std::type_index type);
 

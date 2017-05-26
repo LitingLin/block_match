@@ -132,8 +132,10 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		padded_B = instance->optionalBuffer.matrixB_padded_internal.get();
 	}
 
-	instance->padMethodA(A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
-	instance->padMethodB(B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
+	int nChannels = instance->numberOfChannels;
+
+	instance->padMethodA(nChannels, A, padded_A, A_M, A_N, A_M_padPre, A_M_padPost, A_N_padPre, A_N_padPost);
+	instance->padMethodB(nChannels, B, padded_B, B_M, B_N, B_M_padPre, B_M_padPost, B_N_padPre, B_N_padPost);
 
 	execution_service &exec_serv = globalContext.exec_serv;
 
@@ -148,6 +150,7 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->matrixB_N = instance->matrixB_padded_N;
 		executionContext->matrixA = padded_A;
 		executionContext->matrixB = padded_B;
+		executionContext->numberOfChannels = instance->numberOfChannels;
 		executionContext->numberOfIteration = instance->workerContext[i].numberOfIteration;
 		if (index_x) {
 			executionContext->index_x = index_x->clone(instance->workerContext[i].rawMatrixCIndex_begin);

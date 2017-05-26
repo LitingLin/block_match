@@ -139,6 +139,7 @@ public:
 		SearchFrom searchFrom,
 		bool sort,
 		int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+		int numberOfChannels,
 		int searchRegion_M, int searchRegion_N,
 		int block_M, int block_N,
 		int strideA_M, int strideA_N,
@@ -180,8 +181,8 @@ public:
 		void *index_x = nullptr, void *index_y = nullptr);
 	void destroy();
 	void get_matrixC_dimensions(int *dim0, int *dim1, int *dim2);
-	void get_matrixA_padded_dimensions(int *m, int *n);
-	void get_matrixB_padded_dimensions(int *m, int *n);
+	void get_matrixA_padded_dimensions(int *m, int *n, int *c);
+	void get_matrixB_padded_dimensions(int *m, int *n, int *c);
 private:
 	void *m_instance;
 	std::type_index inputADataType;

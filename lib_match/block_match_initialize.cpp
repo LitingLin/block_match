@@ -89,6 +89,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -471,12 +472,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 
 #define EXP(type) \
-	blockCopyingAFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	blockCopyingAFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputADataType, EXP);
 #undef EXP
 
 #define EXP(type) \
-	blockCopyingBFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	blockCopyingBFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputBDataType, EXP);
 #undef EXP
 
@@ -526,25 +527,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 	case PadMethod::zero:
 #define exp(type) \
-	padFunctionA = (PadFunction*)zeroPadding<type>
+	padFunctionA = (PadFunction*)zeroPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
-	padFunctionA = (PadFunction*)circularPadding<type>
+	padFunctionA = (PadFunction*)circularPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
-	padFunctionA = (PadFunction*)replicatePadding<type>
+	padFunctionA = (PadFunction*)replicatePaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
-	padFunctionA = (PadFunction*)symmetricPadding<type>
+	padFunctionA = (PadFunction*)symmetricPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
@@ -555,25 +556,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 	case PadMethod::zero:
 #define exp(type) \
-	padFunctionB = (PadFunction*)zeroPadding<type>
+	padFunctionB = (PadFunction*)zeroPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
-	padFunctionB = (PadFunction*)circularPadding<type>
+	padFunctionB = (PadFunction*)circularPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
-	padFunctionB = (PadFunction*)replicatePadding<type>
+	padFunctionB = (PadFunction*)replicatePaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
-	padFunctionB = (PadFunction*)symmetricPadding<type>
+	padFunctionB = (PadFunction*)symmetricPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
@@ -586,6 +587,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
+		numberOfChannels,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
 		searchRegion_M, searchRegion_N,
@@ -626,8 +628,9 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
 
 	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = sizeOfGpuTaskQueue * block_M * block_N;
-	const int perThreadMatrixBBufferSize = perThreadMatrixCBufferSize * block_M * block_N;
+	const int perThreadMatrixABufferSize = sizeOfGpuTaskQueue * block_M * block_N * numberOfChannels;
+	const int perThreadMatrixBBufferSize = perThreadMatrixCBufferSize * block_M * block_N * numberOfChannels;
+	const int indexSortingBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
 
 	instance->workerContext.reserve(numberOfThreads);
 	instance->threadPoolTaskHandle.resize(numberOfThreads);
@@ -649,8 +652,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
 			});
 		}
@@ -666,8 +669,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer
 			});
 		}
@@ -734,6 +737,7 @@ BlockMatch<float>::BlockMatch(
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -761,6 +765,7 @@ BlockMatch<double>::BlockMatch(
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,

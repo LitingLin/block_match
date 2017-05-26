@@ -15,14 +15,6 @@
 #include <typeindex>
 #include <cstring>
 
-void checkEqual(const size_t *a, const size_t *b, size_t n)
-{
-	for (size_t i = 0; i < n; ++i)
-		if (a[i] != b[i])
-			throw std::exception();
-}
-
-
 template<typename T1, typename T2>
 void copyArray(const T1 *src, T2*dst, size_t n)
 {
@@ -111,61 +103,83 @@ size_t getDataTypeElementSize(std::type_index type)
 void generateResult(const mxArray *result, const mxArray *index, mxArray **out_)
 {
 	size_t ndimsResult = mxGetNumberOfDimensions(result);
+	if (ndimsResult != 3)
+		throw std::exception();
 	const size_t *resultdims = mxGetDimensions(result);
 	if (index)
 	{
 		size_t ndimsIndex = mxGetNumberOfDimensions(index);
 		if (ndimsIndex != 4)
 			throw std::exception();
-		checkEqual(resultdims, mxGetDimensions(index), 3);
-		if (mxGetDimensions(index)[3] != 2)
+		const size_t *indexdims = mxGetDimensions(index);
+		if (indexdims[0] != resultdims[0] || indexdims[1] != 2 || indexdims[2] != resultdims[1] || indexdims[3] != resultdims[2])
 			throw std::exception();
 	}
 
+	std::type_index resultType = getTypeIndexFromMxClassId(mxGetClassID(result));
+	std::type_index indexType = typeid(nullptr);
+	if (index)
+		indexType = getTypeIndexFromMxClassId(mxGetClassID(index));
+	size_t resultElementSize = getDataTypeElementSize(resultType);
+	size_t indexElementSize = 0;
+	if (index)
+		indexElementSize = getDataTypeElementSize(indexType);
+
 	char *resultPtr = static_cast<char*>(mxGetData(result));
-	char *indexXPtr, indexYPtr;
+	char *indexXPtr = 0, *indexYPtr = 0;
+	size_t indexPtrOffset = resultdims[0] * indexElementSize;
 	if (index) {
 		indexXPtr = static_cast<char*>(mxGetData(index));
-		//indexYPtr = indexXPtr + ;
+		indexYPtr = indexXPtr + indexPtrOffset;
 	}
-
-	const size_t outCellDims[2] = { resultdims[0], resultdims[1] };
+	
+	const size_t outCellDims[2] = { resultdims[1], resultdims[2] };
 	mxArray *out = mxCreateCellArray(2, outCellDims);
 
-	for (size_t i_dim1 = 0;i_dim1<resultdims[1];i_dim1++)
+	for (size_t i_dim1 = 0;i_dim1<resultdims[2];i_dim1++)
 	{
-		for (size_t i_dim0=0;i_dim0<resultdims[0];i_dim0++)
+		for (size_t i_dim0=0;i_dim0<resultdims[1];i_dim0++)
 		{
 			mxArray *currentMatrix;
 			if (index)
-				currentMatrix = mxCreateDoubleMatrix(resultdims[2], 3, mxREAL);
+				currentMatrix = mxCreateDoubleMatrix(resultdims[0], 3, mxREAL);
 			else
-				currentMatrix = mxCreateDoubleMatrix(resultdims[2], 1, mxREAL);
+				currentMatrix = mxCreateDoubleMatrix(resultdims[0], 1, mxREAL);
 
 			double *currentMatrixPtr = mxGetPr(currentMatrix);
+			convertArrayDataType(resultPtr, currentMatrixPtr, resultdims[0], resultType);
+			resultPtr += resultElementSize * resultdims[0];
+			currentMatrixPtr += resultdims[0];
+			if (index)
+			{
+				convertArrayDataType(indexXPtr, currentMatrixPtr, resultdims[0], indexType);
+				indexXPtr += 2 * indexPtrOffset;
+				currentMatrixPtr += resultdims[0];
+				convertArrayDataType(indexYPtr, currentMatrixPtr, resultdims[0], indexType);
+				indexYPtr += 2 * indexPtrOffset;
+			}
 			
-
 			size_t currentCellIndex[2] = { i_dim0, i_dim1 };
 			mxSetCell(out, mxCalcSingleSubscript(out, 2, currentCellIndex),currentMatrix);
 		}
 	}
+	*out_ = out;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 {
-	if (nrhs != 1 || nrhs != 2)
+	if (!(nrhs == 1 || nrhs == 2))
 		mexErrMsgTxt("Invalid input");
 	if (nlhs != 1)
 		mexErrMsgTxt("Invalid output");
 	try {
-		generateResult(prhs[0], &plhs[0]);
-		if (nlhs == 2)
-		{
-			size_t max_x, max_y;
-			getMaxIndexValue(prhs[0], &max_x, &max_y);
-			generateIndex(prhs[0], &plhs[1], std::max(max_x, max_y));
-		}
+		if (nrhs == 1)
+			generateResult(prhs[0], nullptr, &plhs[0]);
+		else if (nrhs == 2)
+			generateResult(prhs[0], prhs[1], &plhs[0]);
+		else
+			throw std::exception();
 	}
 	catch (std::exception &)
 	{

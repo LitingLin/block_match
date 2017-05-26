@@ -53,7 +53,7 @@
       <PreprocessorDefinitions>LIB_MATCH_BUILD_DLL;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningVersion>
       </WarningVersion>
-      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../lib_match_gpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -75,7 +75,7 @@
       <PreprocessorDefinitions>LIB_MATCH_BUILD_DLL;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningVersion>
       </WarningVersion>
-      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../lib_match_gpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -118,13 +118,19 @@ xcopy /Y "$(CudaToolkitBinDir)\cudart64*.dll" "$(SolutionDir)build\+match\privat
     <ClCompile Include="instruction_set.cpp" />
     <ClCompile Include="interrupt_handler.cpp" />
     <ClCompile Include="lib_match.cpp" />
-    <ClCompile Include="lib_match_cc_cpu.cpp" />
+    <ClCompile Include="lib_match_cc_cpu.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="block_match_execute.hpp" />
     <ClCompile Include="block_match_destroy.cpp" />
     <ClCompile Include="block_match_initialize.cpp" />
     <ClCompile Include="lib_match_initialize.cpp" />
     <ClCompile Include="lib_match_internal.cpp" />
-    <ClCompile Include="lib_match_mse_cpu.cpp" />
+    <ClCompile Include="lib_match_mse_cpu.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="block_match_execute.cpp" />
     <ClCompile Include="lib_match_sort.cpp" />
     <ClCompile Include="logging.cpp" />

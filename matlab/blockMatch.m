@@ -3,12 +3,12 @@ function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(Sequence
 % Input:
 %  SequenceA:
 %   Sequence A, can be
-%    MxN image, MxNxC multi-channel image,
-%    MxNxF video, MxNxCxF multi-channel video
+%    MxN image,
+%    MxNxC multi-channel image, [NOT IMPLEMENTED]
 %  SequenceB:
 %   Sequence B, the size must be the same as SequenceA, can be
-%    MxN image, MxNxC multi-channel image,
-%    MxNxF video, MxNxCxF multi-channel video
+%    MxN image, 
+%    MxNxC multi-channel image,  [NOT IMPLEMENTED]
 %  BlockSize:
 %   Size of block, can be
 %    scalar, 1x2 matrix
@@ -17,7 +17,10 @@ function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(Sequence
 %    struct
 %
 % Output:
-%  Result
+%  Result:
+%   AxMxN
+%  Index:
+%   XxYxMxN matrix, stores the corresponding index of Result in matrix B
 
 % Demo:
 %  blockSize = [3,3];

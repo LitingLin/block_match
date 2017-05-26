@@ -139,6 +139,7 @@ template <typename Type,
 	CUDA_CHECK_POINT(cudaSetDevice(executionContext->indexOfDevice));
 
 	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB;
+	int numberOfChannels = executionContext->numberOfChannels;
 	Iterator *matrixC = executionContext->matrixC.get();
 	Type *matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
 		*matrixC_buffer = executionContext->matrixC_buffer,
@@ -168,7 +169,7 @@ template <typename Type,
 
 	Type thresholdValue = executionContext->thresholdValue, replacementValue = executionContext->replacementValue;
 
-	int blockSize = executionContext->block_M * executionContext->block_N;
+	int blockSize = executionContext->block_M * executionContext->block_N * numberOfChannels;
 	Type *c_bufferA = executionContext->matrixA_buffer;
 	Type *c_bufferB = executionContext->matrixB_buffer;
 	int *c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
@@ -194,7 +195,7 @@ template <typename Type,
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
-			blockCopyA(c_bufferA, matrixA,
+			blockCopyA(numberOfChannels, c_bufferA, matrixA,
 				matrixA_M, matrixA_N,
 				indexA_M, indexA_N, block_M, block_N);
 
@@ -212,7 +213,7 @@ template <typename Type,
 					matrixB_N, block_N, neighbour_N, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					blockCopyB(c_bufferB, matrixB,
+					blockCopyB(numberOfChannels, c_bufferB, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
 					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);

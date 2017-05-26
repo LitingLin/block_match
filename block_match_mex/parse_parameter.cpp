@@ -575,18 +575,54 @@ LibMatchMexError parseSequenceB(BlockMatchMexContext *context,
 	if (context->sourceBType == typeid(nullptr))
 		return LibMatchMexError::errorTypeOfArgument;
 
-	return parse2DMatrixParameter(pa, &context->sequenceBMatrixPointer,
-		&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1]);
+	if (context->sequenceMatrixNumberOfDimensions == 2)
+	{
+		context->sequenceBMatrixDimensions[2] = 1;
+		return parse2DMatrixParameter(pa, &context->sequenceBMatrixPointer,
+			&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1]);
+	}
+	else if (context->sequenceMatrixNumberOfDimensions == 3)
+	{
+		LibMatchMexError error = parse3DMatrixParameter(pa, &context->sequenceBMatrixPointer,
+			&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1],
+			&context->sequenceBMatrixDimensions[2]);
+
+		if (error != LibMatchMexError::success)
+			return error;
+		
+		if (context->sequenceAMatrixDimensions[2] != context->sequenceBMatrixDimensions[2])
+			return LibMatchMexError::errorNumberOfMatrixDimensionMismatch;
+
+		return LibMatchMexError::success;
+	}
+	else
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 }
 
 // TODO: multi-dimension
 LibMatchMexError parseSequenceA(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	LibMatchMexError error = parse2DMatrixParameter(pa, &context->sequenceAMatrixPointer,
-		&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1]);
+	LibMatchMexError error = LibMatchMexError::success;
+	if (mxGetNumberOfDimensions(pa) == 2) 
+	{
+		error = parse2DMatrixParameter(pa, &context->sequenceAMatrixPointer,
+			&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1]);
 
-	context->sequenceMatrixNumberOfDimensions = 2;
+		context->sequenceAMatrixDimensions[2] = 1;
+
+		context->sequenceMatrixNumberOfDimensions = 2;
+	}
+	else if (mxGetNumberOfDimensions(pa) == 3)
+	{
+		error = parse3DMatrixParameter(pa, &context->sequenceAMatrixPointer,
+			&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1],
+			&context->sequenceAMatrixDimensions[2]);
+
+		context->sequenceMatrixNumberOfDimensions = 3;
+	}
+	else
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 
 	context->sourceAType = getTypeIndex(mxGetClassID(pa));
 
@@ -655,7 +691,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2\n");
+		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2 or 3\n");
 	}
 	else if (error != LibMatchMexError::success)
 		return unknownParsingError("A");
@@ -669,11 +705,11 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2\n");
+		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2 or 3\n");
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimensionMismatch)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix B must be the same as Matrix A\n");
+		return generateErrorMessage(error, "Number of channels of Matrix B must be the same as Matrix A\n");
 	}
 	else if (error != LibMatchMexError::success)
 		return unknownParsingError("B");

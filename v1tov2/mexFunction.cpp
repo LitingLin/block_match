@@ -57,6 +57,7 @@ void getMaxIndexValue(const mxArray *pa, size_t *x, size_t *y)
 			}
 		}
 	}
+	*x = max_x, *y = max_y;
 }
 
 void checkSubMatrix(const mxArray *matrix, const size_t ndims, const size_t *dims, const mxClassID type)
@@ -89,7 +90,7 @@ void generateResult(const mxArray *pa, mxArray **out_)
 	if (mxGetClassID(cell) != mxDOUBLE_CLASS)
 		throw std::exception();
 
-	size_t outmatrixDims[3] = { dimensions[0],dimensions[1], matrixDimensions[0] };
+	size_t outmatrixDims[3] = { matrixDimensions[0], dimensions[0],dimensions[1] };
 	mxArray *out = mxCreateNumericArray(3, outmatrixDims, mxDOUBLE_CLASS, mxREAL);
 	double *out_ptr = mxGetPr(out);
 
@@ -203,7 +204,7 @@ void generateIndex(const mxArray *pa, mxArray **out_, size_t max)
 	if (mxGetClassID(cell) != mxDOUBLE_CLASS)
 		throw std::exception();
 
-	size_t outmatrixDims[4] = { dimensions[0],dimensions[1], matrixDimensions[0], 2 };
+	size_t outmatrixDims[4] = { matrixDimensions[0], 2, dimensions[0], dimensions[1] };
 	mxArray *out = mxCreateNumericArray(4, outmatrixDims, getMxClassIdFromTypeIndex(out_type), mxREAL);
 	char *out_ptr = (char*)mxGetData(out);
 	size_t out_type_element_size = getDataTypeElementSize(out_type);
@@ -232,7 +233,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 {
 	if (nrhs != 1)
 		mexErrMsgTxt("Invalid input");
-	if (nlhs != 1 || nlhs != 2)
+	if (nlhs != 1 && nlhs != 2)
 		mexErrMsgTxt("Invalid output");
 	try {
 		generateResult(prhs[0], &plhs[0]);
