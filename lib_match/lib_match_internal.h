@@ -420,8 +420,8 @@ struct BlockMatchContext
 
 	struct OptionalBuffer
 	{
-		memory_allocator<Type, memory_type::system> matrixA_padded_internal;
-		memory_allocator<Type, memory_type::system> matrixB_padded_internal;
+		memory_allocator<double, memory_type::system> matrixA_padded_internal;
+		memory_allocator<double, memory_type::system> matrixB_padded_internal;
 	};
 	OptionalBuffer optionalBuffer;
 

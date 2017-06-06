@@ -74,6 +74,8 @@
     <ClCompile Include="array_match_test_case_3.cpp" />
     <ClCompile Include="array_match_test_case_4.cpp" />
     <ClCompile Include="test_case_1.cpp" />
+    <ClCompile Include="test_case_10.cpp" />
+    <ClCompile Include="test_case_11.cpp" />
     <ClCompile Include="test_case_2.cpp" />
     <ClCompile Include="test_case_3.cpp" />
     <ClCompile Include="test_case_4.cpp" />
@@ -81,6 +83,7 @@
     <ClCompile Include="test_case_6.cpp" />
     <ClCompile Include="test_case_7.cpp" />
     <ClCompile Include="test_case_8.cpp" />
+    <ClCompile Include="test_case_9.cpp" />
     <ClCompile Include="test_main.cpp" />
   </ItemGroup>
   <ItemGroup>

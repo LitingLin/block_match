@@ -83,6 +83,7 @@
     <ClCompile Include="test_determine_gpu_task_configuration.cpp" />
     <ClCompile Include="test_determine_end_of_index.cpp" />
     <ClCompile Include="test_get_length.cpp" />
+    <ClCompile Include="test_iterator.cpp" />
     <ClCompile Include="test_main.cpp" />
     <ClCompile Include="test_mse_cpu.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

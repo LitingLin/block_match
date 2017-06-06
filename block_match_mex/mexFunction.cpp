@@ -43,10 +43,10 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 		);
 		int dim0, dim1, dim2;
 		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
-		mxMatrixAllocator<size_t, size_t, size_t> matrixC(context->resultType, dim2, dim1, dim0);
+		mxMatrixAllocator<size_t, size_t> matrixC(context->resultType, dim2, dim1 * dim0);
 		if (nlhs <= 1)
 			dim0 = dim1 = dim2 = 0;
-		mxMatrixAllocator<size_t, size_t, size_t, size_t> index(context->indexDataType, dim2, 2, dim1, dim0);
+		mxMatrixAllocator<size_t, size_t, size_t> index(context->indexDataType, dim2, 2, dim1 * dim0);
 		blockMatch.get_matrixA_padded_dimensions(&dim0, &dim1, &dim2);
 		if (nlhs <= 2)
 			dim0 = dim1 = dim2 = 0;
@@ -113,10 +113,11 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 			reportMemoryAllocationFailed(currentMxMemorySize, maxMxMemorySize);
 			throw;
 		}
+		blockMatch.get_matrixC_dimensions(&dim0, &dim1, &dim2);
 		ContiguousMemoryIterator matrixCIterator(matrixC.getData(), dim2 * getTypeSize(context->resultType));
-		ContiguousMemoryIterator indexXIterator(index.getData(), dim2 * 2 * getTypeSize(context->indexDataType));
-		ContiguousMemoryIterator indexYIterator(static_cast<char*>(index.getData()) + dim2*getTypeSize(context->indexDataType),
+		ContiguousMemoryIterator indexXIterator(static_cast<char*>(index.getData()) + dim2*getTypeSize(context->indexDataType),
 			dim2 * 2 * getTypeSize(context->indexDataType));
+		ContiguousMemoryIterator indexYIterator(index.getData(), dim2 * 2 * getTypeSize(context->indexDataType));
 
 		void *matrixAPaddedPtr = nullptr;
 		if (nlhs > 2) {

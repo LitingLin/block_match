@@ -65,17 +65,17 @@ void recheckSequenceBPadding(BlockMatchMexContext *context)
 	}
 	else
 	{
-		if (context->sequenceBPadding_N_Pre == -1)
+		if (context->sequenceBPadding_N_Pre == -1) // same
 		{
 			context->sequenceBPadding_N_Pre = context->searchRegion_N / 2;
 			context->sequenceBPadding_N_Post = context->searchRegion_N - context->searchRegion_N / 2;
 			context->sequenceBPadding_M_Pre = context->searchRegion_M / 2;
 			context->sequenceBPadding_M_Post = context->searchRegion_M - context->searchRegion_M / 2;
 		}
-		else if (context->sequenceBPadding_N_Pre == -2)
+		else if (context->sequenceBPadding_N_Pre == -2) // full
 		{
-			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post = context->searchRegion_N;
-			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M;
+			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post = context->searchRegion_N - 1;
+			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M - 1;
 		}
 	}
 }

@@ -511,7 +511,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 	else
 	{
-		indexRecordFunction = recordIndexPlusOne;
+		indexRecordFunction = recordIndex;
 	}
 
 	if (measureMethod == MeasureMethod::mse)
@@ -610,8 +610,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
 		/*std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
 		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer */
-		{ memory_allocator<Type, memory_type::system>(matrixA_padded_M*matrixA_padded_N), 
-			memory_allocator<Type, memory_type::system>(matrixB_padded_M * matrixB_padded_N)},
+		{ memory_allocator<double, memory_type::system>(matrixA_padded_M*matrixA_padded_N), 
+			memory_allocator<double, memory_type::system>(matrixB_padded_M * matrixB_padded_N)},
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 
