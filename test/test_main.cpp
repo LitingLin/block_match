@@ -3,6 +3,7 @@
 
 #include <lib_match.h>
 #include "test_common.h"
+#include <iostream>
 
 void logging_sink(const char *msg)
 {
@@ -60,10 +61,14 @@ const void* MemoryMappedIO::getPtr() const
 	return ptr;
 }
 
+#include <cmath>
+
 void checkFloatPointEqual(const double* a, const double* b, size_t n)
 {
-	for (size_t i = 0; i < n; ++i)
-	BOOST_CHECK_SMALL(a[i] - b[i], doubleFloatingPointErrorTolerance);
+	for (size_t i = 0; i < n; ++i) {
+		if (std::isnan(a[i]) && std::isnan(b[i])) continue;
+		BOOST_CHECK_SMALL(a[i] - b[i], doubleFloatingPointErrorTolerance);
+	}
 }
 
 void checkIndexEqual(const uint8_t* m, const uint8_t* n, const uint8_t* groundtruth, size_t elemsize, size_t num)
@@ -73,9 +78,13 @@ void checkIndexEqual(const uint8_t* m, const uint8_t* n, const uint8_t* groundtr
 	size_t n_offset = 0;
 	for (size_t i = 0; i < num; ++i)
 	{
-		for (size_t j = 0; j < elemsize; ++j)
-		BOOST_CHECK_EQUAL(groundtruth[ptroffset++], m[m_offset++]);
-		for (size_t j = 0; j < elemsize; ++j)
-		BOOST_CHECK_EQUAL(groundtruth[ptroffset++], n[n_offset++]);
+		for (size_t j = 0; j < elemsize; ++j) {
+			BOOST_CHECK_EQUAL(groundtruth[ptroffset], m[m_offset]);
+			ptroffset++; m_offset++;
+		}
+		for (size_t j = 0; j < elemsize; ++j) {
+			BOOST_CHECK_EQUAL(groundtruth[ptroffset], n[n_offset]);
+			ptroffset++; n_offset++;
+		}
 	}
 }

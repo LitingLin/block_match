@@ -15,4 +15,7 @@ void determineBlockB_index_local_topLeft(int *indexB_begin, int *indexB_end, int
 	int neighbour, int index_A);
 
 void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block,
-	int neighbour, int index_A);
+	int neighbour_pre, int neighbour_post, int index_A);
+
+void determineBlockB_index_local_normal(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour_pre,int neighbour_post, int index_A);

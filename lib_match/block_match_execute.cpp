@@ -43,12 +43,23 @@ void determineBlockB_index_local_topLeft(int *indexB_begin, int *indexB_end, int
 }
 
 void determineBlockB_index_full(int *indexB_begin, int *indexB_end, int matB, int block,
-	int neighbour, int index_A)
+	int neighbour_pre, int neighbour_post, int index_A)
 {
 	*indexB_begin = 0;
 	*indexB_end = determineEndOfIndex(matB, block);
 }
 
+void determineBlockB_index_local_normal(int *indexB_begin, int *indexB_end, int matB, int block,
+	int neighbour_pre, int neighbour_post, int index_A)
+{
+	*indexB_begin = index_A - neighbour_pre;
+	*indexB_end = index_A  + neighbour_post + 1;
+	if (*indexB_begin < 0)
+		*indexB_begin = 0;
+	int indexB_max = determineEndOfIndex(matB, block);
+	if (*indexB_end > indexB_max)
+		*indexB_end = indexB_max;
+}
 ContiguousMemoryIterator::ContiguousMemoryIterator(void* ptr, int elem_size)
 	: ptr(static_cast<char*>(ptr)), elem_size(elem_size) { }
 
@@ -168,9 +179,14 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->matrixA_deviceBuffer = instance->perThreadBuffer[i].matrixA_deviceBuffer.get();
 		executionContext->matrixB_deviceBuffer = instance->perThreadBuffer[i].matrixB_deviceBuffer.get();
 		executionContext->matrixC_deviceBuffer = instance->perThreadBuffer[i].matrixC_deviceBuffer.get();
+		executionContext->sizeBuffer = instance->perThreadBuffer[i].sizeBuffer.get();
+		executionContext->offsetA_buffer = instance->perThreadBuffer[i].offsetOfA.get();
+		executionContext->offsetA_deviceBuffer = instance->perThreadBuffer[i].offsetOfADevice.get();
 		executionContext->maxNumberOfThreadsPerProcessor = globalContext.numberOfGPUProcessorThread;
-		executionContext->neighbour_M = instance->searchRegion_M;
-		executionContext->neighbour_N = instance->searchRegion_N;
+		executionContext->searchRegion_M_pre = instance->searchRegion_M_pre;
+		executionContext->searchRegion_M_post = instance->searchRegion_M_post;
+		executionContext->searchRegion_N_pre = instance->searchRegion_N_pre;
+		executionContext->searchRegion_N_post = instance->searchRegion_N_post;
 		executionContext->numberOfBlockBPerBlockA = instance->numberOfBlockBPerBlockA;
 		executionContext->rawIndexBuffer = instance->perThreadBuffer[i].index_raw_sorting_buffer.get();
 		executionContext->rawIndexTemplate = instance->common_buffer.get();

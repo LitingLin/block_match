@@ -86,11 +86,11 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
-	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int numberOfChannels,
-	int searchRegion_M, int searchRegion_N,
+	int searchRegion_M_pre, int searchRegion_M_post,
+	int searchRegion_N_pre, int searchRegion_N_post,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
@@ -113,10 +113,10 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	CHECK_POINT_LT(indexOfDevice, globalContext.numberOfGPUDeviceMultiProcessor.size());
 
 	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
-		searchRegion_M,
+		searchRegion_M_pre + searchRegion_M_post + 1,
 		matrixB_M, matrixBPadding_M_pre, matrixBPadding_M_post, block_M, strideB_M);
 	const int numberOfBlockBPerBlockA_N = determineNumberOfBlockBPerBlockA(searchType,
-		searchRegion_N,
+		searchRegion_N_pre + searchRegion_N_post + 1,
 		matrixB_N, matrixBPadding_N_pre, matrixBPadding_N_post, block_N, strideB_N);
 	int indexA_M_begin = 0, indexA_M_end = 0, indexA_N_begin = 0, indexA_N_end = 0;
 
@@ -125,51 +125,56 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
 	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
 
-	if (searchType == SearchType::local)
-	{
-		if (searchFrom == SearchFrom::topLeft)
-		{
-			indexA_M_begin = 0;
-			if (matrixA_padded_M > (matrixB_padded_M - searchRegion_M + 1))
-				indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - searchRegion_M + 1;
-			else
-				indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
-			indexA_N_begin = 0;
-			if (matrixA_padded_N > (matrixB_padded_N - searchRegion_N + 1))
-				indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - searchRegion_N + 1;
-			else
-				indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
-		}
-		else if (searchFrom == SearchFrom::center)
-		{
-			indexA_M_begin = searchRegion_M / 2;
-			// TODO: Border check
-			if (matrixA_padded_M > matrixB_padded_M - (searchRegion_M - searchRegion_M / 2) + 1)
-				indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
-			else
-				indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+	//if (searchType == SearchType::local)
+	//{
+	//	if (searchFrom == SearchFrom::topLeft)
+	//	{
+	//		indexA_M_begin = 0;
+	//		if (matrixA_padded_M > (matrixB_padded_M - searchRegion_M + 1))
+	//			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - searchRegion_M + 1;
+	//		else
+	//			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+	//		indexA_N_begin = 0;
+	//		if (matrixA_padded_N > (matrixB_padded_N - searchRegion_N + 1))
+	//			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - searchRegion_N + 1;
+	//		else
+	//			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+	//	}
+	//	else if (searchFrom == SearchFrom::center)
+	//	{
+	//		indexA_M_begin = searchRegion_M / 2;
+	//		// TODO: Border check
+	//		if (matrixA_padded_M > matrixB_padded_M - (searchRegion_M - searchRegion_M / 2) + 1)
+	//			indexA_M_end = determineEndOfIndex(matrixB_padded_M, block_M) - (searchRegion_M - searchRegion_M / 2) + 1;
+	//		else
+	//			indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
 
-			indexA_N_begin = searchRegion_N / 2;
-			if (matrixA_padded_N > matrixB_padded_N - (searchRegion_N - searchRegion_N / 2) + 1)
-				indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
-			else
-				indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
-		}
-		else
-		{
-			NOT_IMPLEMENTED_ERROR;
-		}
-	}
-	else
-	{
-		indexA_M_begin = 0;
-		indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
-		indexA_N_begin = 0;
-		indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
-	}
+	//		indexA_N_begin = searchRegion_N / 2;
+	//		if (matrixA_padded_N > matrixB_padded_N - (searchRegion_N - searchRegion_N / 2) + 1)
+	//			indexA_N_end = determineEndOfIndex(matrixB_padded_N, block_N) - (searchRegion_N - searchRegion_N / 2) + 1;
+	//		else
+	//			indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+	//	}
+	//	else
+	//	{
+	//		NOT_IMPLEMENTED_ERROR;
+	//	}
+	//}
+	//else
+	//{
+	//	indexA_M_begin = 0;
+	//	indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+	//	indexA_N_begin = 0;
+	//	indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
+	//}
+
+	indexA_M_begin = 0;
+	indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
+	indexA_N_begin = 0;
+	indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
 
 	if (indexA_M_end <= indexA_M_begin || indexA_N_end <= indexA_N_begin)
-		throw std::exception("Parameter 'blockSize' is too large.");
+		throw std::runtime_error("Parameter 'blockSize' is too large.");
 
 	int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
 	int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
@@ -208,14 +213,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				if (doThresholding) {
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortPartialAscend<Type>, threshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 				else
 				{
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortPartialAscend<Type>, noThreshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 			}
@@ -224,13 +229,13 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				if (doThresholding) {
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortAscend<Type>, threshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 				else {
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortAscend<Type>, noThreshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 			}
@@ -239,14 +244,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				if (doThresholding) {
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortDescend<Type>, threshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 				else
 				{
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortDescend<Type>, noThreshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp					
 				}
 			}
@@ -255,14 +260,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				if (doThresholding) {
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortPartialDescend<Type>, threshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 				else
 				{
 #define exp(type) \
 	dataPostProcessingFunction = sort_noRecordIndex<Type, type, sortPartialDescend<Type>, noThreshold<Type>>
-					RuntimeTypeInference(outputDataType, exp);
+					RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 				}
 			}
@@ -277,14 +282,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					if (indexStartFromOne) {
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, threshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, threshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -294,14 +299,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialAscend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -312,14 +317,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					if (indexStartFromOne) {
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortAscend<Type>, threshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortAscend<Type>, threshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp						
 					}
 				}
@@ -329,14 +334,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortAscend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp						
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortAscend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp						
 					}					
 				}
@@ -347,14 +352,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					if (indexStartFromOne) {
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -364,14 +369,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortPartialDescend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -384,14 +389,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortDescend<Type>, threshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortDescend<Type>, threshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -401,14 +406,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortDescend<Type>, noThreshold<Type>, indexValuePlusOne<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 					else
 					{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = sort_recordIndex<Type, type1, type2, sortDescend<Type>, noThreshold<Type>, noChangeIndexValue<type2>>
-						RuntimeTypeInference2(outputDataType, indexDataType, exp);
+						RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 					}
 				}
@@ -422,14 +427,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 			if (doThresholding) {
 #define exp(type) \
 	dataPostProcessingFunction = noSort_noRecordIndex<Type, type, threshold<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+				RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 			}
 			else
 			{
 #define exp(type) \
 	dataPostProcessingFunction = noSort_noRecordIndex<Type, type, noThreshold<Type>>
-				RuntimeTypeInference(outputDataType, exp);
+				RuntimeTypeInferenceFloat(outputDataType, exp);
 #undef exp
 			}
 		}
@@ -440,14 +445,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = noSort_recordIndex<Type, type1, type2, threshold<Type>, indexValuePlusOne<type2>>
-					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+					RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 				}
 				else
 				{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = noSort_recordIndex<Type, type1, type2, threshold<Type>, noChangeIndexValue<type2>>
-					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+					RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 				}
 			}
@@ -457,14 +462,14 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = noSort_recordIndex<Type, type1, type2, noThreshold<Type>, indexValuePlusOne<type2>>
-					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+					RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp					
 				}
 				else
 				{
 #define exp(type1, type2) \
 	dataPostProcessingFunction = noSort_recordIndex<Type, type1, type2, noThreshold<Type>, noChangeIndexValue<type2>>
-					RuntimeTypeInference2(outputDataType, indexDataType, exp);
+					RuntimeTypeInferenceFloatFull(outputDataType, indexDataType, exp);
 #undef exp
 				}
 			}
@@ -485,13 +490,9 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 		determineBlockBRangeFunction = determineBlockB_index_full;
 	}
-	else if (searchType == SearchType::local && searchFrom == SearchFrom::center)
+	else if (searchType == SearchType::local)
 	{
-		determineBlockBRangeFunction = determineBlockB_index_local;
-	}
-	else if (searchType == SearchType::local && searchFrom == SearchFrom::topLeft)
-	{
-		determineBlockBRangeFunction = determineBlockB_index_local_topLeft;
+		determineBlockBRangeFunction = determineBlockB_index_local_normal;
 	}
 	else
 		NOT_IMPLEMENTED_ERROR;
@@ -516,11 +517,11 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 
 	if (measureMethod == MeasureMethod::mse)
 	{
-		executionFunction = processWorker<Type, lib_match_mse_check_border<Type>>;
+		executionFunction = processWorker<Type, lib_match_mse_offset<Type>>;
 	}
 	else if (measureMethod == MeasureMethod::cc)
 	{
-		executionFunction = processWorker<Type, lib_match_cc_check_border<Type>>;
+		executionFunction = processWorker<Type, lib_match_cc_offset<Type>>;
 	}
 	
 	switch (padMethodA)
@@ -590,7 +591,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		numberOfChannels,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
-		searchRegion_M, searchRegion_N,
+		searchRegion_M_pre, searchRegion_M_post,
+		searchRegion_N_pre, searchRegion_N_post,
 		strideA_M, strideA_N, strideB_M, strideB_N,
 		matrixAPadding_M_pre, matrixAPadding_M_post,matrixAPadding_N_pre, matrixAPadding_N_post,
 		matrixBPadding_M_pre, matrixBPadding_M_post, matrixBPadding_N_pre, matrixBPadding_N_post,
@@ -649,9 +651,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
@@ -666,9 +671,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer
@@ -683,9 +691,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(0), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(0), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer
@@ -715,9 +726,12 @@ void BlockMatch<Type>::initialize()
 		perThreadBuffer.matrixA_buffer.alloc();
 		perThreadBuffer.matrixB_buffer.alloc();
 		perThreadBuffer.matrixC_buffer.alloc();
+		perThreadBuffer.offsetOfA.alloc();
 		perThreadBuffer.matrixA_deviceBuffer.alloc();
 		perThreadBuffer.matrixB_deviceBuffer.alloc();
 		perThreadBuffer.matrixC_deviceBuffer.alloc();
+		perThreadBuffer.offsetOfADevice.alloc();
+		perThreadBuffer.sizeBuffer.alloc();
 		perThreadBuffer.index_x_sorting_buffer.alloc();
 		perThreadBuffer.index_y_sorting_buffer.alloc();
 		perThreadBuffer.index_raw_sorting_buffer.alloc();
@@ -734,11 +748,11 @@ BlockMatch<float>::BlockMatch(
 	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
-	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int numberOfChannels,
-	int searchRegion_M, int searchRegion_N,
+	int searchRegion_M_pre, int searchRegion_M_post,
+	int searchRegion_N_pre, int searchRegion_N_post,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
@@ -762,11 +776,11 @@ BlockMatch<double>::BlockMatch(
 	MeasureMethod measureMethod,
 	PadMethod padMethodA, PadMethod padMethodB,
 	BorderType sequenceABorderType,
-	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 	int numberOfChannels,
-	int searchRegion_M, int searchRegion_N,
+	int searchRegion_M_pre, int searchRegion_M_post,
+	int searchRegion_N_pre, int searchRegion_N_post,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,

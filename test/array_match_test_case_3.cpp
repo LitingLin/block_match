@@ -53,4 +53,5 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_3) {
 	BOOST_CHECK_EQUAL(index[numberOfArrayB + 1], 1 + 1);
 
 	free(C);
+	free(index);
 }

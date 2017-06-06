@@ -120,7 +120,7 @@ noSort_noRecordIndex(void **index, ResultDataType **result,
 #endif
 
 
-template <typename Type, ProcessFunction<Type> processFunction>
+template <typename Type, ArrayMatchProcessFunction<Type> processFunction>
 unsigned arrayMatchWorker(ArrayMatchExecutionContext<Type>* context)
 {
 	CUDA_CHECK_POINT(cudaSetDevice(context->indexOfDevice));

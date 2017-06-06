@@ -1,31 +1,32 @@
-function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(SequenceA, SequenceB, BlockSize, Options)
+function [Result, Index, APadded, BPadded] = blockMatch(A, B, BlockSize, Options)
 %% Parameter Description
 % Input:
-%  SequenceA:
-%   Sequence A, can be
+%  A:
+%   matrix A, can be
 %    MxN image,
-%    MxNxC multi-channel image, [NOT IMPLEMENTED]
-%  SequenceB:
-%   Sequence B, the size must be the same as SequenceA, can be
+%    MxNxC multi-channel image
+%  B:
+%   matrix B, the size must be the same as A, can be
 %    MxN image, 
-%    MxNxC multi-channel image,  [NOT IMPLEMENTED]
+%    MxNxC multi-channel image
 %  BlockSize:
 %   Size of block, can be
 %    scalar, 1x2 matrix
 %  Options:
 %   Options, can be
-%    struct
+%    struct, members are shown below
 %
 % Output:
 %  Result:
-%   AxMxN
+%   MxO, O: the number of patches from A, M: the number of matching result
 %  Index:
-%   XxYxMxN matrix, stores the corresponding index of Result in matrix B
+%   Mx2xO stores the index of B in Result, 
+%    Index(:,1,o) for first-dimension(row), Index(:,2,o) for second-dimension(column)
 
 % Demo:
 %  blockSize = [3,3];
 %  opt.SearchBlock = [3,3];
-%  res = blockMatch(A, B, blockSize, opt);
+%  [res,ind] = blockMatch(A, B, blockSize, opt);
 
 %% Check number of input parameter
 if nargin < 3
@@ -33,25 +34,17 @@ if nargin < 3
 end
 
 %% Perform Full Search
-SearchRegion = 'full';
+SearchWindow = 'full';
 
 %% Perform Local Search
-% Define search region and stride of sequence B
-
+% Define search window
 % Size of search region, can be
-%  scalar, 1x2 matrix
-% SearchRegion = [5,5];
-
-% Or define search region in blocks directly
-%  In this case, SequenceBStride = BlockSize and
-%  SearchRegion = SearchBlock.*SequenceBStride
-% Size of search block, can be
-%  scalar, 1x2 matrix
-% SearchBlock = [3,3];
-
-% Position of A in corresponding search window, can be
-%  'topLeft', 'center'
-SearchFrom = 'center';
+%  scalar: window size = [2xscalar+1,2xscalar+1],
+%  1x2 matrix: window size = [2xmat(1)+1,2xmat(2)+1],
+%  2x2 matrix: window size = [mat(1,1)+1+mat(2,1),mat(1,2)+1+mat(2,2)]
+% SearchWindow = 6;
+% SearchWindow = [5,5];
+% SearchWindow = [3,7;3,7];
 
 %% Measure Method
 % Measure method can be
@@ -60,37 +53,35 @@ SearchFrom = 'center';
 MeasureMethod = 'mse';
 
 %% Stride
-
-% Stride size of sequence A, can be
+% Stride size of matrix A, can be
 %  scalar, 1x2 matrix
-SequenceAStride = [1,1];
-
-% Stride size of sequence B, can be
+StrideA = [1,1];
+% Stride size of matrix B, can be
 %  scalar, 1x2 matrix
-SequenceBStride = [1,1];
+StrideB = [1,1];
 
 %% Border
-% Blocks in the borders 
+% Blocks near the borders
 %  can be
 %  'normal'
-%  'includeLastBlock'
-SequenceABorder = 'normal';
+%  'includeLastBlock': make use of the pixels near the borders of A when AStride > 1
+BorderA = 'normal';
 
 %% Padding Method
-% Padding size of sequence A, can be
+% Padding size of matrix A, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
 %  'same', 'full': same behavior in conv2 (shape parameter)
-SequenceAPadding = 0;
-% Padding of sequence A, can be
+PaddingA = 0;
+% Padding method of matrix A, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
-SequenceAPaddingMethod = 'symmetric';
-% Padding size of sequence B, can be
+PaddingMethodA = 'symmetric';
+% Padding size of matrix B, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
 %  'same', 'full': same behavior in conv2 (shape parameter)
-SequenceBPadding = 0;
-% Padding of sequence B, can be
+PaddingB = 0;
+% Padding method of matrix B, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
-SequenceBPaddingMethod = 'symmetric';
+PaddingMethodB = 'symmetric';
 
 %% Results Post-Processing
 % Threshold of result, can be
@@ -108,8 +99,7 @@ Retain = 'all';
 %% Data type
 % Data type of result, can be
 %  'same': the same as input
-%  'double', 'single',
-%  'logical', 'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64'
+%  'double', 'single'
 ResultDataType = 'same';
 % Data type in computation, can be
 %  'same': the same as input
@@ -132,37 +122,29 @@ IndexOfDevice = 0;
 
 %% Parse option parameter
 if nargin == 4
-    if isfield(Options, 'SearchRegion')
-        SearchRegion = Options.SearchRegion;
+    if isfield(Options, 'SearchWindow')
+        SearchWindow = Options.SearchWindow;
     end
-    if isfield(Options, 'SearchFrom')
-        SearchFrom = Options.SearchFrom;
+    if isfield(Options, 'StrideA')
+        StrideA = Options.StrideA;
     end
-    if isfield(Options, 'SequenceAStride')
-        SequenceAStride = Options.SequenceAStride;
-    end
-    if isfield(Options, 'SequenceBStride')
-        SequenceBStride = Options.SequenceBStride;
-    end
-    if isfield(Options, 'SearchBlock')
-        SearchBlock = Options.SearchBlock;
-        SequenceBStride = BlockSize;
-        SearchRegion = SequenceBStride.*SearchBlock;
+    if isfield(Options, 'StrideB')
+        StrideB = Options.StrideB;
     end
     if isfield(Options, 'MeasureMethod')
         MeasureMethod = Options.MeasureMethod;
     end
-    if isfield(Options, 'SequenceAPadding')
-        SequenceAPadding = Options.SequenceAPadding;
+    if isfield(Options, 'PaddingA')
+        PaddingA = Options.PaddingA;
     end
-    if isfield(Options, 'SequenceAPaddingMethod')
-        SequenceAPaddingMethod = Options.SequenceAPaddingMethod;
+    if isfield(Options, 'PaddingMethodA')
+        PaddingMethodA = Options.PaddingMethodA;
     end
-    if isfield(Options, 'SequenceBPadding')
-        SequenceBPadding = Options.SequenceBPadding;
+    if isfield(Options, 'PaddingB')
+        PaddingB = Options.PaddingB;
     end
-    if isfield(Options, 'SequenceBPaddingMethod')
-        SequenceBPaddingMethod = Options.SequenceBPaddingMethod;
+    if isfield(Options, 'PaddingMethodB')
+        PaddingMethodB = Options.PaddingMethodB;
     end
     if isfield(Options, 'Threshold')
         Threshold = Options.Threshold;
@@ -182,8 +164,8 @@ if nargin == 4
     if isfield(Options, 'IndexDataType')
         IndexDataType = Options.IndexDataType;
     end
-    if isfield(Options, 'SequenceABorder')
-        SequenceABorder = Options.SequenceABorder;
+    if isfield(Options, 'BorderA')
+        BorderA = Options.BorderA;
     end
     if isfield(Options, 'NumberOfThreads')
         NumberOfThreads = Options.NumberOfThreads;
@@ -194,18 +176,17 @@ if nargin == 4
 end
 
 %% Call mex
-if nargout == 1
-[Result] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
-    'SearchRegion', SearchRegion, ...
-    'SearchFrom', SearchFrom, ...
-    'SequenceAStride', SequenceAStride, ...
-    'SequenceBStride', SequenceBStride, ...
-    'SequenceABorder', SequenceABorder, ...
+if nargout == 0 || nargout == 1
+[Result] = blockMatchMex(A, B, BlockSize, ...
+    'SearchWindow', SearchWindow, ...
+    'StrideA', StrideA, ...
+    'StrideB', StrideB, ...
+    'BorderA', BorderA, ...
     'MeasureMethod', MeasureMethod, ...
-    'SequenceAPadding', SequenceAPadding, ...
-    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
-    'SequenceBPadding', SequenceBPadding, ...
-    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'PaddingA', PaddingA, ...
+    'PaddingMethodA', PaddingMethodA, ...
+    'PaddingB', PaddingB, ...
+    'PaddingMethodB', PaddingMethodB, ...
     'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
@@ -215,17 +196,16 @@ if nargout == 1
 end
 
 if nargout == 2
-[Result, Index] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
-    'SearchRegion', SearchRegion, ...
-    'SearchFrom', SearchFrom, ...
-    'SequenceAStride', SequenceAStride, ...
-    'SequenceBStride', SequenceBStride, ...
-    'SequenceABorder', SequenceABorder, ...
+[Result, Index] = blockMatchMex(A, B, BlockSize, ...
+    'SearchWindow', SearchWindow, ...
+    'StrideA', StrideA, ...
+    'StrideB', StrideB, ...
+    'BorderA', BorderA, ...
     'MeasureMethod', MeasureMethod, ...
-    'SequenceAPadding', SequenceAPadding, ...
-    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
-    'SequenceBPadding', SequenceBPadding, ...
-    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'PaddingA', PaddingA, ...
+    'PaddingMethodA', PaddingMethodA, ...
+    'PaddingB', PaddingB, ...
+    'PaddingMethodB', PaddingMethodB, ...
     'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
@@ -235,17 +215,16 @@ if nargout == 2
 end
 
 if nargout == 3
-[Result, Index, SequenceAPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
-    'SearchRegion', SearchRegion, ...
-    'SearchFrom', SearchFrom, ...
-    'SequenceAStride', SequenceAStride, ...
-    'SequenceBStride', SequenceBStride, ...
-    'SequenceABorder', SequenceABorder, ...
+[Result, Index, APadded] = blockMatchMex(A, B, BlockSize, ...
+    'SearchWindow', SearchWindow, ...
+    'StrideA', StrideA, ...
+    'StrideB', StrideB, ...
+    'BorderA', BorderA, ...
     'MeasureMethod', MeasureMethod, ...
-    'SequenceAPadding', SequenceAPadding, ...
-    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
-    'SequenceBPadding', SequenceBPadding, ...
-    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'PaddingA', PaddingA, ...
+    'PaddingMethodA', PaddingMethodA, ...
+    'PaddingB', PaddingB, ...
+    'PaddingMethodB', PaddingMethodB, ...
     'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
@@ -255,17 +234,16 @@ if nargout == 3
 end
 
 if nargout == 4
-[Result, Index, SequenceAPadded, SequenceBPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
-    'SearchRegion', SearchRegion, ...
-    'SearchFrom', SearchFrom, ...
-    'SequenceAStride', SequenceAStride, ...
-    'SequenceBStride', SequenceBStride, ...
-    'SequenceABorder', SequenceABorder, ...
+[Result, Index, APadded, BPadded] = blockMatchMex(A, B, BlockSize, ...
+    'SearchWindow', SearchWindow, ...
+    'StrideA', StrideA, ...
+    'StrideB', StrideB, ...
+    'BorderA', BorderA, ...
     'MeasureMethod', MeasureMethod, ...
-    'SequenceAPadding', SequenceAPadding, ...
-    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
-    'SequenceBPadding', SequenceBPadding, ...
-    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'PaddingA', PaddingA, ...
+    'PaddingMethodA', PaddingMethodA, ...
+    'PaddingB', PaddingB, ...
+    'PaddingMethodB', PaddingMethodB, ...
     'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...

@@ -14,15 +14,19 @@ BOOST_AUTO_TEST_CASE(test_case_1)
 		93,49,10,72,90,49,52,80, 6,17,
 		73,62,26,90,61,17,10,45,40,11 };
 
-	int matM = 10, matN = 10, blockM = 2, blockN = 2, strideM = 1, strideN = 1, searchRegionM = 3, searchRegionN = 3, numberOfResultRetain = 0;
+	int matM = 10, matN = 10, blockM = 2, blockN = 2, strideM = 1, strideN = 1, 
+	searchRegionM_pre = 1,searchRegionM_post = 1, 
+	searchRegionN_pre = 1, searchRegionN_post = 1,
+	numberOfResultRetain = 0;
 
 	int numberOfChannels;
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
 	BlockMatch<float> match(typeid(float), typeid(float), typeid(float), typeid(int),
-		SearchType::local, MeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::includeLastBlock, SearchFrom::topLeft, true,
+		SearchType::local, MeasureMethod::mse, PadMethod::zero, PadMethod::zero, BorderType::includeLastBlock, true,
 		matM, matN, matM, matN, 1,
-		searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
+		searchRegionM_pre, searchRegionM_post, searchRegionN_pre, searchRegionN_post,
+		blockM, blockN, strideM, strideN, strideM, strideN,
 		0, 0, 0, 0, 0, 0, 0, 0,
 		numberOfResultRetain, false, 0, 0, false);
 	match.initialize();

@@ -10,7 +10,6 @@ struct BlockMatchMexContext
 	PadMethod padMethodA;
 	PadMethod padMethodB;
 	BorderType sequenceABorderType;
-	SearchFrom searchFrom;
 
 	std::type_index sourceAType = typeid(nullptr);
 	std::type_index sourceBType = typeid(nullptr);
@@ -28,8 +27,10 @@ struct BlockMatchMexContext
 
 	int block_M;
 	int block_N;
-	int searchRegion_M;
-	int searchRegion_N;
+	int searchRegion_M_pre;
+	int searchRegion_M_post;
+	int searchRegion_N_pre;
+	int searchRegion_N_post;
 
 	int sequenceAStride_M;
 	int sequenceAStride_N;

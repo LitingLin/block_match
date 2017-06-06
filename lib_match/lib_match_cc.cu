@@ -60,11 +60,24 @@ lib_match_cc_kernel_helper(const Type *blocks_A, const Type *blocks_B, const int
 	Type *resultsBuffer, const int tid)
 {
 	int groupIndex = tid / numberOfBlockBPerBlockA;
-
-	int inGroupOffset = tid % numberOfBlockBPerBlockA;
-
+	
 	const Type *c_block_A = blocks_A + groupIndex * blockSize;
-	const Type *c_block_B = blocks_B + groupIndex * numberOfBlockBPerBlockA * blockSize + inGroupOffset * blockSize;
+	const Type *c_block_B = blocks_B + tid * blockSize;
+
+	resultsBuffer[tid] = correlation_coefficient(c_block_A, c_block_B, blockSize);
+}
+
+template <typename Type>
+__global__ void
+lib_match_cc_kernel_offset(const Type *blocks_A, const Type *blocks_B, Type *resultsBuffer,const int blockSize, const int *offsetA,const int numberOfB)
+{
+	const int tid = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if (tid >= numberOfB)
+		return;
+			
+	const Type *c_block_A = blocks_A + offsetA[tid] * blockSize;
+	const Type *c_block_B = blocks_B + tid * blockSize;
 
 	resultsBuffer[tid] = correlation_coefficient(c_block_A, c_block_B, blockSize);
 }
@@ -121,6 +134,15 @@ cudaError_t lib_match_cc_global(const Type *A, const Type *B, const int numberOf
 	return cudaGetLastError();
 }
 
+template <typename Type>
+cudaError_t lib_match_cc_offset(const Type *blocks_A, const Type *blocks_B, const int *offsetA,
+	const int numberOfB, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream)
+{
+	lib_match_cc_kernel_offset <<<numProcessors, numThreads, 0, stream >>> 
+		(blocks_A, blocks_B,result, blockSize, offsetA, numberOfB);
+	return cudaGetLastError();
+}
+
 #define EXP(type) \
 template \
 cudaError_t lib_match_cc(const type *, const type *, const int, \
@@ -138,6 +160,13 @@ InstantiateTemplateFloating(EXP);
 #define EXP(type) \
 template \
 cudaError_t lib_match_cc_global(const type *, const type *, const int, \
+	const int, const int, type *, const int, const int, const cudaStream_t)
+InstantiateTemplateFloating(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+cudaError_t lib_match_cc_offset(const type *, const type *, const int*, \
 	const int, const int, type *, const int, const int, const cudaStream_t)
 InstantiateTemplateFloating(EXP);
 #undef EXP

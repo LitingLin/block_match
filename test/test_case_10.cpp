@@ -20,9 +20,9 @@ BOOST_AUTO_TEST_CASE(test_case_10)
 
 	BlockMatch<double> blockMatch(typeid(uint8_t), typeid(uint8_t), typeid(double), typeid(uint8_t),
 		SearchType::global, MeasureMethod::mse, PadMethod::zero, PadMethod::zero,
-		BorderType::normal, SearchFrom::center, false,
+		BorderType::normal, false,
 		inDim0, inDim1, inDim0, inDim1, 1,
-		0, 0, blockSize, blockSize, 
+		0, 0, 0, 0, blockSize, blockSize,
 		stepSize, stepSize, stepSize, stepSize,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, true);
 	blockMatch.initialize();

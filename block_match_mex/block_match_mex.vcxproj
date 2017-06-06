@@ -97,6 +97,9 @@ xcopy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetFileName)" "$(Solut
   <ItemGroup>
     <ClInclude Include="common.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\matlab\blockMatch.m" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

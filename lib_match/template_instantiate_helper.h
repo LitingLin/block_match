@@ -283,6 +283,64 @@
 	else \
 		NOT_IMPLEMENTED_ERROR
 
+#define RuntimeTypeInferenceFloat(type, exp) \
+	if (type == typeid(float)) \
+		exp(float); \
+	else if (type == typeid(double)) \
+		exp(double); \
+	else \
+		NOT_IMPLEMENTED_ERROR
+
+#define RuntimeTypeInferenceFloatFull(type1, type2, exp) \
+	if (type1 == typeid(float)) { \
+		if (type2 == typeid(bool)) \
+			exp(float, bool); \
+		else if (type2 == typeid(uint8_t)) \
+			exp(float, uint8_t); \
+		else if (type2 == typeid(int8_t)) \
+			exp(float, int8_t); \
+		else if (type2 == typeid(uint16_t)) \
+			exp(float, uint16_t); \
+			else if (type2 == typeid(int16_t)) \
+			exp(float, int16_t); \
+		else if (type2 == typeid(uint32_t)) \
+			exp(float, uint32_t); \
+		else if (type2 == typeid(int32_t)) \
+			exp(float, int32_t); \
+		else if (type2 == typeid(uint64_t)) \
+			exp(float, uint64_t); \
+		else if (type2 == typeid(int64_t)) \
+			exp(float, int64_t); \
+		else if (type2 == typeid(float)) \
+			exp(float, float); \
+		else if (type2 == typeid(double)) \
+			exp(float, double); } \
+	else if (type1 == typeid(double)) { \
+		if (type2 == typeid(bool)) \
+			exp(double, bool); \
+		else if (type2 == typeid(uint8_t)) \
+			exp(double, uint8_t); \
+		else if (type2 == typeid(int8_t)) \
+			exp(double, int8_t); \
+		else if (type2 == typeid(uint16_t)) \
+			exp(double, uint16_t); \
+		else if (type2 == typeid(int16_t)) \
+			exp(double, int16_t); \
+		else if (type2 == typeid(uint32_t)) \
+			exp(double, uint32_t); \
+		else if (type2 == typeid(int32_t)) \
+			exp(double, int32_t); \
+		else if (type2 == typeid(uint64_t)) \
+			exp(double, uint64_t); \
+		else if (type2 == typeid(int64_t)) \
+			exp(double, int64_t); \
+		else if (type2 == typeid(float)) \
+			exp(double, float); \
+		else if (type2 == typeid(double)) \
+			exp(double, double); } \
+	else \
+		NOT_IMPLEMENTED_ERROR
+
 #define InstantiateTemplateFloating(exp) \
 	exp(float); \
 	exp(double)

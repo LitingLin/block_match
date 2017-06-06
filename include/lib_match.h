@@ -44,12 +44,6 @@ enum class BorderType
 	includeLastBlock
 };
 
-enum class SearchFrom
-{
-	topLeft,
-	center
-};
-
 class Iterator
 {
 public:
@@ -136,11 +130,11 @@ public:
 		MeasureMethod measureMethod,
 		PadMethod padMethodA, PadMethod padMethodB,
 		BorderType sequenceABorderType,
-		SearchFrom searchFrom,
 		bool sort,
 		int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
 		int numberOfChannels,
-		int searchRegion_M, int searchRegion_N,
+		int searchRegion_M_pre, int searchRegion_M_post,
+		int searchRegion_N_pre, int searchRegion_N_post,
 		int block_M, int block_N,
 		int strideA_M, int strideA_N,
 		int strideB_M, int strideB_N,

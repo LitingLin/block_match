@@ -91,7 +91,10 @@
     </ClCompile>
     <ClCompile Include="test_mse_gpu.cpp" />
     <ClCompile Include="test_padding.cpp" />
-    <ClCompile Include="test_simd_intrinsic_sum.cpp" />
+    <ClCompile Include="test_simd_intrinsic_sum.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="test_sort.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -102,14 +105,14 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\boost.1.60.0.0\build\native\boost.targets" Condition="Exists('..\packages\boost.1.60.0.0\build\native\boost.targets')" />
-    <Import Project="..\packages\boost_unit_test_framework-vc140.1.60.0.0\build\native\boost_unit_test_framework-vc140.targets" Condition="Exists('..\packages\boost_unit_test_framework-vc140.1.60.0.0\build\native\boost_unit_test_framework-vc140.targets')" />
+    <Import Project="..\packages\boost.1.62.0.0\build\native\boost.targets" Condition="Exists('..\packages\boost.1.62.0.0\build\native\boost.targets')" />
+    <Import Project="..\packages\boost_unit_test_framework-vc140.1.62.0.0\build\native\boost_unit_test_framework-vc140.targets" Condition="Exists('..\packages\boost_unit_test_framework-vc140.1.62.0.0\build\native\boost_unit_test_framework-vc140.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\boost.1.60.0.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.60.0.0\build\native\boost.targets'))" />
-    <Error Condition="!Exists('..\packages\boost_unit_test_framework-vc140.1.60.0.0\build\native\boost_unit_test_framework-vc140.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_unit_test_framework-vc140.1.60.0.0\build\native\boost_unit_test_framework-vc140.targets'))" />
+    <Error Condition="!Exists('..\packages\boost.1.62.0.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.62.0.0\build\native\boost.targets'))" />
+    <Error Condition="!Exists('..\packages\boost_unit_test_framework-vc140.1.62.0.0\build\native\boost_unit_test_framework-vc140.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_unit_test_framework-vc140.1.62.0.0\build\native\boost_unit_test_framework-vc140.targets'))" />
   </Target>
 </Project>

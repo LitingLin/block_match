@@ -57,4 +57,5 @@ BOOST_AUTO_TEST_CASE(array_match_test_case_4) {
 	BOOST_CHECK(inRange(index[retain + 1], a));
 
 	free(C);
+	free(index);
 }

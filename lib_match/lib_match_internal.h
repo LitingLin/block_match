@@ -269,13 +269,13 @@ template<typename Type>
 using DataPostProcessingMethod =
 void(Iterator *index_x, Iterator *index_y, Iterator *result,
 	int *index_x_buffer, int *index_y_buffer, Type *result_buffer,
-	int numberOfBlockA, int numberOfBlockBPerBlockA, int retain,
+	int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
 	Type threshold, Type replacementValue,
 	const int *index_buffer, int *index_buffer_sort);
 using BlockCopyMethod =
 void(const size_t, void *, const void *, int, int, int, int, int, int);
 using DetermineBlockBRangeMethod =
-void(int *, int *, int, int, int, int);
+void(int *, int *, int, int,int, int, int);
 using IterationIndexPostProcessMethod =
 void(int*, int, int);
 using IndexRecordMethod =
@@ -294,10 +294,15 @@ struct ExecutionContext
 	std::unique_ptr<Iterator> index_x, index_y;
 	int *index_x_buffer, *index_y_buffer,
 		*rawIndexTemplate, *rawIndexBuffer,
+		*sizeBuffer,
+	*offsetA_buffer, *offsetA_deviceBuffer,
 		block_M, block_N,
 		strideA_M, strideA_N,
 		strideB_M, strideB_N,
-		neighbour_M, neighbour_N,
+		 searchRegion_M_pre,
+	 searchRegion_M_post,
+	 searchRegion_N_pre,
+	 searchRegion_N_post,
 		numberOfBlockBPerBlockA,
 		numberOfIndexRetain,
 		indexA_M_begin, indexA_N_begin,
@@ -355,8 +360,10 @@ struct BlockMatchContext
 	int block_M;
 	int block_N;
 
-	int searchRegion_M;
-	int searchRegion_N;
+	int searchRegion_M_pre;
+	int searchRegion_M_post;
+	int searchRegion_N_pre;
+	int searchRegion_N_post;
 
 	int strideA_M;
 	int strideA_N;
@@ -430,13 +437,14 @@ struct BlockMatchContext
 		memory_allocator<Type, memory_type::page_locked> matrixA_buffer;
 		memory_allocator<Type, memory_type::page_locked> matrixB_buffer;
 		memory_allocator<Type, memory_type::page_locked> matrixC_buffer;
+		memory_allocator<int, memory_type::page_locked> offsetOfA;
 		memory_allocator<Type, memory_type::gpu> matrixA_deviceBuffer;
 		memory_allocator<Type, memory_type::gpu> matrixB_deviceBuffer;
 		memory_allocator<Type, memory_type::gpu> matrixC_deviceBuffer;
-
+		memory_allocator<int, memory_type::gpu> offsetOfADevice;
+		memory_allocator<int, memory_type::system> sizeBuffer;
 		memory_allocator<int, memory_type::system> index_x_sorting_buffer;
 		memory_allocator<int, memory_type::system> index_y_sorting_buffer;
-
 		memory_allocator<int, memory_type::system> index_raw_sorting_buffer;
 	};
 	std::vector<PerThreadBuffer> perThreadBuffer;
@@ -593,6 +601,13 @@ cudaError_t lib_match_mse_global(const Type *A, const Type *B, const int numberO
 template <typename Type>
 cudaError_t lib_match_cc_global(const Type *A, const Type *B, const int numberOfA,
 	const int numberOfBPerA, const int size, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
+
+template <typename Type>
+cudaError_t lib_match_mse_offset(const Type *blocks_A, const Type *blocks_B, const int *offsetA,
+	const int numberOfB, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
+template <typename Type>
+cudaError_t lib_match_cc_offset(const Type *blocks_A, const Type *blocks_B, const int *offsetA,
+	const int numberOfB, const int blockSize, Type *result, const int numProcessors, const int numThreads, const cudaStream_t stream);
 
 template <typename Type>
 void lib_match_mse_cpu(Type *block_A, Type *block_B, int blockSize, Type *result);

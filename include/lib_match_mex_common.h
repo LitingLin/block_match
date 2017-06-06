@@ -123,6 +123,17 @@ LibMatchMexError parse4ElementNonNegativeIntegerParameter(const mxArray *pa,
 	int *parameterA1, int *parameterA2,
 	int *parameterB1, int *parameterB2);
 
+/*
+* Return:
+*  errorNumberOfMatrixDimension
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementPositiveIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+	int *parameterB1, int *parameterB2);
+
 /* 
 * Return:
 *  errorTypeOfArgument

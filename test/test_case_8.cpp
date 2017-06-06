@@ -46,16 +46,21 @@ BOOST_AUTO_TEST_CASE(test_case_8)
 		10,1,3,5,4,5,2,2,5,8,5,6,10,2,5,2,4,2,6,2,7,1,1,7,7
 	};
 
-	int matM = 25, matN = 20, blockM = 2, blockN = 2, strideM = 3, strideN = 1, searchRegionM = 0, searchRegionN = 0, numberOfResultRetain = 10,
+	int matM = 25, matN = 20, blockM = 2, blockN = 2, strideM = 3, strideN = 1,
+		searchRegionM_pre = 0, searchRegionM_post = 0,
+		searchRegionN_pre = 0, searchRegionN_post = 0,
+	numberOfResultRetain = 10,
 		matrixPaddingMPre = 0, matrixPaddingMPost = 0, matrixPaddingNPre = 0, matrixPaddingNPost = 0,
 	numberOfChannels = 2;
 
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
 	BlockMatch<float> match(typeid(float), typeid(float), typeid(float), typeid(nullptr),
-		SearchType::global, MeasureMethod::mse, PadMethod::symmetric, PadMethod::symmetric, BorderType::normal, SearchFrom::topLeft, false,
+		SearchType::global, MeasureMethod::mse, PadMethod::symmetric, PadMethod::symmetric, BorderType::normal, false,
 		matM, matN, matM, matN, numberOfChannels,
-		searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
+		searchRegionM_pre, searchRegionM_post,
+		searchRegionN_pre, searchRegionN_post,
+		blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain, false, 0, 0, false);
 	match.initialize();

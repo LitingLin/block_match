@@ -131,7 +131,25 @@ LibMatchMexError parse4ElementNonNegativeIntegerParameter(const mxArray *pa,
 
 	return LibMatchMexError::success;
 }
+/*
+* Return:
+*  errorNumberOfMatrixDimension
+*  errorOverFlow
+*  errorInvalidValue
+*  success
+*/
+LibMatchMexError parse4ElementPositiveIntegerParameter(const mxArray *pa,
+	int *parameterA1, int *parameterA2,
+	int *parameterB1, int *parameterB2)
+{
+	LibMatchMexError error = parse4ElementIntegerParameter(pa, parameterA1, parameterA2, parameterB1, parameterB2);
+	if (error != LibMatchMexError::success)
+		return error;
+	if (*parameterA1 <= 0 || *parameterA2 <= 0 || *parameterB1 <= 0 || *parameterB2 <= 0)
+		return LibMatchMexError::errorInvalidValue;
 
+	return LibMatchMexError::success;
+}
 LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 	void **pointer,
 	int *size_M, int *size_N)
