@@ -13,6 +13,8 @@ void BlockMatch<Type>::destroy()
 	BlockMatchContext<Type> *instance = static_cast<BlockMatchContext<Type> *>(m_instance);
 	delete instance;
 
+	CUDA_CHECK_POINT(cudaSetDevice(0));
+
 	m_instance = nullptr;
 }
 

@@ -65,17 +65,17 @@ void recheckSequenceBPadding(BlockMatchMexContext *context)
 	}
 	else
 	{
-		if (context->sequenceBPadding_N_Pre == -1)
+		if (context->sequenceBPadding_N_Pre == -1) // same
 		{
 			context->sequenceBPadding_N_Pre = context->searchRegion_N / 2;
 			context->sequenceBPadding_N_Post = context->searchRegion_N - context->searchRegion_N / 2;
 			context->sequenceBPadding_M_Pre = context->searchRegion_M / 2;
 			context->sequenceBPadding_M_Post = context->searchRegion_M - context->searchRegion_M / 2;
 		}
-		else if (context->sequenceBPadding_N_Pre == -2)
+		else if (context->sequenceBPadding_N_Pre == -2) // full
 		{
-			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post = context->searchRegion_N;
-			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M;
+			context->sequenceBPadding_N_Pre = context->sequenceBPadding_N_Post = context->searchRegion_N - 1;
+			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M - 1;
 		}
 	}
 }
@@ -344,6 +344,66 @@ LibMatchMexError parseThresholdReplacementValue(BlockMatchMexContext *context,
 //	}
 //}
 
+LibMatchMexError parseIndexOfDevice(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	if (!mxIsScalar(pa))
+		return LibMatchMexError::errorTypeOfArgument;
+	
+	LibMatchMexError error = getIntegerFromMxArray(pa, &context->indexOfDevice);
+
+	if (error != LibMatchMexError::success)
+		return error;
+
+	if (context->indexOfDevice < 0)
+		return LibMatchMexError::errorInvalidValue;
+
+	return LibMatchMexError::success;
+}
+
+LibMatchMexError parseNumberOfThreads(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	mxClassID classId = mxGetClassID(pa);
+	if (classId == mxCHAR_CLASS)
+		goto StringClass;
+	else
+		goto ValueClass;
+
+	LibMatchMexError error;
+
+StringClass:
+	{
+		char buffer[5];
+
+		error = getStringFromMxArray(pa, buffer, 5);
+
+		if (error != LibMatchMexError::success)
+			return error;
+
+		if (strncmp(buffer, "auto", 5) != 0)
+			return LibMatchMexError::errorInvalidValue;
+
+		context->numberOfThreads = 0;
+
+		return LibMatchMexError::success;
+	}
+ValueClass:
+	{
+		if (!mxIsScalar(pa))
+			return LibMatchMexError::errorSizeOfArray;
+
+		error = getUnsignedIntegerFromMxArray(pa, &context->numberOfThreads);
+		if (error != LibMatchMexError::success)
+			return error;
+		
+		if (context->numberOfThreads == 0)
+			return LibMatchMexError::errorInvalidValue;
+
+		return LibMatchMexError::success;
+	}
+}
+
 LibMatchMexError parseRetain(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -497,18 +557,54 @@ LibMatchMexError parseSequenceB(BlockMatchMexContext *context,
 	if (context->sourceBType == typeid(nullptr))
 		return LibMatchMexError::errorTypeOfArgument;
 
-	return parse2DMatrixParameter(pa, &context->sequenceBMatrixPointer,
-		&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1]);
+	if (context->sequenceMatrixNumberOfDimensions == 2)
+	{
+		context->sequenceBMatrixDimensions[2] = 1;
+		return parse2DMatrixParameter(pa, &context->sequenceBMatrixPointer,
+			&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1]);
+	}
+	else if (context->sequenceMatrixNumberOfDimensions == 3)
+	{
+		LibMatchMexError error = parse3DMatrixParameter(pa, &context->sequenceBMatrixPointer,
+			&context->sequenceBMatrixDimensions[0], &context->sequenceBMatrixDimensions[1],
+			&context->sequenceBMatrixDimensions[2]);
+
+		if (error != LibMatchMexError::success)
+			return error;
+		
+		if (context->sequenceAMatrixDimensions[2] != context->sequenceBMatrixDimensions[2])
+			return LibMatchMexError::errorNumberOfMatrixDimensionMismatch;
+
+		return LibMatchMexError::success;
+	}
+	else
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 }
 
 // TODO: multi-dimension
 LibMatchMexError parseSequenceA(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
-	LibMatchMexError error = parse2DMatrixParameter(pa, &context->sequenceAMatrixPointer,
-		&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1]);
+	LibMatchMexError error = LibMatchMexError::success;
+	if (mxGetNumberOfDimensions(pa) == 2) 
+	{
+		error = parse2DMatrixParameter(pa, &context->sequenceAMatrixPointer,
+			&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1]);
 
-	context->sequenceMatrixNumberOfDimensions = 2;
+		context->sequenceAMatrixDimensions[2] = 1;
+
+		context->sequenceMatrixNumberOfDimensions = 2;
+	}
+	else if (mxGetNumberOfDimensions(pa) == 3)
+	{
+		error = parse3DMatrixParameter(pa, &context->sequenceAMatrixPointer,
+			&context->sequenceAMatrixDimensions[0], &context->sequenceAMatrixDimensions[1],
+			&context->sequenceAMatrixDimensions[2]);
+
+		context->sequenceMatrixNumberOfDimensions = 3;
+	}
+	else
+		return LibMatchMexError::errorNumberOfMatrixDimension;
 
 	context->sourceAType = getTypeIndex(mxGetClassID(pa));
 
@@ -577,7 +673,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2\n");
+		return generateErrorMessage(error, "Number of dimension of Matrix A must be 2 or 3\n");
 	}
 	else if (error != LibMatchMexError::success)
 		return unknownParsingError("A");
@@ -591,11 +687,11 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimension)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2\n");
+		return generateErrorMessage(error, "Number of dimension of Matrix B must be 2 or 3\n");
 	}
 	else if (error == LibMatchMexError::errorNumberOfMatrixDimensionMismatch)
 	{
-		return generateErrorMessage(error, "Number of dimension of Matrix B must be the same as Matrix A\n");
+		return generateErrorMessage(error, "Number of channels of Matrix B must be the same as Matrix A\n");
 	}
 	else if (error != LibMatchMexError::success)
 		return unknownParsingError("B");
@@ -838,6 +934,32 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return generateErrorMessage(error, "Argument SearchFrom must be string.");
 			else if (error == LibMatchMexError::errorInvalidValue || error == LibMatchMexError::errorSizeOfArray || error == LibMatchMexError::errorNumberOfMatrixDimension)
 				return generateErrorMessage(error, "Invalid value of argument SearchFrom.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "NumberOfThreads", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseNumberOfThreads(context, prhs[index]);
+
+			if (error == LibMatchMexError::errorSizeOfArray)
+				return generateErrorMessage(error, "Argument NumberOfThreads must be scalar or 'auto'.");
+			else if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "Argument NumberOfThreads must be integer or string.");
+			else if (error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "Value of argument NumberOfThreads must be 'auto' or positive integer.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of argument NumberOfThreads overflowed.");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "IndexOfDevice", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseIndexOfDevice(context, prhs[index]);
+
+			if (error == LibMatchMexError::errorTypeOfArgument || error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "Argument IndexOfDevice must be positive integer.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of argument IndexOfDevice overflowed.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}

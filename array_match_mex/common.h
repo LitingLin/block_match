@@ -20,6 +20,13 @@ struct ArrayMatchMexContext
 
 	bool sort;
 	int retain;
+
+	bool threshold;
+	double thresholdValue;
+	double thresholdReplacementValue;
+
+	unsigned numberOfThreads;
+	int indexOfDevice;
 };
 
 struct LibMatchMexErrorWithMessage parseParameter(struct ArrayMatchMexContext *context,

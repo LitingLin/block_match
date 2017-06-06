@@ -16,19 +16,20 @@ BOOST_AUTO_TEST_CASE(test_case_4)
 
 	int matM = 10, matN = 10, blockM = 2, blockN = 2, strideM = 2, strideN = 2, searchRegionM = 0, searchRegionN = 0, numberOfResultRetain = 0,
 		matrixPaddingMPre = 2, matrixPaddingMPost = 2, matrixPaddingNPre = 2, matrixPaddingNPost = 2;
-
+	int numberOfChannels;
 	int matrixC_M, matrixC_N, matrixC_O,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N;
 	BlockMatch<float> match(typeid(float), typeid(float), typeid(float), typeid(int),
 		SearchType::global, MeasureMethod::mse, PadMethod::symmetric, PadMethod::symmetric, BorderType::normal, SearchFrom::topLeft,
 		true,
-		matM, matN, matM, matN, searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
+		matM, matN, matM, matN, 1,
+		searchRegionM, searchRegionN, blockM, blockN, strideM, strideN, strideM, strideN,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain, true, 1, 0, false);
 	match.initialize();
 	match.get_matrixC_dimensions(&matrixC_M, &matrixC_N, &matrixC_O);
-	match.get_matrixA_padded_dimensions(&matrixA_padded_M, &matrixA_padded_N);
-	match.get_matrixB_padded_dimensions(&matrixB_padded_M, &matrixB_padded_N);
+	match.get_matrixA_padded_dimensions(&matrixA_padded_M, &matrixA_padded_N, &numberOfChannels);
+	match.get_matrixB_padded_dimensions(&matrixB_padded_M, &matrixB_padded_N, &numberOfChannels);
 
 	float *matrixC = (float*)malloc(matrixC_M * matrixC_N * matrixC_O * sizeof(float));
 	float *matrixAPadded = (float*)malloc(matrixA_padded_M * matrixA_padded_N * sizeof(float));

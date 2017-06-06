@@ -109,8 +109,6 @@ void threshold(ComputingDataType *value, ComputingDataType threshold, ComputingD
 template <typename ComputingDataType>
 void noThreshold(ComputingDataType *value, ComputingDataType threshold, ComputingDataType replacementValue)
 {
-	if (*value > threshold)
-		*value = replacementValue;
 }
 
 template<typename IndexDataType>

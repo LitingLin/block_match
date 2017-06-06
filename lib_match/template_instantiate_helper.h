@@ -287,6 +287,20 @@
 	exp(float); \
 	exp(double)
 
+
+#define InstantiateTemplate(exp) \
+	exp(bool); \
+	exp(uint8_t); \
+	exp(int8_t); \
+	exp(uint16_t); \
+	exp(int16_t); \
+	exp(uint32_t); \
+	exp(int32_t); \
+	exp(uint64_t); \
+	exp(int64_t); \
+	exp(float); \
+	exp(double)
+
 #define InstantiateTemplate2(exp) \
 	exp(bool, bool); \
 	exp(bool, uint8_t); \

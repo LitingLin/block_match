@@ -161,3 +161,34 @@ LibMatchMexError parse2DMatrixParameter(const mxArray *pa,
 
 	return LibMatchMexError::success;
 }
+
+LibMatchMexError parse3DMatrixParameter(const mxArray *pa,
+	void **pointer,
+	int *size_M, int *size_N, int *size_O)
+{
+	if (!mxIsNumeric(pa))
+	{
+		return LibMatchMexError::errorTypeOfArgument;
+	}
+
+	if (mxGetNumberOfDimensions(pa) > INT_MAX)
+		return LibMatchMexError::errorOverFlow;
+
+	int numberOfDimensions = static_cast<int>(mxGetNumberOfDimensions(pa));
+	if (numberOfDimensions != 3)
+	{
+		return LibMatchMexError::errorNumberOfMatrixDimension;
+	}
+
+	const size_t *dimensions = mxGetDimensions(pa);
+	if (dimensions[0] > INT_MAX || dimensions[1] > INT_MAX || dimensions[2] > INT_MAX)
+		return LibMatchMexError::errorOverFlow;
+
+	*size_M = static_cast<int>(dimensions[1]);
+	*size_N = static_cast<int>(dimensions[0]);
+	*size_O = static_cast<int>(dimensions[2]);
+
+	*pointer = mxGetData(pa);
+
+	return LibMatchMexError::success;
+}

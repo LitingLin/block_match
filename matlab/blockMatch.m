@@ -3,12 +3,12 @@ function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(Sequence
 % Input:
 %  SequenceA:
 %   Sequence A, can be
-%    MxN image, MxNxC multi-channel image,
-%    MxNxF video, MxNxCxF multi-channel video
+%    MxN image,
+%    MxNxC multi-channel image, [NOT IMPLEMENTED]
 %  SequenceB:
 %   Sequence B, the size must be the same as SequenceA, can be
-%    MxN image, MxNxC multi-channel image,
-%    MxNxF video, MxNxCxF multi-channel video
+%    MxN image, 
+%    MxNxC multi-channel image,  [NOT IMPLEMENTED]
 %  BlockSize:
 %   Size of block, can be
 %    scalar, 1x2 matrix
@@ -17,7 +17,10 @@ function [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatch(Sequence
 %    struct
 %
 % Output:
-%  Result
+%  Result:
+%   AxMxN
+%  Index:
+%   XxYxMxN matrix, stores the corresponding index of Result in matrix B
 
 % Demo:
 %  blockSize = [3,3];
@@ -46,7 +49,7 @@ SearchRegion = 'full';
 %  scalar, 1x2 matrix
 % SearchBlock = [3,3];
 
-% Beginning index of B, can be
+% Position of A in corresponding search window, can be
 %  'topLeft', 'center'
 SearchFrom = 'center';
 
@@ -67,25 +70,24 @@ SequenceAStride = [1,1];
 SequenceBStride = [1,1];
 
 %% Border
-
 % Blocks in the borders 
 %  can be
 %  'normal'
 %  'includeLastBlock'
-SequenceABorder = 'includeLastBlock';
+SequenceABorder = 'normal';
 
 %% Padding Method
 % Padding size of sequence A, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
-%  'same', 'full'
+%  'same', 'full': same behavior in conv2 (shape parameter)
 SequenceAPadding = 0;
 % Padding of sequence A, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
 SequenceAPaddingMethod = 'symmetric';
 % Padding size of sequence B, can be
 %  scalar, 1x2 matrix, 2x2 matrix,
-%  'same', 'full'
-SequenceBPadding = 'same';
+%  'same', 'full': same behavior in conv2 (shape parameter)
+SequenceBPadding = 0;
 % Padding of sequence B, can be
 %  'zero', 'circular', 'replicate', 'symmetric'
 SequenceBPaddingMethod = 'symmetric';
@@ -97,7 +99,7 @@ SequenceBPaddingMethod = 'symmetric';
 Threshold = 'no';
 % Sort result, can be
 %  logical
-Sort = true;
+Sort = false;
 % After sorting the result, retain specified number of blocks, can be
 %  scalar
 %  'all': retain all blocks
@@ -118,10 +120,15 @@ IntermediateDataType = 'single';
 %  'double', 'single',
 %  'logical', 'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64'
 IndexDataType = 'auto';
-% Sparse or not, can be
-%  'auto': depends on results,
-%  logical
-Sparse = 'auto';
+
+%% Performance Tunning
+% Number of worker threads, can be
+%  scalar
+%  'auto': depends on environment
+NumberOfThreads = 'auto';
+% Index of GPU, can be
+%  scalar
+IndexOfDevice = 0;
 
 %% Parse option parameter
 if nargin == 4
@@ -175,15 +182,79 @@ if nargin == 4
     if isfield(Options, 'IndexDataType')
         IndexDataType = Options.IndexDataType;
     end
-    if isfield(Options, 'Sparse')
-        Sparse = Options.Sparse;
-    end
     if isfield(Options, 'SequenceABorder')
         SequenceABorder = Options.SequenceABorder;
+    end
+    if isfield(Options, 'NumberOfThreads')
+        NumberOfThreads = Options.NumberOfThreads;
+    end
+    if isfield(Options, 'IndexOfDevice')
+        IndexOfDevice = Options.IndexOfDevice;
     end
 end
 
 %% Call mex
+if nargout == 1
+[Result] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
+    'SearchRegion', SearchRegion, ...
+    'SearchFrom', SearchFrom, ...
+    'SequenceAStride', SequenceAStride, ...
+    'SequenceBStride', SequenceBStride, ...
+    'SequenceABorder', SequenceABorder, ...
+    'MeasureMethod', MeasureMethod, ...
+    'SequenceAPadding', SequenceAPadding, ...
+    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
+    'SequenceBPadding', SequenceBPadding, ...
+    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
+    'ResultDataType', ResultDataType, ...
+    'IntermediateDataType', IntermediateDataType, ...
+    'IndexDataType', IndexDataType, ...
+    'NumberOfThreads', NumberOfThreads, ...
+    'IndexOfDevice', IndexOfDevice);
+end
+
+if nargout == 2
+[Result, Index] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
+    'SearchRegion', SearchRegion, ...
+    'SearchFrom', SearchFrom, ...
+    'SequenceAStride', SequenceAStride, ...
+    'SequenceBStride', SequenceBStride, ...
+    'SequenceABorder', SequenceABorder, ...
+    'MeasureMethod', MeasureMethod, ...
+    'SequenceAPadding', SequenceAPadding, ...
+    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
+    'SequenceBPadding', SequenceBPadding, ...
+    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
+    'ResultDataType', ResultDataType, ...
+    'IntermediateDataType', IntermediateDataType, ...
+    'IndexDataType', IndexDataType, ...
+    'NumberOfThreads', NumberOfThreads, ...
+    'IndexOfDevice', IndexOfDevice);
+end
+
+if nargout == 3
+[Result, Index, SequenceAPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
+    'SearchRegion', SearchRegion, ...
+    'SearchFrom', SearchFrom, ...
+    'SequenceAStride', SequenceAStride, ...
+    'SequenceBStride', SequenceBStride, ...
+    'SequenceABorder', SequenceABorder, ...
+    'MeasureMethod', MeasureMethod, ...
+    'SequenceAPadding', SequenceAPadding, ...
+    'SequenceAPaddingMethod', SequenceAPaddingMethod, ...
+    'SequenceBPadding', SequenceBPadding, ...
+    'SequenceBPaddingMethod', SequenceBPaddingMethod, ...
+    'Threshold', Threshold, 'Sort', Sort, 'Retain', Retain, ...
+    'ResultDataType', ResultDataType, ...
+    'IntermediateDataType', IntermediateDataType, ...
+    'IndexDataType', IndexDataType, ...
+    'NumberOfThreads', NumberOfThreads, ...
+    'IndexOfDevice', IndexOfDevice);
+end
+
+if nargout == 4
 [Result, Index, SequenceAPadded, SequenceBPadded] = blockMatchMex(SequenceA, SequenceB, BlockSize, ...
     'SearchRegion', SearchRegion, ...
     'SearchFrom', SearchFrom, ...
@@ -199,4 +270,6 @@ end
     'ResultDataType', ResultDataType, ...
     'IntermediateDataType', IntermediateDataType, ...
     'IndexDataType', IndexDataType, ...
-    'Sparse', Sparse);
+    'NumberOfThreads', NumberOfThreads, ...
+    'IndexOfDevice', IndexOfDevice);
+end

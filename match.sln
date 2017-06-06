@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_test", "unit_test\unit_test.vcxproj", "{D7F9439D-6A75-4D93-874E-9DAF9727DBB1}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -34,6 +34,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lib_match_mex", "lib_match_
 	ProjectSection(ProjectDependencies) = postProject
 		{6A32AFD3-16B3-469E-820D-7CE42B939FBC} = {6A32AFD3-16B3-469E-820D-7CE42B939FBC}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "v1tov2", "v1tov2\v1tov2.vcxproj", "{339E687F-D45C-4969-AD03-8A8B4E20AD6A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "v2tov1", "v2tov1\v2tov1.vcxproj", "{041E0604-858D-4D8A-9C88-9347CF6A9095}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lib_match_gpu", "lib_match_gpu\lib_match_gpu.vcxproj", "{55746088-CF13-4028-9C8C-0D5240529165}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,6 +91,22 @@ Global
 		{C23019BB-0E7E-4E86-A487-CF339804D6D2}.Release|x64.ActiveCfg = Release|x64
 		{C23019BB-0E7E-4E86-A487-CF339804D6D2}.Release|x64.Build.0 = Release|x64
 		{C23019BB-0E7E-4E86-A487-CF339804D6D2}.Release|x86.ActiveCfg = Release|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Debug|x64.ActiveCfg = Debug|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Debug|x64.Build.0 = Debug|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Debug|x86.ActiveCfg = Debug|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Release|x64.ActiveCfg = Release|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Release|x64.Build.0 = Release|x64
+		{339E687F-D45C-4969-AD03-8A8B4E20AD6A}.Release|x86.ActiveCfg = Release|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Debug|x64.ActiveCfg = Debug|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Debug|x64.Build.0 = Debug|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Debug|x86.ActiveCfg = Debug|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Release|x64.ActiveCfg = Release|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Release|x64.Build.0 = Release|x64
+		{041E0604-858D-4D8A-9C88-9347CF6A9095}.Release|x86.ActiveCfg = Release|x64
+		{55746088-CF13-4028-9C8C-0D5240529165}.Debug|x64.ActiveCfg = Debug|x64
+		{55746088-CF13-4028-9C8C-0D5240529165}.Debug|x86.ActiveCfg = Debug|x64
+		{55746088-CF13-4028-9C8C-0D5240529165}.Release|x64.ActiveCfg = Release|x64
+		{55746088-CF13-4028-9C8C-0D5240529165}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

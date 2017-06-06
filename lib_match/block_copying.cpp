@@ -42,6 +42,19 @@ void copyBlock(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, 
 	copyBlock_helper(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
 }
 
+template <typename Type1, typename Type2>
+void copyBlockMultiChannel(const size_t nChannels, Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N)
+{
+	size_t blockSize = block_M * block_N;
+	size_t matSize = mat_M * mat_N;
+	for (size_t i=0;i<nChannels;++i)
+	{
+		copyBlock_helper(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
+		buf += blockSize;
+		src += matSize;
+	}
+}
+
 void determineIndexPreMat(int index, int mat_length, int block_length, int &index_pre_begin, int &index_pre_end)
 {
 	if (index >= 0) {
@@ -188,7 +201,13 @@ void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int ma
 
 #define exp(type1, type2) \
 template \
-void copyBlock(type1 *buf, const type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+void copyBlock(type1 *, const type2 *, int, int, int, int, int, int);
+InstantiateTemplate2(exp);
+#undef exp
+
+#define exp(type1, type2) \
+template \
+void copyBlockMultiChannel(const size_t, type1 *, const type2 *, int, int, int, int, int, int);
 InstantiateTemplate2(exp);
 #undef exp
 

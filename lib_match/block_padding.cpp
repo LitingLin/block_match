@@ -1,6 +1,7 @@
 #include <string.h>
 #include <type_traits>
 #include "lib_match.h"
+#include "template_instantiate_helper.h"
 
 template <typename T>
 inline T
@@ -193,135 +194,119 @@ void symmetricPadding(const T *src_ptr, T *dst_ptr,
 	}
 }
 
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const int8_t *, int8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const uint16_t *, uint16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const int16_t *, int16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const uint32_t *, uint32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const int32_t *, int32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const uint64_t *, uint64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const int64_t *, int64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void zeroPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const int8_t *, int8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const uint16_t *, uint16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const int16_t *, int16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const uint32_t *, uint32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const int32_t *, int32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const uint64_t *, uint64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const int64_t *, int64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void circularPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const int8_t *, int8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const uint16_t *, uint16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const int16_t *, int16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const uint32_t *, uint32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const int32_t *, int32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const uint64_t *, uint64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const int64_t *, int64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void replicatePadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const bool *, bool *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const uint8_t *, uint8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const int8_t *, int8_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const uint16_t *, uint16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const int16_t *, int16_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const uint32_t *, uint32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const int32_t *, int32_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const uint64_t *, uint64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const int64_t *, int64_t *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const float *, float *, size_t, size_t, size_t, size_t, size_t, size_t);
-template
-LIB_MATCH_EXPORT
-void symmetricPadding(const double *, double *, size_t, size_t, size_t, size_t, size_t, size_t);
+
+template <typename T>
+void zeroPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
+{
+	size_t newM = m + m_pre + m_post;
+	size_t newN = n + n_pre + n_post;
+
+	for (size_t i = 0; i < nChannels; ++i) {
+		zeroPadding(src_ptr, dst_ptr, m, n, m_pre, m_post, n_pre, n_post);
+		src_ptr += m * n;
+		dst_ptr += newM * newN;
+	}
+}
+
+template <typename T>
+void circularPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
+{
+	size_t newM = m + m_pre + m_post;
+	size_t newN = n + n_pre + n_post;
+
+	for (size_t i = 0; i < nChannels; ++i) {
+		circularPadding(src_ptr, dst_ptr, m, n, m_pre, m_post, n_pre, n_post);
+		src_ptr += m * n;
+		dst_ptr += newM * newN;
+	}	
+}
+
+template <typename T>
+void replicatePaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
+{
+	size_t newM = m + m_pre + m_post;
+	size_t newN = n + n_pre + n_post;
+
+	for (size_t i = 0; i < nChannels; ++i) {
+		replicatePadding(src_ptr, dst_ptr, m, n, m_pre, m_post, n_pre, n_post);
+		src_ptr += m * n;
+		dst_ptr += newM * newN;
+	}
+}
+
+template <typename T>
+void symmetricPaddingMultiChannel(const size_t nChannels, const T *src_ptr, T *dst_ptr,
+	size_t m, size_t n,
+	size_t m_pre, size_t m_post, size_t n_pre, size_t n_post)
+{
+	size_t newM = m + m_pre + m_post;
+	size_t newN = n + n_pre + n_post;
+
+	for (size_t i = 0; i < nChannels; ++i) {
+		symmetricPadding(src_ptr, dst_ptr, m, n, m_pre, m_post, n_pre, n_post);
+		src_ptr += m * n;
+		dst_ptr += newM * newN;
+	}
+}
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void zeroPadding(const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void circularPadding(const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void replicatePadding(const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void symmetricPadding(const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void zeroPaddingMultiChannel(const size_t, const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void circularPaddingMultiChannel(const size_t, const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void replicatePaddingMultiChannel(const size_t, const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP
+
+#define EXP(type) \
+template \
+LIB_MATCH_EXPORT \
+void symmetricPaddingMultiChannel(const size_t, const type *, type *, size_t, size_t, size_t, size_t, size_t, size_t)
+InstantiateTemplate(EXP);
+#undef EXP

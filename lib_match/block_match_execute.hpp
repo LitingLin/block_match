@@ -29,7 +29,7 @@ sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
 		IndexDataType *index_y_ptr = static_cast<IndexDataType *>(index_y->get());
 		for (int j = 0; j < retain; ++j)
 		{
-			ComputingDataType value = *result_buffer++;
+			ComputingDataType value = result_buffer[index_buffer_sort[j]];
 			thresholdFunction(&value, threshold, replacementValue);
 			*result_ptr++ = static_cast<ResultDataType>(value);
 			*index_x_ptr = static_cast<IndexDataType>(index_x_buffer[index_buffer_sort[j]]);
@@ -136,7 +136,10 @@ template <typename Type,
 	ProcessFunction<Type> processFunction>
 	unsigned processWorker(ExecutionContext<Type> *executionContext)
 {
+	CUDA_CHECK_POINT(cudaSetDevice(executionContext->indexOfDevice));
+
 	void *matrixA = executionContext->matrixA, *matrixB = executionContext->matrixB;
+	int numberOfChannels = executionContext->numberOfChannels;
 	Iterator *matrixC = executionContext->matrixC.get();
 	Type *matrixA_buffer = executionContext->matrixA_buffer, *matrixB_buffer = executionContext->matrixB_buffer,
 		*matrixC_buffer = executionContext->matrixC_buffer,
@@ -166,7 +169,7 @@ template <typename Type,
 
 	Type thresholdValue = executionContext->thresholdValue, replacementValue = executionContext->replacementValue;
 
-	int blockSize = executionContext->block_M * executionContext->block_N;
+	int blockSize = executionContext->block_M * executionContext->block_N * numberOfChannels;
 	Type *c_bufferA = executionContext->matrixA_buffer;
 	Type *c_bufferB = executionContext->matrixB_buffer;
 	int *c_index_x_buffer = executionContext->index_x_buffer, *c_index_y_buffer = executionContext->index_y_buffer;
@@ -192,7 +195,7 @@ template <typename Type,
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
 		{
 		JumpIn:
-			blockCopyA(c_bufferA, matrixA,
+			blockCopyA(numberOfChannels, c_bufferA, matrixA,
 				matrixA_M, matrixA_N,
 				indexA_M, indexA_N, block_M, block_N);
 
@@ -210,7 +213,7 @@ template <typename Type,
 					matrixB_N, block_N, neighbour_N, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
-					blockCopyB(c_bufferB, matrixB,
+					blockCopyB(numberOfChannels, c_bufferB, matrixB,
 						matrixB_M, matrixB_N,
 						indexB_M, indexB_N, block_M, block_N);
 					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
@@ -332,13 +335,13 @@ template <typename Type,
 
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	DataPostProcessingMethod *dataPostProcessing = executionContext->dataPostProcessingFunction;
+	DataPostProcessingMethod<Type> *dataPostProcessing = executionContext->dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
 	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
-
+	
 	goto JumpIn;
 
 	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || outOfIndexError(); indexA_M += strideA_M)

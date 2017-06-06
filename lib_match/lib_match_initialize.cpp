@@ -33,8 +33,9 @@ void determineGpuTaskConfiguration(const int maxNumberOfGpuThreads, const int nu
 
 int determineNumberOfThreads(bool sort,
 	const int numberOfTasks,
-	const int maxNumberOfThreads)
-{
+	const int maxNumberOfThreads,
+	const int numberOfDevices)
+{	
 	if (sort) {
 		if (numberOfTasks < maxNumberOfThreads)
 			return numberOfTasks;

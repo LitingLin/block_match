@@ -20,10 +20,10 @@ struct BlockMatchMexContext
 
 	int sequenceMatrixNumberOfDimensions;
 
-	int sequenceAMatrixDimensions[4];
+	int sequenceAMatrixDimensions[3];
 	void *sequenceAMatrixPointer;
 
-	int sequenceBMatrixDimensions[4];
+	int sequenceBMatrixDimensions[3];
 	void *sequenceBMatrixPointer;
 
 	int block_M;
@@ -50,6 +50,9 @@ struct BlockMatchMexContext
 	bool threshold;
 	double thresholdValue;
 	double thresholdReplacementValue;
+
+	unsigned numberOfThreads;
+	int indexOfDevice;
 	// int sparse;
 };
 

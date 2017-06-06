@@ -17,7 +17,7 @@ int determineSizeOfMatrixC_X(int numberOfIndexRetain, int group_M, int group_N)
 
 template <typename Type>
 void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
-	BorderType sequenceABorderType)
+	BorderType sequenceABorderType, std::vector<int> deviceLists)
 {
 	const int numberOfThreads = context->numberOfThreads;
 
@@ -58,6 +58,7 @@ void initializeInstanceWorkerContext(BlockMatchContext<Type> *context,
 			rawMatrixCIndex_begin,
 			beginMatrixAIndex_M,
 			beginMatrixAIndex_N,
+			deviceLists[0],
 			std::make_unique<ExecutionContext<Type>>()
 		});
 	}
@@ -88,6 +89,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -99,12 +101,16 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	int numberOfResultRetain,
 	bool doThresholding,
 	Type thresholdValue, Type replacementValue,
-	bool indexStartFromOne)
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads_byUser)
 	: m_instance(nullptr), 
 		inputADataType(inputADataType), inputBDataType(inputBDataType),
 		outputDataType(outputDataType), indexDataType(indexDataType)
 {
 	CHECK_POINT(globalContext.hasGPU);
+
+	CHECK_POINT_LT(indexOfDevice, globalContext.numberOfGPUDeviceMultiProcessor.size());
 
 	const int numberOfBlockBPerBlockA_M = determineNumberOfBlockBPerBlockA(searchType,
 		searchRegion_M,
@@ -175,8 +181,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		if ((indexA_N_end - indexA_N_begin - 1) % strideA_N)
 			++matrixC_N;
 	}
+	if (!numberOfThreads_byUser)
+		numberOfThreads_byUser = globalContext.numberOfThreads;
+
 	// In case number of threads > size of A
-	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M * matrixC_N, globalContext.numberOfThreads);
+	const int numberOfThreads = determineNumberOfThreads(sort, matrixC_M * matrixC_N, 
+		globalContext.numberOfThreads < numberOfThreads_byUser ? globalContext.numberOfThreads : numberOfThreads_byUser);
 
 	PadFunction *padFunctionA = nullptr;
 	PadFunction *padFunctionB = nullptr;
@@ -462,12 +472,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 
 #define EXP(type) \
-	blockCopyingAFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	blockCopyingAFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputADataType, EXP);
 #undef EXP
 
 #define EXP(type) \
-	blockCopyingBFunction = (BlockCopyMethod*)(copyBlock<Type, type>)
+	blockCopyingBFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputBDataType, EXP);
 #undef EXP
 
@@ -501,7 +511,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 	else
 	{
-		indexRecordFunction = recordIndexPlusOne;
+		indexRecordFunction = recordIndex;
 	}
 
 	if (measureMethod == MeasureMethod::mse)
@@ -517,25 +527,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 	case PadMethod::zero:
 #define exp(type) \
-	padFunctionA = (PadFunction*)zeroPadding<type>
+	padFunctionA = (PadFunction*)zeroPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
-	padFunctionA = (PadFunction*)circularPadding<type>
+	padFunctionA = (PadFunction*)circularPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
-	padFunctionA = (PadFunction*)replicatePadding<type>
+	padFunctionA = (PadFunction*)replicatePaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
-	padFunctionA = (PadFunction*)symmetricPadding<type>
+	padFunctionA = (PadFunction*)symmetricPaddingMultiChannel<type>
 		RuntimeTypeInference(inputADataType, exp);
 #undef exp
 		break;
@@ -546,25 +556,25 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	{
 	case PadMethod::zero:
 #define exp(type) \
-	padFunctionB = (PadFunction*)zeroPadding<type>
+	padFunctionB = (PadFunction*)zeroPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::circular:
 #define exp(type) \
-	padFunctionB = (PadFunction*)circularPadding<type>
+	padFunctionB = (PadFunction*)circularPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::replicate:
 #define exp(type) \
-	padFunctionB = (PadFunction*)replicatePadding<type>
+	padFunctionB = (PadFunction*)replicatePaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
 	case PadMethod::symmetric:
 #define exp(type) \
-	padFunctionB = (PadFunction*)symmetricPadding<type>
+	padFunctionB = (PadFunction*)symmetricPaddingMultiChannel<type>
 		RuntimeTypeInference(inputBDataType, exp);
 #undef exp
 		break;
@@ -577,6 +587,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 
 	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
+		numberOfChannels,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
 		block_M, block_N,
 		searchRegion_M, searchRegion_N,
@@ -599,12 +610,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		std::vector<typename BlockMatchContext<Type>::WorkerContext>(), // workerContext
 		/*std::vector<typename BlockMatchContext<Type>::OptionalPerThreadBuffer>(), // optionalPerThreadBuffer
 		std::vector<typename BlockMatchContext<Type>::OptionalBuffer>(), // optionalBuffer */
-		{ memory_allocator<Type, memory_type::system>(matrixA_padded_M*matrixA_padded_N), 
-			memory_allocator<Type, memory_type::system>(matrixB_padded_M * matrixB_padded_N)},
+		{ memory_allocator<double, memory_type::system>(matrixA_padded_M*matrixA_padded_N), 
+			memory_allocator<double, memory_type::system>(matrixB_padded_M * matrixB_padded_N)},
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor;
+	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor[indexOfDevice];
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;
@@ -617,13 +628,16 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	instance->sizeOfGpuTaskQueue = sizeOfGpuTaskQueue;
 
 	const int perThreadMatrixCBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
-	const int perThreadMatrixABufferSize = sizeOfGpuTaskQueue * block_M * block_N;
-	const int perThreadMatrixBBufferSize = perThreadMatrixCBufferSize * block_M * block_N;
+	const int perThreadMatrixABufferSize = sizeOfGpuTaskQueue * block_M * block_N * numberOfChannels;
+	const int perThreadMatrixBBufferSize = perThreadMatrixCBufferSize * block_M * block_N * numberOfChannels;
+	const int indexSortingBufferSize = sizeOfGpuTaskQueue * numberOfBlockBPerBlockA;
 
 	instance->workerContext.reserve(numberOfThreads);
 	instance->threadPoolTaskHandle.resize(numberOfThreads);
 	instance->streams.resize(numberOfThreads);
 	instance->perThreadBuffer.reserve(numberOfThreads);
+
+	CUDA_CHECK_POINT(cudaSetDevice(indexOfDevice));
 
 	if (sort && indexDataType != typeid(nullptr))
 	{
@@ -638,8 +652,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
 			});
 		}
@@ -655,8 +669,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_x_sorting_buffer
-				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // index_y_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
+				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer
 			});
 		}
@@ -681,7 +695,9 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	else
 		NOT_IMPLEMENTED_ERROR;
 
-	initializeInstanceWorkerContext(instance, sequenceABorderType);
+	std::vector<int> deviceLists(1, indexOfDevice);
+
+	initializeInstanceWorkerContext(instance, sequenceABorderType, deviceLists);
 	this->m_instance = instance;
 }
 
@@ -711,7 +727,7 @@ void BlockMatch<Type>::initialize()
 template
 LIB_MATCH_EXPORT
 BlockMatch<float>::BlockMatch(
-	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index inputADataType, std::type_index inputBDataType,
 	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
@@ -721,6 +737,7 @@ BlockMatch<float>::BlockMatch(
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -732,11 +749,13 @@ BlockMatch<float>::BlockMatch(
 	int numberOfIndexRetain,
 	bool doThresholding,
 	float thresholdValue, float replacementValue,
-	bool indexStartFromOne);
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads);
 template
 LIB_MATCH_EXPORT
 BlockMatch<double>::BlockMatch(
-	std::type_index inputADataType, std::type_index inputBDataType, 
+	std::type_index inputADataType, std::type_index inputBDataType,
 	std::type_index outputDataType,
 	std::type_index indexDataType,
 	SearchType searchType,
@@ -746,6 +765,7 @@ BlockMatch<double>::BlockMatch(
 	SearchFrom searchFrom,
 	bool sort,
 	int matrixA_M, int matrixA_N, int matrixB_M, int matrixB_N,
+	int numberOfChannels,
 	int searchRegion_M, int searchRegion_N,
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
@@ -757,7 +777,9 @@ BlockMatch<double>::BlockMatch(
 	int numberOfIndexRetain,
 	bool doThresholding,
 	double thresholdValue, double replacementValue,
-	bool indexStartFromOne);
+	bool indexStartFromOne,
+	int indexOfDevice,
+	unsigned numberOfThreads);
 
 template
 LIB_MATCH_EXPORT
