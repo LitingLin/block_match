@@ -178,24 +178,6 @@ LibMatchMexError parseResultDataType(BlockMatchMexContext *context,
 		context->resultType = typeid(float);
 	else if (strncmp(buffer, "double", 7) == 0)
 		context->resultType = typeid(double);
-	else if (strncmp(buffer, "logical", 8) == 0)
-		context->resultType = typeid(bool);
-	else if (strncmp(buffer, "uint8", 6) == 0)
-		context->resultType = typeid(uint8_t);
-	else if (strncmp(buffer, "int8", 5) == 0)
-		context->resultType = typeid(int8_t);
-	else if (strncmp(buffer, "uint16", 7) == 0)
-		context->resultType = typeid(uint16_t);
-	else if (strncmp(buffer, "int16", 6) == 0)
-		context->resultType = typeid(int16_t);
-	else if (strncmp(buffer, "uint32", 7) == 0)
-		context->resultType = typeid(uint32_t);
-	else if (strncmp(buffer, "int32", 6) == 0)
-		context->resultType = typeid(int32_t);
-	else if (strncmp(buffer, "uint64", 7) == 0)
-		context->resultType = typeid(uint64_t);
-	else if (strncmp(buffer, "int64", 6) == 0)
-		context->resultType = typeid(int64_t);
 	else if (strncmp(buffer, "same", 5) != 0)
 		return LibMatchMexError::errorInvalidValue;
 
