@@ -80,16 +80,6 @@ void recheckSequenceBPadding(BlockMatchMexContext *context)
 	}
 }
 
-LibMatchMexError recheckSortingParameter(BlockMatchMexContext *context)
-{
-	if (!context->sort && context->retain)
-	{
-		return LibMatchMexError::errorInvalidParameterCombination;
-	}
-
-	return LibMatchMexError::success;
-}
-
 LibMatchMexError parseSequenceABorderType(BlockMatchMexContext *context,
 	const mxArray *pa)
 {
@@ -943,11 +933,7 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		}
 		++index;
 	}
-
-	error = recheckSortingParameter(context);
-	if (error == LibMatchMexError::errorInvalidParameterCombination)
-		return generateErrorMessage(error, "Parameter Retain cannot be integer when Parameter Sort is given");
-
+	
 	error = recheckSearchRegion(context);
 	if (error == LibMatchMexError::errorSizeOfArray)
 		return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
