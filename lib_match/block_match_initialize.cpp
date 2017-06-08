@@ -652,12 +652,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
-				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixCBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
-				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixCBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(numberOfBlockBPerBlockA) // index_raw_sorting_buffer
@@ -672,12 +672,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
-				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixCBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
-				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixCBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(indexSortingBufferSize), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer
@@ -692,12 +692,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixABufferSize), // matrixA_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixBBufferSize), // matrixB_buffer
 				memory_allocator<Type, memory_type::page_locked>(perThreadMatrixCBufferSize), // matrixC_buffer
-				memory_allocator<int, memory_type::page_locked>(perThreadMatrixBBufferSize), // offsetOfA
+				memory_allocator<int, memory_type::page_locked>(perThreadMatrixCBufferSize), // offsetOfA
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixABufferSize), // matrixA_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixBBufferSize), // matrixB_deviceBuffer
 				memory_allocator<Type, memory_type::gpu>(perThreadMatrixCBufferSize), // matrixC_deviceBuffer
-				memory_allocator<int, memory_type::gpu>(perThreadMatrixBBufferSize), // offsetOfADevice
-				memory_allocator<int, memory_type::system>(perThreadMatrixABufferSize), // sizeBuffer
+				memory_allocator<int, memory_type::gpu>(perThreadMatrixCBufferSize), // offsetOfADevice
+				memory_allocator<int, memory_type::system>(perThreadMatrixCBufferSize), // sizeBuffer
 				memory_allocator<int, memory_type::system>(0), // index_x_sorting_buffer
 				memory_allocator<int, memory_type::system>(0), // index_y_sorting_buffer
 				memory_allocator<int, memory_type::system>(0) // index_raw_sorting_buffer

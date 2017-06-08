@@ -4,12 +4,12 @@
 
 template <typename Type>
 __device__ inline Type
-accumulate(const Type *begin, const Type *end)
+accumulate(const Type *begin, const int size)
 {
 	Type sum = static_cast<Type>(0);
-	for (const Type *iter = begin; iter != end; ++iter)
+	for (int i = 0; i != size; ++i)
 	{
-		sum += *iter;
+		sum += begin[i];
 	}
 	return sum;
 }
@@ -19,8 +19,9 @@ __device__ inline Type
 correlation_coefficient(const Type *A, const Type *B, const int size)
 {
 	Type X = 0, Y = 0, Z = 0;
-	Type A_mean = accumulate(A, A + size) / static_cast<Type>(size);
-	Type B_mean = accumulate(B, B + size) / static_cast<Type>(size);
+	
+	Type A_mean = accumulate(A, size) / static_cast<Type>(size);
+	Type B_mean = accumulate(B, size) / static_cast<Type>(size);
 
 	for (int i = 0; i < size; ++i)
 	{

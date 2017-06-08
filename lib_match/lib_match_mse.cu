@@ -60,7 +60,7 @@ lib_match_mse_kernel_offset(const Type *blocks_A, const Type *blocks_B, Type *re
 			
 	const Type *c_block_A = blocks_A + offsetA[tid] * blockSize;
 	const Type *c_block_B = blocks_B + tid * blockSize;
-
+	
 	resultsBuffer[tid] = mean_square_error(c_block_A, c_block_B, blockSize);
 }
 
