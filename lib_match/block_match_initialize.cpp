@@ -617,7 +617,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
 	};
 
-	const int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor[indexOfDevice];
+	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor[indexOfDevice];
+	numberOfGPUDeviceMultiProcessor *= 10;
 	const int numberOfGPUProcessorThread = globalContext.numberOfGPUProcessorThread;
 
 	int numberOfSubmitThreadsPerProcessor, numberOfSubmitProcessors, sizeOfGpuTaskQueue;

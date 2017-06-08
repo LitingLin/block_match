@@ -295,7 +295,7 @@ struct ExecutionContext
 	int *index_x_buffer, *index_y_buffer,
 		*rawIndexTemplate, *rawIndexBuffer,
 		*sizeBuffer,
-	*offsetA_buffer, *offsetA_deviceBuffer,
+		*offsetA_buffer, *offsetA_deviceBuffer,
 		block_M, block_N,
 		strideA_M, strideA_N,
 		strideB_M, strideB_N,
