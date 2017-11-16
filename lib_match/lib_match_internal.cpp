@@ -10,7 +10,7 @@ const int numberOfGPUProcessorThread = 512;
 
 #define MAX_NUMBER_OF_PROCESSOR 14
 
-// Hyper-Threading do harms to arithmetic computation
+// Hyper-Threading do harm to floating operation
 unsigned getNumberOfPhysicalProcessor()
 {
 	DWORD bufferLength = 0;
