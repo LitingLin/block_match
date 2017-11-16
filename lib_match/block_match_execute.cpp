@@ -201,6 +201,10 @@ void BlockMatch<Type>::executev2(void *A, void *B,
 		executionContext->strideA_N = instance->strideA_N;
 		executionContext->strideB_M = instance->strideB_M;
 		executionContext->strideB_N = instance->strideB_N;
+		executionContext->blockStrideA_M = instance->blockStrideA_M;
+		executionContext->blockStrideA_N = instance->blockStrideA_N;
+		executionContext->blockStrideB_M = instance->blockStrideB_M;
+		executionContext->blockStrideB_N = instance->blockStrideB_N;
 		executionContext->matrixC = C->clone(instance->workerContext[i].rawMatrixCIndex_begin);
 		executionContext->dataPostProcessingFunction = instance->dataPostProcessingFunction;
 		executionContext->blockCopyingAFunction = instance->blockCopyingAFunction;

@@ -273,7 +273,7 @@ void(Iterator *index_x, Iterator *index_y, Iterator *result,
 	Type threshold, Type replacementValue,
 	const int *index_buffer, int *index_buffer_sort);
 using BlockCopyMethod =
-void(const size_t, void *, const void *, int, int, int, int, int, int);
+void(const size_t, void *, const void *, int, int, int, int, int, int, int, int);
 using DetermineBlockBRangeMethod =
 void(int *, int *, int, int,int, int, int);
 using IterationIndexPostProcessMethod =
@@ -299,6 +299,8 @@ struct ExecutionContext
 		block_M, block_N,
 		strideA_M, strideA_N,
 		strideB_M, strideB_N,
+		blockStrideA_M, blockStrideA_N,
+		blockStrideB_M, blockStrideB_N,
 		 searchRegion_M_pre,
 	 searchRegion_M_post,
 	 searchRegion_N_pre,
@@ -369,6 +371,11 @@ struct BlockMatchContext
 	int strideA_N;
 	int strideB_M;
 	int strideB_N;
+
+	int blockStrideA_M;
+	int blockStrideA_N;
+	int blockStrideB_M;
+	int blockStrideB_N;
 
 	int matrixAPadding_M_pre;
 	int matrixAPadding_M_post;
@@ -579,6 +586,10 @@ template <typename Type1, typename Type2>
 void copyBlockMultiChannel(const size_t nChannels, Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
 template <typename Type>
 void copyBlockWithSymmetricPadding(Type *buf, const Type *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N);
+template <typename Type1, typename Type2>
+void copyBlockMultiChannel_withParameterStride(const size_t nChannels, Type1 *buf, const Type2 *src,
+	int mat_M, int mat_N, int index_x, int index_y,
+	int block_M, int block_N, int stride_M, int stride_N);
 template <typename Type1, typename Type2>
 void copyArray(Type1 *buf, const Type2 *src, int size);
 

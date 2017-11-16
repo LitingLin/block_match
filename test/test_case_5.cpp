@@ -40,6 +40,7 @@ BOOST_AUTO_TEST_CASE(test_case_5)
 		searchRegionM_pre, searchRegionM_post,
 		searchRegionN_pre, searchRegionN_post, 
 		blockM, blockN, strideM, strideN, strideM, strideN,
+		1, 1, 1, 1,
 		matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost, matrixPaddingMPre, matrixPaddingMPost, matrixPaddingNPre, matrixPaddingNPost,
 		numberOfResultRetain, true, 1, 5, true);
 	match.initialize();

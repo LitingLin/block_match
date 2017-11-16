@@ -32,6 +32,23 @@ void copyBlock_helper(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int in
 		c_src += (mat_N - block_N);
 	}
 }
+
+#ifdef _MSC_VER
+#pragma warning( disable : 4800 )  
+#endif
+template <typename Type1, typename Type2>
+	void copyBlock_helper_withStride(Type1 *buf, const Type2 *src, int mat_M, int mat_N, int index_x, int index_y, int block_M, int block_N, int stride_M, int stride_N)
+{
+	Type1 *c_buf = buf;
+	const Type2 *c_src = src + index_x * mat_N + index_y;
+	for (int i = 0; i < block_M; ++i)
+	{
+		for (int j = 0; j < block_N; ++j)
+			*c_buf++ = static_cast<Type1>(*(c_src + j * stride_N));
+		c_src += mat_N * stride_M;
+	}
+}
+
 #ifdef _MSC_VER
 #pragma warning( default : 4800 )  
 #endif
@@ -50,6 +67,26 @@ void copyBlockMultiChannel(const size_t nChannels, Type1 *buf, const Type2 *src,
 	for (size_t i=0;i<nChannels;++i)
 	{
 		copyBlock_helper(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
+		buf += blockSize;
+		src += matSize;
+	}
+}
+
+template <typename Type1, typename Type2>
+void copyBlockMultiChannel_withParameterStride(const size_t nChannels, Type1 *buf, const Type2 *src, 
+	int mat_M, int mat_N, int index_x, int index_y,
+	int block_M, int block_N, int stride_M, int stride_N)
+{
+	if (stride_M == 1 && stride_N == 1) {
+		copyBlockMultiChannel<Type1, Type2>(nChannels, buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N);
+		return;
+	}
+
+	size_t blockSize = block_M * block_N;
+	size_t matSize = mat_M * mat_N;
+	for (size_t i = 0; i<nChannels; ++i)
+	{
+		copyBlock_helper_withStride(buf, src, mat_M, mat_N, index_x, index_y, block_M, block_N, stride_M, stride_N);
 		buf += blockSize;
 		src += matSize;
 	}
@@ -208,6 +245,12 @@ InstantiateTemplate2(exp);
 #define exp(type1, type2) \
 template \
 void copyBlockMultiChannel(const size_t, type1 *, const type2 *, int, int, int, int, int, int);
+InstantiateTemplate2(exp);
+#undef exp
+
+#define exp(type1, type2) \
+template \
+void copyBlockMultiChannel_withParameterStride(const size_t, type1 *, const type2 *, int, int, int, int, int, int, int, int);
 InstantiateTemplate2(exp);
 #undef exp
 

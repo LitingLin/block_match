@@ -37,6 +37,11 @@ struct BlockMatchMexContext
 	int sequenceBStride_M;
 	int sequenceBStride_N;
 
+	int blockStrideA_M;
+	int blockStrideA_N;
+	int blockStrideB_M;
+	int blockStrideB_N;
+
 	int sequenceAPadding_M_Pre;
 	int sequenceAPadding_M_Post;
 	int sequenceAPadding_N_Pre;

@@ -12,6 +12,42 @@ void recheckSparse(BlockMatchMexContext *context)
 	}
 }
 */
+LibMatchMexError recheckBlockStride(BlockMatchMexContext *context)
+{
+	uint64_t blockSizeA_M = (uint64_t)context->block_M * (uint64_t)context->blockStrideA_M;
+	uint64_t blockSizeA_N = (uint64_t)context->block_N * (uint64_t)context->blockStrideA_N;
+	uint64_t blockSizeB_M = (uint64_t)context->block_M * (uint64_t)context->blockStrideB_M;
+	uint64_t blockSizeB_N = (uint64_t)context->block_N * (uint64_t)context->blockStrideB_N;
+
+	if (blockSizeA_M > std::numeric_limits<int>::max())
+		return LibMatchMexError::errorOverFlow;
+	if (blockSizeA_N > std::numeric_limits<int>::max())
+		return LibMatchMexError::errorOverFlow;
+	if (blockSizeB_M > std::numeric_limits<int>::max())
+		return LibMatchMexError::errorOverFlow;
+	if (blockSizeB_N > std::numeric_limits<int>::max())
+		return LibMatchMexError::errorOverFlow;
+
+	int A_M = context->sequenceAMatrixDimensions[0] + context->sequenceAPadding_M_Pre + context->sequenceAPadding_M_Post;
+	int A_N = context->sequenceAMatrixDimensions[0] + context->sequenceAPadding_N_Pre + context->sequenceAPadding_N_Post;
+	int B_M = context->sequenceAMatrixDimensions[1] + context->sequenceBPadding_M_Pre + context->sequenceBPadding_M_Post;
+	int B_N = context->sequenceAMatrixDimensions[1] + context->sequenceBPadding_N_Pre + context->sequenceBPadding_N_Post;
+
+	if (blockSizeA_M > A_M || blockSizeA_N > A_N || blockSizeB_M > B_M || blockSizeB_N > B_N)
+	{
+		return LibMatchMexError::errorInvalidValue;
+	}
+	if (context->searchType == SearchType::local)
+	{
+		if (blockSizeA_M > (context->searchRegion_M_pre + context->searchRegion_M_post) ||
+			blockSizeA_N > (context->searchRegion_N_pre + context->searchRegion_N_post) ||
+			blockSizeB_M > (context->searchRegion_M_pre + context->searchRegion_M_post) ||
+			blockSizeB_N > (context->searchRegion_N_pre + context->searchRegion_N_post))
+			return LibMatchMexError::errorInvalidValue;
+	}
+
+	return LibMatchMexError::success;
+}
 LibMatchMexError recheckSearchRegion(BlockMatchMexContext *context)
 {
 	if (context->searchType == SearchType::local)
@@ -78,6 +114,18 @@ void recheckSequenceBPadding(BlockMatchMexContext *context)
 			context->sequenceBPadding_M_Pre = context->sequenceBPadding_M_Post = context->searchRegion_M_pre + context->searchRegion_M_post;
 		}
 	}
+}
+
+LibMatchMexError parseBlockStrideA(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	return parse2ElementPositiveIntegerParameter(pa, &context->blockStrideA_M, &context->blockStrideA_N);
+}
+
+LibMatchMexError parseBlockStrideB(BlockMatchMexContext *context,
+	const mxArray *pa)
+{
+	return parse2ElementPositiveIntegerParameter(pa, &context->blockStrideB_M, &context->blockStrideB_N);
 }
 
 LibMatchMexError parseSequenceABorderType(BlockMatchMexContext *context,
@@ -749,6 +797,34 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}
+		else if (strncmp(buffer, "StrideBlockA", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseBlockStrideA(context, prhs[index]);
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
+				return generateErrorMessage(error, "Number of dimension of StrideBlockA must be 1 or 2.");
+			else if (error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "StrideBlockA must be positive.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of StrideBlockA overflowed.");
+			else if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "StrideBlockA must be numeric array");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
+		else if (strncmp(buffer, "StrideBlockB", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		{
+			error = parseBlockStrideB(context, prhs[index]);
+			if (error == LibMatchMexError::errorNumberOfMatrixDimension)
+				return generateErrorMessage(error, "Number of dimension of StrideBlockB must be 1 or 2.");
+			else if (error == LibMatchMexError::errorInvalidValue)
+				return generateErrorMessage(error, "StrideBlockB must be positive.");
+			else if (error == LibMatchMexError::errorOverFlow)
+				return generateErrorMessage(error, "Value of StrideBlockB overflowed.");
+			else if (error == LibMatchMexError::errorTypeOfArgument)
+				return generateErrorMessage(error, "StrideBlockB must be numeric array");
+			else if (error != LibMatchMexError::success)
+				return unknownParsingError(buffer);
+		}
 		else if (strncmp(buffer, "PaddingA", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSequenceAPaddingSize(context, prhs[index]);
@@ -877,7 +953,8 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 				return generateErrorMessage(error, "Invalid value of argument IntermediateDataType.");
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
-		}/*
+		}
+		/*
 		else if (strncmp(buffer, "Sparse", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseSparse(context, prhs[index]);
@@ -933,13 +1010,18 @@ LibMatchMexErrorWithMessage parseParameter(BlockMatchMexContext *context,
 		}
 		++index;
 	}
-	
+
 	error = recheckSearchRegion(context);
 	if (error == LibMatchMexError::errorSizeOfArray)
 		return generateErrorMessage(error, "SearchRegionSize cannot be smaller then the size of Matrix A - BlockSize\n");
 
 	recheckSequenceBPadding(context);
 	recheckDataType(context);
+	error = recheckBlockStride(context);
+	if (error == LibMatchMexError::errorOverFlow)
+		return generateErrorMessage(error, "Parameter StrideBlock overflowed");
+	else if (error == LibMatchMexError::errorInvalidValue)
+		return generateErrorMessage(error, "Invalid value of Parameter StrideBlock");
 	// recheckSparse(context);
 
 	LibMatchMexErrorWithMessage error_message = { error = LibMatchMexError::success };

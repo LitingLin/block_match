@@ -21,7 +21,9 @@ BOOST_AUTO_TEST_CASE(test_case_9)
 		SearchType::global, MeasureMethod::mse, PadMethod::zero, PadMethod::zero,
 		BorderType::normal, false,
 		inDim0, inDim1, inDim0, inDim1, 1,
-		0,0,0,0, blockSize, blockSize, 1,1,1,1, 0,0,0,0,0,0,0,0,0,false, 0,0,true);
+		0, 0, 0, 0, blockSize, blockSize, 1, 1, 1, 1,
+		1, 1, 1, 1,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, true);
 	blockMatch.initialize();
 	int estimateOutDim0, estimateOutDim1, estimateOutDim2;
 	blockMatch.get_matrixC_dimensions(&estimateOutDim0, &estimateOutDim1, &estimateOutDim2);
