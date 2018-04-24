@@ -422,7 +422,7 @@ struct LibMatchMexErrorWithMessage parseParameter(ArrayMatchMexContext *context,
 			else if (error != LibMatchMexError::success)
 				return unknownParsingError(buffer);
 		}
-		if (strncmp(buffer, "ResultDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
+		else if (strncmp(buffer, "ResultDataType", LIB_MATCH_MEX_MAX_PARAMETER_NAME_LENGTH) == 0)
 		{
 			error = parseResultDataType(context, prhs[index]);
 			if (error == LibMatchMexError::errorTypeOfArgument)
