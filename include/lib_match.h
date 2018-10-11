@@ -138,8 +138,6 @@ public:
 		int block_M, int block_N,
 		int strideA_M, int strideA_N,
 		int strideB_M, int strideB_N,
-		int blockStrideA_M, int blockStrideA_N,
-		int blockStrideB_M, int blockStrideB_N,
 		int matrixAPadding_M_pre, int matrixAPadding_M_post,
 		int matrixAPadding_N_pre, int matrixAPadding_N_post,
 		int matrixBPadding_M_pre, int matrixBPadding_M_post,

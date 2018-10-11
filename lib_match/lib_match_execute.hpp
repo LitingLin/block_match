@@ -45,11 +45,7 @@ void submitGpuTask_offset(Type *bufferA, Type *bufferB, Type *resultBuffer,
 	CUDA_CHECK_POINT(cudaMemcpyAsync(offsetADevice, offsetA, numberOfB * sizeof(int), cudaMemcpyHostToDevice, stream));
 
 	CUDA_CHECK_POINT(processFunction(deviceBufferA, deviceBufferB, offsetADevice, numberOfB, size, deviceResultBuffer,
-		numberOfGpuProcessors, numberOfGpuThreads, stream))
-		<< "\ndeviceBufferA: " << deviceBufferA << ", deviceBufferB: " << deviceBufferB << ", offsetADevice: " << offsetADevice
-		<< ", numberOfB: " << numberOfB << ", size: " << size << ", deviceResultBuffer: " << deviceResultBuffer 
-		<< ", numberOfGpuProcessors: " << numberOfGpuProcessors << ", numberOfGpuThreads: " << numberOfGpuThreads
-		<< ", stream: " << stream;
+		numberOfGpuProcessors, numberOfGpuThreads, stream));
 
 	CUDA_CHECK_POINT(cudaMemcpyAsync(resultBuffer, deviceResultBuffer, numberOfB * sizeof(Type), cudaMemcpyDeviceToHost, stream));
 }

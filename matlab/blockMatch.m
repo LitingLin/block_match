@@ -60,14 +60,6 @@ StrideA = [1,1];
 %  scalar, 1x2 matrix
 StrideB = [1,1];
 
-%% Stride in block
-% Stride size of blocks get from matrix A, can be
-%  scalar, 1x2 matrix
-StrideBlockA = [1,1];
-% Stride size of blocks get from matrix B, can be
-%  scalar, 1x2 matrix
-StrideBlockB = [1,1];
-
 %% Border
 % Blocks near the borders
 %  can be

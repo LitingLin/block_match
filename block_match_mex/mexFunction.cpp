@@ -30,8 +30,6 @@ void process(BlockMatchMexContext *context, int nlhs, mxArray *plhs[])
 			context->block_M, context->block_N,
 			context->sequenceAStride_M, context->sequenceAStride_N,
 			context->sequenceBStride_M, context->sequenceBStride_N,
-			context->blockStrideA_M, context->blockStrideA_N,
-			context->blockStrideB_M, context->blockStrideB_N,
 			context->sequenceAPadding_M_Pre, context->sequenceAPadding_M_Post,
 			context->sequenceAPadding_N_Pre, context->sequenceAPadding_N_Post,
 			context->sequenceBPadding_M_Pre, context->sequenceBPadding_M_Post,

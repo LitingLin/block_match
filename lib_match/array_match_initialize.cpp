@@ -35,8 +35,8 @@ ArrayMatch<Type>::ArrayMatch(std::type_index inputADataType, std::type_index inp
 	bool doThresholding,
 	Type thresholdValue, Type replacementValue,
 	bool indexStartFromOne,
-	int indexOfDevice,
-	unsigned numberOfThreads_byUser)
+	int indexOfDevice = 0,
+	unsigned numberOfThreads_byUser = 0)
 	: m_instance(nullptr), inputADataType(inputADataType), inputBDataType(inputBDataType),
 	outputDataType(outputDataType), indexDataType(indexDataType)
 {

@@ -94,8 +94,6 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
-	int blockStrideA_M, int blockStrideA_N,
-	int blockStrideB_M, int blockStrideB_N,
 	int matrixAPadding_M_pre, int matrixAPadding_M_post,
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
@@ -126,10 +124,6 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	const int matrixA_padded_N = matrixA_N + matrixAPadding_N_pre + matrixAPadding_N_post;
 	const int matrixB_padded_M = matrixB_M + matrixBPadding_M_pre + matrixBPadding_M_post;
 	const int matrixB_padded_N = matrixB_N + matrixBPadding_N_pre + matrixBPadding_N_post;
-	const int realBlockSizeA_M = block_M * blockStrideA_M;
-	const int realBlockSizeA_N = block_N * blockStrideA_N;
-	const int realBlockSizeB_M = block_M * blockStrideB_M;
-	const int realBlockSizeB_N = block_N * blockStrideB_N;
 
 	//if (searchType == SearchType::local)
 	//{
@@ -175,33 +169,13 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	//}
 
 	indexA_M_begin = 0;
-	indexA_M_end = determineEndOfIndex(matrixA_padded_M, realBlockSizeA_M);
+	indexA_M_end = determineEndOfIndex(matrixA_padded_M, block_M);
 	indexA_N_begin = 0;
-	indexA_N_end = determineEndOfIndex(matrixA_padded_N, realBlockSizeA_N);
+	indexA_N_end = determineEndOfIndex(matrixA_padded_N, block_N);
 
 	if (indexA_M_end <= indexA_M_begin || indexA_N_end <= indexA_N_begin)
-		throw std::runtime_error("Parameter 'blockSize' is too large for Matrix A.");
+		throw std::runtime_error("Parameter 'blockSize' is too large.");
 
-	int indexB_M_begin = 0;
-	int indexB_M_end = determineEndOfIndex(matrixB_padded_M, realBlockSizeB_M);
-	int indexB_N_begin = 0;
-	int indexB_N_end = determineEndOfIndex(matrixB_padded_N, realBlockSizeB_N);
-	
-	if (indexB_M_end <= indexB_M_begin || indexB_N_end <= indexB_N_begin)
-		throw std::runtime_error("Parameter 'blockSize' is too large for Matrix B.");
-
-	if (searchType == SearchType::local)
-	{
-		if (indexA_M_begin < indexB_M_begin)
-			indexA_M_begin = indexB_M_begin;
-		if (indexA_M_end > (indexB_M_end + searchRegion_M_pre))
-			indexA_M_end = (indexB_M_end + searchRegion_M_pre);
-		if (indexA_N_begin < indexB_N_begin)
-			indexA_N_begin = indexB_N_begin;
-		if (indexA_N_end > (indexB_N_end + searchRegion_N_pre))
-			indexA_N_end = (indexB_N_end + searchRegion_N_pre);
-	}
-	
 	int matrixC_M = (indexA_M_end - indexA_M_begin + strideA_M - 1) / strideA_M;
 	int matrixC_N = (indexA_N_end - indexA_N_begin + strideA_N - 1) / strideA_N;
 	const int matrixC_X = determineSizeOfMatrixC_X(numberOfResultRetain, numberOfBlockBPerBlockA_M, numberOfBlockBPerBlockA_N);
@@ -503,12 +477,12 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	}
 
 #define EXP(type) \
-	blockCopyingAFunction = (BlockCopyMethod*)(copyBlockMultiChannel_withParameterStride<Type, type>)
+	blockCopyingAFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputADataType, EXP);
 #undef EXP
 
 #define EXP(type) \
-	blockCopyingBFunction = (BlockCopyMethod*)(copyBlockMultiChannel_withParameterStride<Type, type>)
+	blockCopyingBFunction = (BlockCopyMethod*)(copyBlockMultiChannel<Type, type>)
 	RuntimeTypeInference(inputBDataType, EXP);
 #undef EXP
 
@@ -612,7 +586,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 	if (numberOfResultRetain > numberOfBlockBPerBlockA)
 		throw std::runtime_error("Check Error: Parameter 'retain' cannot larger than number of blocks of B");
 
-	std::unique_ptr<BlockMatchContext<Type>> instance = std::make_unique<BlockMatchContext<Type>>(BlockMatchContext<Type>{
+	BlockMatchContext<Type> *instance = new BlockMatchContext<Type>{
 		matrixA_M, matrixA_N, matrixB_M, matrixB_N,
 		numberOfChannels,
 		matrixA_padded_M, matrixA_padded_N, matrixB_padded_M, matrixB_padded_N,
@@ -620,7 +594,6 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		searchRegion_M_pre, searchRegion_M_post,
 		searchRegion_N_pre, searchRegion_N_post,
 		strideA_M, strideA_N, strideB_M, strideB_N,
-		blockStrideA_M, blockStrideA_N, blockStrideB_M, blockStrideB_N,
 		matrixAPadding_M_pre, matrixAPadding_M_post,matrixAPadding_N_pre, matrixAPadding_N_post,
 		matrixBPadding_M_pre, matrixBPadding_M_post, matrixBPadding_N_pre, matrixBPadding_N_post,
 		indexA_M_begin, indexA_M_end, indexA_N_begin, indexA_N_end,
@@ -642,7 +615,7 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 		{ memory_allocator<double, memory_type::system>(matrixA_padded_M*matrixA_padded_N), 
 			memory_allocator<double, memory_type::system>(matrixB_padded_M * matrixB_padded_N)},
 		std::vector<typename BlockMatchContext<Type>::PerThreadBuffer>() // perThreadBuffer
-	});
+	};
 
 	int numberOfGPUDeviceMultiProcessor = globalContext.numberOfGPUDeviceMultiProcessor[indexOfDevice];
 	numberOfGPUDeviceMultiProcessor *= 10;
@@ -736,8 +709,8 @@ BlockMatch<Type>::BlockMatch(std::type_index inputADataType, std::type_index inp
 
 	std::vector<int> deviceLists(1, indexOfDevice);
 
-	initializeInstanceWorkerContext(instance.get(), sequenceABorderType, deviceLists);
-	this->m_instance = instance.release();
+	initializeInstanceWorkerContext(instance, sequenceABorderType, deviceLists);
+	this->m_instance = instance;
 }
 
 template <typename Type>
@@ -784,8 +757,6 @@ BlockMatch<float>::BlockMatch(
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
-	int blockStrideA_M, int blockStrideA_N,
-	int blockStrideB_M, int blockStrideB_N,
 	int matrixAPadding_M_pre, int matrixAPadding_M_post,
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,
@@ -814,8 +785,6 @@ BlockMatch<double>::BlockMatch(
 	int block_M, int block_N,
 	int strideA_M, int strideA_N,
 	int strideB_M, int strideB_N,
-	int blockStrideA_M, int blockStrideA_N,
-	int blockStrideB_M, int blockStrideB_N,
 	int matrixAPadding_M_pre, int matrixAPadding_M_post,
 	int matrixAPadding_N_pre, int matrixAPadding_N_post,
 	int matrixBPadding_M_pre, int matrixBPadding_M_post,

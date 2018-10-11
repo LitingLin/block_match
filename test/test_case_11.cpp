@@ -24,7 +24,6 @@ BOOST_AUTO_TEST_CASE(test_case_11)
 		inDim0, inDim1, inDim0, inDim1, 1,
 		0, 0, 0, 0, blockSize, blockSize,
 		stepSize, stepSize, stepSize, stepSize,
-		1, 1, 1, 1,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, true);
 	blockMatch.initialize();
 	int estimateOutDim0, estimateOutDim1, estimateOutDim2;

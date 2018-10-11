@@ -8,7 +8,7 @@
 
 const int numberOfGPUProcessorThread = 512;
 
-#define MAX_NUMBER_OF_PROCESSOR 14
+#define MAX_NUMBER_OF_PROCESSOR 1
 
 // Hyper-Threading do harm to floating operation
 unsigned getNumberOfPhysicalProcessor()

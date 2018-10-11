@@ -42,7 +42,8 @@ std::string getStackTrace()
 	{
 		if (!SymFromAddr(hProcess, (DWORD64)stacks[i], 0, symbol))
 		{
-			symbol->Name[0] = '\0';
+			message += "Warning! SymFromAddr() failed.\n"
+				"Win32 Error Code: " + std::to_string(GetLastError()) + "\n";
 		}
 		snprintf(buffer, address_buffer_length, "%llx", symbol->Address);
 		message += std::to_string(i) + "\t0x" + buffer + "\t" + (symbol->Name[0] == '\0' ? "(unknown)" : symbol->Name) + "\n";

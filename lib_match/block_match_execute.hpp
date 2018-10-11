@@ -8,15 +8,15 @@
 #pragma warning( disable : 4800 )  
 #endif
 
-template <typename ComputingDataType, typename ResultDataType, typename IndexDataType,
-	RawSortMethod_WithIndex<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction,
-	IndexValueOffsetMethod<IndexDataType> indexValueOffset>
-	inline void
-	sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
-		int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-		int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
-		ComputingDataType threshold, ComputingDataType replacementValue,
-		const int *index_buffer, int *index_buffer_sort)
+template <typename ComputingDataType, typename ResultDataType, typename IndexDataType, 
+RawSortMethod_WithIndex<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction, 
+IndexValueOffsetMethod<IndexDataType> indexValueOffset>
+inline void
+sort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
+	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
+	int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain, 
+	ComputingDataType threshold, ComputingDataType replacementValue,
+	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
@@ -41,7 +41,7 @@ template <typename ComputingDataType, typename ResultDataType, typename IndexDat
 			*index_y_ptr = static_cast<IndexDataType>(index_y_buffer[index_buffer_sort[j]]);
 			indexValueOffset(index_y_ptr++);
 		}
-		for (int j = c_retain; j < retain; ++j)
+		for (int j=c_retain;j<retain;++j)
 		{
 			*result_ptr++ = NAN;
 			*index_x_ptr++ = 0;
@@ -57,14 +57,14 @@ template <typename ComputingDataType, typename ResultDataType, typename IndexDat
 	}
 }
 
-template <typename ComputingDataType, typename ResultDataType,
-	RawSortMethod<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction>
-	inline void
-	sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
-		int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-		int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
-		ComputingDataType threshold, ComputingDataType replacementValue,
-		const int *index_buffer, int *index_buffer_sort)
+template <typename ComputingDataType, typename ResultDataType, 
+RawSortMethod<ComputingDataType> sortType, ThresholdMethod<ComputingDataType> thresholdFunction>
+inline void
+sort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
+	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
+	int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain, 
+	ComputingDataType threshold, ComputingDataType replacementValue,
+	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
@@ -80,24 +80,23 @@ template <typename ComputingDataType, typename ResultDataType,
 			thresholdFunction(&value, threshold, replacementValue);
 			*result_ptr++ = static_cast<ResultDataType>(value);
 		}
-		for (int j = c_retain; j < retain; ++j)
+		for (int j = c_retain; j<retain; ++j)
 		{
 			*result_ptr++ = NAN;
 		}
-		result_buffer += c_numberOfBlockBPerBlockA - c_retain;
 		result->next();
 	}
 }
 
 template <typename ComputingDataType, typename ResultDataType, typename IndexDataType,
-	ThresholdMethod<ComputingDataType> thresholdFunction,
-	IndexValueOffsetMethod<IndexDataType> indexValueOffset>
-	inline void
-	noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
-		int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-		int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
-		ComputingDataType threshold, ComputingDataType replacementValue,
-		const int *index_buffer, int *index_buffer_sort)
+ThresholdMethod<ComputingDataType> thresholdFunction,
+IndexValueOffsetMethod<IndexDataType> indexValueOffset>
+inline void
+noSort_recordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
+	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
+	int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
+	ComputingDataType threshold, ComputingDataType replacementValue,
+	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
@@ -117,15 +116,12 @@ template <typename ComputingDataType, typename ResultDataType, typename IndexDat
 			*index_y_ptr = static_cast<IndexDataType>(*index_y_buffer++);
 			indexValueOffset(index_y_ptr++);
 		}
-		for (int j = c_retain; j < retain; ++j)
+		for (int j = c_retain; j<retain; ++j)
 		{
 			*result_ptr++ = NAN;
 			*index_x_ptr++ = 0;
 			*index_y_ptr++ = 0;
 		}
-		result_buffer += c_numberOfBlockBPerBlockA - c_retain;
-		index_x_buffer += c_numberOfBlockBPerBlockA - c_retain;
-		index_y_buffer += c_numberOfBlockBPerBlockA - c_retain;
 		result->next();
 		index_x->next();
 		index_y->next();
@@ -134,13 +130,13 @@ template <typename ComputingDataType, typename ResultDataType, typename IndexDat
 
 
 template <typename ComputingDataType, typename ResultDataType,
-	ThresholdMethod<ComputingDataType> thresholdFunction>
-	inline void
-	noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
-		int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
-		int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
-		ComputingDataType threshold, ComputingDataType replacementValue,
-		const int *index_buffer, int *index_buffer_sort)
+ThresholdMethod<ComputingDataType> thresholdFunction>
+inline void
+noSort_noRecordIndex(Iterator *index_x, Iterator *index_y, Iterator *result,
+	int *index_x_buffer, int *index_y_buffer, ComputingDataType *result_buffer,
+	int numberOfBlockA, int *numberOfBlockBPerBlockA, int retain,
+	ComputingDataType threshold, ComputingDataType replacementValue,
+	const int *index_buffer, int *index_buffer_sort)
 {
 	for (int i = 0; i < numberOfBlockA; ++i)
 	{
@@ -154,11 +150,10 @@ template <typename ComputingDataType, typename ResultDataType,
 			thresholdFunction(&value, threshold, replacementValue);
 			*result_ptr++ = static_cast<ResultDataType>(value);
 		}
-		for (int j = c_retain; j < retain; ++j)
+		for (int j = c_retain; j<retain; ++j)
 		{
 			*result_ptr++ = NAN;
 		}
-		result_buffer += c_numberOfBlockBPerBlockA - c_retain;
 		result->next();
 	}
 }
@@ -223,24 +218,15 @@ template <typename Type,
 	int indexOfIteration = 0;
 	int indexA_M = startIndexOfMatrixA_M, indexA_N = startIndexOfMatrixA_N;
 
-	int blockStrideA_M = executionContext->blockStrideA_M;
-	int blockStrideA_N = executionContext->blockStrideA_N;
-	int blockStrideB_M = executionContext->blockStrideB_M;
-	int blockStrideB_N = executionContext->blockStrideB_N;
-	int realBlockA_M = block_M * blockStrideA_M;
-	int realBlockA_N = block_N * blockStrideA_N;
-	int realBlockB_M = block_M * blockStrideB_M;
-	int realBlockB_N = block_N * blockStrideB_N;
-
 	DataPostProcessingMethod<Type> *dataPostProcessing = executionContext->dataPostProcessingFunction;
 	BlockCopyMethod *blockCopyA = executionContext->blockCopyingAFunction;
 	BlockCopyMethod *blockCopyB = executionContext->blockCopyingBFunction;
 	DetermineBlockBRangeMethod *determineBlockBRange = executionContext->determineBlockBRangeFunction;
 	IterationIndexPostProcessMethod *iterationIndexPostProcess = executionContext->iterationIndexPostProcessFunction;
 	IndexRecordMethod *indexRecord = executionContext->indexRecordFunction;
-
+	
 	goto JumpIn;
-
+	
 	for (/*indexA_M = indexA_M_begin*/; indexA_M < indexA_M_end || outOfIndexError(); indexA_M += strideA_M)
 	{
 		for (indexA_N = indexA_N_begin; indexA_N < indexA_N_end; indexA_N += strideA_N)
@@ -248,24 +234,24 @@ template <typename Type,
 		JumpIn:
 			blockCopyA(numberOfChannels, c_bufferA, matrixA,
 				matrixA_M, matrixA_N,
-				indexA_M, indexA_N, block_M, block_N, blockStrideA_M, blockStrideA_N);
+				indexA_M, indexA_N, block_M, block_N);
 
 			int sequenceBCount = 0;
 			int indexB_M_begin, indexB_M_end;
 			determineBlockBRange(&indexB_M_begin, &indexB_M_end,
-				matrixB_M, realBlockB_M,
+				matrixB_M, block_M,
 				searchRegion_M_pre, searchRegion_M_post, indexA_M);
 			for (int indexB_M = indexB_M_begin; indexB_M < indexB_M_end; indexB_M += strideB_M)
 			{
 				int indexB_N_begin, indexB_N_end;
 				determineBlockBRange(&indexB_N_begin, &indexB_N_end,
-					matrixB_N, realBlockB_N,
+					matrixB_N, block_N,
 					searchRegion_N_pre, searchRegion_N_post, indexA_N);
 				for (int indexB_N = indexB_N_begin; indexB_N < indexB_N_end; indexB_N += strideB_N)
 				{
 					blockCopyB(numberOfChannels, c_bufferB, matrixB,
 						matrixB_M, matrixB_N,
-						indexB_M, indexB_N, realBlockB_M, block_N, blockStrideB_M, blockStrideB_N);
+						indexB_M, indexB_N, block_M, block_N);
 					indexRecord(c_index_x_buffer++, c_index_y_buffer++, indexB_M, indexB_N);
 					c_bufferB += blockSize;
 					offsetA_buffer[numberOfBlockB++] = numberOfBlockA;
@@ -325,7 +311,7 @@ JumpOut:
 	{/*
 		if (checkIsInterruptPending())
 			return 2;*/
-
+		
 		submitGpuTask_offset<Type, processFunction>(matrixA_buffer, matrixB_buffer, matrixC_buffer,
 			matrixA_deviceBuffer, matrixB_deviceBuffer, matrixC_deviceBuffer,
 			blockSize, numberOfBlockA, numberOfBlockB,
