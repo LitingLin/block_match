@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <Matlab_Dir>C:\Program Files\MATLAB\R2017a\</Matlab_Dir>
+    <Matlab_Dir>C:\Program Files\MATLAB\R2019a\</Matlab_Dir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

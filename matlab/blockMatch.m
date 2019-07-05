@@ -26,7 +26,7 @@ function [Result, Index, APadded, BPadded] = blockMatch(A, B, BlockSize, Options
 % Demo:
 %  blockSize = [3,3];
 %  opt.SearchBlock = [3,3];
-%  [res,ind] = blockMatch(A, B, blockSize, opt);
+%  [res,ind] = match.blockMatch(A, B, blockSize, opt);
 
 %% Check number of input parameter
 if nargin < 3
